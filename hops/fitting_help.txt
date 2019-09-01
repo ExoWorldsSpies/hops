@@ -1,0 +1,19 @@
+FITTING
+
+You can notice here that there are too many boxes with information about the star, the planet and our observation. However, in most of these you do not need to intervene, as the code receives this information automatically from databases.
+
+Choose the light curve you want to model for the "Light-curve file" drop-down menu.
+
+Choose your planet by typing the planet name in the "Planet" box and choosing from the drop-down menu.
+
+Fill in the box "Filter" based on the filter you used for the observation (available options are 'u', 'v', 'b', 'y', 'U', 'B', 'V', 'R', 'I', 'J', 'H', 'K').
+
+Then, press the button "Show / Update Preview" and you can see a first model of your light curve in a new window ("Preview" window). In this window, the blue curve represents the model based on the information provided, while the red curve represents the best-fit model to your data.
+
+By changing the value in the box "Scatter limit", and pressing "Show / Update Preview" again, you can see which data points are discarded as outliers. The higher the value, the less the points discarded.
+
+After testing different values and ending up with what we want, close this "light-curve" window and press "RUN FITTING". When the modeling process is completed (a few minutes), our final window opens with the light curve of our target. In this window there are also a number of items related to the star target and the exoplanet.
+
+Note 1: By pressing "RETURN TO PHOTOMETRY" you can return to the photometry window and repeat the process while changing some parameters.
+Note 2: You can change the information of the star or the planet if you notices that the blue model (input) does not respond to the red model (best-fit) in the "Preview window".
+

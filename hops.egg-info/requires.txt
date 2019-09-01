@@ -1,0 +1,6 @@
+pylightcurve>=2.3.2
+scipy
+pyaml
+astropy
+matplotlib
+numpy

@@ -1,0 +1,47 @@
+SELECTION OF DIRECTORY
+
+By clicking the button "Directory" a search window opens and you can select the folder of your choice. This directory should contain all your frames (field of view and reduction).
+
+
+
+FIELD OF VIEW AND REDUCTION FRAMES
+
+After selecting your directory, you should give the name identifiers of the different file types (field of view frames, bias frames, dark frames, flat frames) into the corresponding boxes:
+- Name identifier for observation files
+- Name identifier for bias frames
+- Name identifier for dark frames
+- Name identifier for flat frames
+
+You will see that the boxes are already filled in. These options are either usual ones or, if you have analysed the specific data set in the past, the latest values you gave.
+
+Next to each box there is an indication of how many files of each type exist in your folder, you cannot move to the next step if the field of view frames are 0 (for the rest of the files there is no limitation). For your convenience, there is the "Show files" button, which opens a list of all the files in your directory.
+
+
+
+FIELD COORDINATES
+
+The program automatically tries to locate the field coordinates and displays the result next to "Detected target RA DEC". If the program does not automatically detect the field coordinates, you must enter the coordinates in the box "Manual target RA DEC" (according to the example hh:mm:ss +/-dd:mm:ss). If the program automatically detects the field coordinates but you do not want to use them, you can deselect "Use detected values" and enter the coordinates manually.
+
+
+
+HEADER KEYWORDS
+
+Finally, you need to provide some header keywords (about exposure time, date of observation and observation time) in the corresponding boxes:
+- Exposure time header keyword
+- Observation Date header keyword
+- Observation Time header keyword
+
+Again, you will find that the boxes are already filled, following the same logic as before.
+
+There is an indication next to each box showing whether this header exists in our files. We cannot move on unless all keywords have been found. Again for our convenience, there is the "Show header" button at the bottom of the window, which opens a list of all header keywords and their values in one of the field of view frames.
+
+* Note: Many times in .fit files the date and time are in the same header keyword. When we enter the header of the date keyword, the program automatically detects whether this includes the time as well. As a result, the program disables the box "Observation Time header keyword".
+
+
+REDUCTION - ALIGNMENT
+
+As soon as you click on the button "REDUCTION & ALIGNMENT", the program performs the following procedures: cleaning and aligning the field of view frames. In the beginning, a window appears showing a clean frame and the reduction process % of completion (no need to do something here).
+
+Then, a window appears showing the counts of the sky as a function of time. This helps us detect any damaged frames and exclude them from the analysis (follow the on-screen instructions on how to do that).
+
+Finally, a window showing the alignment process % of completion will appear. In this window you will see how the positions of specific reference stars are located in the field of view. If a picture is damaged and the reference star cannot be found, the program will ask you if you want to exclude it from the analysis. If a picture has been shifted (due to bad tracking) or inverted (due to pier flip), select "NO".

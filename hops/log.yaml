@@ -1,0 +1,115 @@
+alignment:
+  burn_limit: 65000
+  min_calibration_stars_number: 5
+  rotation_tolerance: 0.1
+  search_window_std: 5
+  shift_tolerance_p: 10
+  star_std: 2
+fitting:
+  binning: 1
+  burn: 30000
+  eccentricity: 0.0
+  eccentricity_fit: false
+  inclination: 0.0
+  inclination_fit: 0.0
+  iterations: 130000
+  light_curve_file: Choose Light-curve file
+  logg: 0.0
+  metallicity: 0.0
+  mid_time: 0.0
+  mid_time_fit:
+  - -0.2
+  - 0.2
+  observatory: default
+  observer: default
+  telescope: default
+  camera: default
+  phot_filter: default
+  periastron: 0.0
+  periastron_fit: false
+  period: 0.0
+  period_fit: false
+  planet: Choose Planet
+  planet_search: ' '
+  rp_over_rs: 0.0
+  rp_over_rs_fit:
+  - 0.5
+  - 2.0
+  scatter: 3.0
+  sma_over_rs: 0.0
+  sma_over_rs_fit: false
+  target_ra_dec: hh:mm:ss +dd:mm:ss
+  temperature: 0.0
+photometry:
+  auto_target_ra_dec: None detected
+  max_comparisons: 10
+  sky_inner_aperture: 1.7
+  sky_outer_aperture: 2.4
+  target_aperture: 0
+  target_ra_dec: hh:mm:ss +dd:mm:ss
+  target_x_position: 0
+  target_y_position: 0
+  use_auto_target_ra_dec: true
+pipeline:
+  alignment_complete: false
+  directory: Choose Directory
+  directory_short: Choose Directory
+  fitting_directory: FITTING
+  fov_figure: FOV.pdf
+  light_curve_aperture_file: PHOTOMETRY_APERTURE.txt
+  light_curve_gauss_file: PHOTOMETRY_GAUSS.txt
+  observation_files: ''
+  photometry_complete: false
+  photometry_directory: PHOTOMETRY
+  photometry_file: PHOTOMETRY.txt
+  reduction_complete: false
+  reduction_directory: REDUCED_DATA
+  reduction_prefix: out_
+  reduction_trash_directory: REDUCED_DATA_TRASH
+  results_figure: RESULTS.pdf
+  trash: []
+pipeline_keywords:
+  align_star_area_key: ALIGN_SA
+  align_u0_key: ALIGN_U0
+  align_x0_key: ALIGN_X0
+  align_y0_key: ALIGN_Y0
+  exposure_time_key: EXPTIME
+  mean_key: MEAN
+  observation_date_key: DATE-OBS
+  observation_time_key: TIME-OBS
+  std_key: STD
+reduction:
+  bias_files: bias
+  bin_fits: 1
+  bin_to: 10000
+  dark_files: dark
+  flat_files: flat
+  master_bias_method: median
+  master_dark_method: median
+  master_flat_method: median
+windows:
+  alignment_window: ALIGNMENT
+  button_font:
+  - times
+  - 15
+  - bold
+  button_height: 2
+  button_width: 30
+  created_by: "Copyright (c) 2017-2019, Angelos Tsiaras, atsiaras@star.ucl.ac.uk, , For the user manual visit:, https://github.com/, ExoWorldsSpies/hops/manual.pdf"
+  entries_bd: 3
+  fitting_window: FITTING
+  frame_low_std: -3
+  frame_upper_std: 20
+  main_font:
+  - times
+  - 15
+  names_font:
+  - Courier
+  - 15
+  photometry_window: PHOTOMETRY
+  reduction_window: REDUCTION
+  software_window: HOlomon Photometric Software
+  title_font:
+  - times
+  - 17
+  - bold
