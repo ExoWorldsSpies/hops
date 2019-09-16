@@ -53,6 +53,11 @@ except ImportError:
 from matplotlib.backend_bases import FigureCanvasBase
 import matplotlib.image as mpimg
 
+import webbrowser
+
+def openweb():
+    webbrowser.open("https://exoworldsspies.com/software", new=1)
+
 __location__ = os.path.abspath(os.path.dirname(__file__))
 __home__ = os.path.expanduser('~')
 

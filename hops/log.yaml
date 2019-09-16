@@ -95,7 +95,7 @@ windows:
   - bold
   button_height: 2
   button_width: 30
-  created_by: "Copyright (c) 2017-2019, Angelos Tsiaras, atsiaras@star.ucl.ac.uk, , For the user manual visit:, https://github.com/, ExoWorldsSpies/hops/manual.pdf"
+  created_by: "Copyright (c) 2017-2019, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
   entries_bd: 3
   fitting_window: FITTING
   frame_low_std: -3

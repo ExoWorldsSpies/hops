@@ -627,6 +627,8 @@ def reduction_alignment_window():
     show_header_button['command'] = show_header_window.show
     run_reduction_alignment_button['command'] = run_reduction_alignment
 
+    Btn = Button(root, text="USER MANUAL", command=openweb)
+
     # setup window
 
     photo = PhotoImage(file=holomon_logo)
@@ -642,11 +644,11 @@ def reduction_alignment_window():
         [[directory_label, 1], [directory_entry, 2]],
         [[observation_files_label, 1], [observation_files_entry, 2], [observation_files_test, 3]],
         [[bias_files_label, 1], [bias_files_entry, 2], [bias_files_test, 3]],
-        [[created_by_label, 0, 1, 6], [dark_files_label, 1], [dark_files_entry, 2], [dark_files_test, 3]],
-        [[flat_files_label, 1], [flat_files_entry, 2], [flat_files_test, 3]],
+        [[dark_files_label, 1], [dark_files_entry, 2], [dark_files_test, 3]],
+        [[created_by_label, 0, 1, 3], [flat_files_label, 1], [flat_files_entry, 2], [flat_files_test, 3]],
         [[bin_fits_label, 1], [bin_fits_entry, 2]],
         [[show_files_button, 2]],
-        [],
+        [[Btn, 0]],
         [[auto_target_ra_dec_label, 1], [auto_target_ra_dec_entry, 2], [use_auto_target_ra_dec_entry, 3]],
         [[target_ra_dec_label, 1], [target_ra_dec_entry, 2], [target_ra_dec_test, 3]],
         [[exposure_time_key_label, 1], [exposure_time_key_entry, 2], [exposure_time_key_test, 3]],
@@ -1044,6 +1046,8 @@ def photometry_window():
 
     # setup window
 
+    Btn = Button(root, text="USER MANUAL", command=openweb)
+
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
     window_label = Label(root, text='Photometry')
@@ -1051,7 +1055,7 @@ def photometry_window():
 
     setup_list = [
         [],
-        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title'], [help_button, 4]],
+        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
         [],
         [[position_label, 2, 2], [box_semi_length_label, 4]],
     ]
@@ -1060,6 +1064,10 @@ def photometry_window():
 
         if target == 3:
             setup_list.append([[created_by_label, 0, 1, 3],
+                               [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
+                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4]])
+        elif target == 5:
+            setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4]])
         else:
@@ -1739,6 +1747,8 @@ def fitting_window():
 
     # setup window
 
+    Btn = Button(root, text="USER MANUAL", command=openweb)
+
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
     window_label = Label(root, text='Fitting')
@@ -1746,8 +1756,7 @@ def fitting_window():
 
     setup_window(root, [
         [],
-        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title'], [help_button, 4]],
-        [[my_profile_button, 4]],
+        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title'], [my_profile_button, 4]],
         [],
         [[light_curve_file_label, 1], [light_curve_file_entry, 2, 3, 1]],
         [[binning_label, 1], [binning_entry, 2], [scatter_label, 3], [scatter_entry, 4]],
@@ -1757,7 +1766,7 @@ def fitting_window():
          [observatory_entry, 4]],
         [[observer_label, 3], [observer_entry, 4]],
         [],
-        [[planet_label, 1], [planet_search_entry, 2], [target_ra_dec_label, 3], [target_ra_dec_entry, 4]],
+        [[Btn, 0], [planet_label, 1], [planet_search_entry, 2], [target_ra_dec_label, 3], [target_ra_dec_entry, 4]],
         [[planet_entry, 2], [target_ra_dec_test, 4]],
         [],
         [[period_label, 1], [period_entry, 2], [metallicity_label, 3], [metallicity_entry, 4]],

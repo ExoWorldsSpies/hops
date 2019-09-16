@@ -1,0 +1,6 @@
+*.pyc
+*.egg-info/*
+MANIFEST.in
+local_*
+.idea/*
+hops/__pycache__/*
