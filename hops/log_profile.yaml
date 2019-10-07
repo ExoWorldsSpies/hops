@@ -13,8 +13,12 @@ bias_files: bias
 dark_files: dark
 flat_files: flat
 bin_fits: 1
-observatory:
-observer:
-telescope:
-camera:
-filter:
+observatory: 'My Observatory'
+observatory_lat: '+00 00 00'
+observatory_long: '00 00 00'
+observatory_elev: '0'
+observatory_time_zone: '0'
+observer: ''
+telescope: ''
+camera: ''
+filter: ''

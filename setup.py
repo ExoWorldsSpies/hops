@@ -5,7 +5,7 @@ import glob
 name = 'hops'
 description = 'HOlomon Photometry Software - A software to analyse data from small ground-based telescopes'
 url = 'https://https://github.com/ExoWorldsSpies/hops'
-install_requires = ['pylightcurve>=3.0.1', 'pyaml']
+install_requires = ['pylightcurve>=3.0.1', 'pyaml', 'requests']
 
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 

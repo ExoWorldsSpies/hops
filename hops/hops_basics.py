@@ -26,6 +26,7 @@ warnings.filterwarnings(
 import matplotlib
 matplotlib.use('TkAgg')
 
+import datetime
 import os
 import sys
 import glob
@@ -52,6 +53,13 @@ except ImportError:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.backend_bases import FigureCanvasBase
 import matplotlib.image as mpimg
+
+from astroquery.simbad import Simbad
+import requests
+from astropy import units as u
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation
+
 
 import webbrowser
 
@@ -96,12 +104,26 @@ def write_local_log_user(keyword, value):
     yaml.dump(x, open(local_log_user_file, 'w'), default_flow_style=False)
 
 
-def read_local_log_profile(keyword):
-    x = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
+def read_log_profile(keyword):
+    x = yaml.load(open(log_profile_file, 'r'), Loader=yaml.SafeLoader)
     if not x[keyword]:
         return ''
     else:
-        return str(x[keyword])
+        test = str(x[keyword])
+        if test[0] == ' ':
+            test = test[1:]
+        return test
+
+
+def read_local_log_profile(keyword):
+    try:
+        x = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
+        test = str(x[keyword])
+        if test[0] == ' ':
+            test = test[1:]
+        return test
+    except KeyError:
+        return read_log_profile(keyword)
 
 
 def write_local_log_profile(keyword, value):
@@ -369,7 +391,7 @@ def get_fitting_help():
     return open(os.path.join(__location__, 'fitting_help.txt')).read()
 
 
-filter_map = {'Clear': 'V', 'Lum': 'V',
+filter_map = {'Clear': 'V', 'Luminance': 'V',
               'U': 'U', 'B': 'B', 'V': 'V', 'R': 'R', 'I': 'I', 'H': 'H', 'J': 'J', 'K': 'K',
               'u': 'u', 'b': 'b', 'v': 'v', 'y': 'y',
               'u\'': 'u,', 'g\'': 'g,', 'r\'': 'r,', 'i\'': 'i,', 'z\'': 'z,',

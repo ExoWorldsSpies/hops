@@ -7,7 +7,7 @@ from .reduction_routines import reduction as rdr_reduction
 from .alignment_routines import alignment as alr_alignment
 from .photometry_routines import photometry as phr_photometry
 from .fitting_routines import fitting as ftr_fitting
-
+from .observing_planner import run_observing_planner
 
 class AddOnWindow:
 
@@ -247,7 +247,7 @@ def reduction_alignment_window():
 
     # create widgets
 
-    help_button = Button(root, text='HELP')
+    observing_planner_button = Button(root, text='OBSERVATION\nPLANNER')
     my_profile_button = Button(root, text='MY PROFILE')
 
     directory_label = Label(root, text='Directory')
@@ -315,24 +315,26 @@ def reduction_alignment_window():
     header_list.pack(side=LEFT, fill=BOTH, expand=True)
     scrollbar.config(command=header_list.yview)
 
-    show_help_window = AddOnWindow('Help', 3, 3, 3)
-    scrollbar = Scrollbar(show_help_window.root)
-    scrollbar.pack(side=RIGHT, fill=Y)
-    help_box = Text(show_help_window.root, yscrollcommand=scrollbar.set, font='Courier')
-    help_box.pack(side=LEFT, fill=BOTH, expand=True)
-    help_box.insert(END, get_reduction_alignment_help())
-    scrollbar.config(command=help_box.yview)
+    my_profile_window = AddOnWindow('My Profile', 2, 1.1, 1)
 
-    my_profile_window = AddOnWindow('My Profile', 4, 1, 1)
-    local_headers = {ff.split(':')[0]: ff.split(':')[1][:-1].replace(' ', '')
+    core_headers = {ff.split(':')[0]: read_log_profile(ff.split(':')[0])
+                    for ff in open(log_profile_file, 'r').readlines()}
+
+    local_headers = {ff.split(':')[0]: read_local_log_profile(ff.split(':')[0])
                      for ff in open(local_log_profile_file, 'r').readlines()}
+
     variables = {}
     labels = {}
     entries = {}
-    for row, header in enumerate(local_headers):
-        variables[header] = StringVar(my_profile_window.root, value=local_headers[header])
-        labels[header] = Label(my_profile_window.root, text=header)
-        entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
+    for row, header in enumerate(core_headers):
+        if header in local_headers:
+            variables[header] = StringVar(my_profile_window.root, value=local_headers[header])
+            labels[header] = Label(my_profile_window.root, text=header)
+            entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
+        else:
+            variables[header] = StringVar(my_profile_window.root, value=core_headers[header])
+            labels[header] = Label(my_profile_window.root, text=header)
+            entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
 
     def update_headers():
         for header2 in variables:
@@ -347,8 +349,12 @@ def reduction_alignment_window():
     update_headers_button['command'] = update_headers
 
     stucture = [[], [[update_headers_button, 2]], []]
-    for header in local_headers:
+    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)+1]:
         stucture.append([[labels[header], 1], [entries[header], 2]])
+
+    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2)+1:]):
+        stucture[3+jj].append([labels[header], 3])
+        stucture[3+jj].append([entries[header], 4])
 
     setup_window(my_profile_window.root, stucture)
 
@@ -375,7 +381,7 @@ def reduction_alignment_window():
             use_auto_target_ra_dec_entry['state'] = DISABLED
             show_header_button['state'] = DISABLED
             run_reduction_alignment_button['state'] = DISABLED
-            help_button['state'] = DISABLED
+            observing_planner_button['state'] = DISABLED
             my_profile_button['state'] = DISABLED
 
         elif not os.path.isdir(directory.get()):
@@ -394,7 +400,7 @@ def reduction_alignment_window():
             use_auto_target_ra_dec_entry['state'] = DISABLED
             show_header_button['state'] = DISABLED
             run_reduction_alignment_button['state'] = DISABLED
-            help_button['state'] = NORMAL
+            observing_planner_button['state'] = NORMAL
             my_profile_button['state'] = NORMAL
 
         else:
@@ -425,7 +431,7 @@ def reduction_alignment_window():
             flat_files_entry['state'] = NORMAL
             bin_fits_entry['state'] = NORMAL
             show_files_button['state'] = NORMAL
-            help_button['state'] = NORMAL
+            observing_planner_button['state'] = NORMAL
             my_profile_button['state'] = NORMAL
 
             files_list.delete(0, END)
@@ -602,7 +608,6 @@ def reduction_alignment_window():
             root.destroy()
             show_content_window.close()
             show_header_window.close()
-            show_help_window.close()
             my_profile_window.close()
         else:
             running.set(False)
@@ -610,7 +615,7 @@ def reduction_alignment_window():
 
     # connect actions to widgets
 
-    help_button['command'] = show_help_window.show
+    observing_planner_button['command'] = run_observing_planner
     my_profile_button['command'] = my_profile_window.show
     directory_entry['command'] = choose_directory
     observation_files_entry.bind(sequence='<KeyRelease>', func=update_window)
@@ -650,7 +655,7 @@ def reduction_alignment_window():
         [[show_files_button, 2]],
         [[Btn, 0]],
         [[auto_target_ra_dec_label, 1], [auto_target_ra_dec_entry, 2], [use_auto_target_ra_dec_entry, 3]],
-        [[target_ra_dec_label, 1], [target_ra_dec_entry, 2], [target_ra_dec_test, 3]],
+        [[observing_planner_button, 0], [target_ra_dec_label, 1], [target_ra_dec_entry, 2], [target_ra_dec_test, 3]],
         [[exposure_time_key_label, 1], [exposure_time_key_entry, 2], [exposure_time_key_test, 3]],
         [[observation_date_key_label, 1], [observation_date_key_entry, 2], [observation_date_key_test, 3]],
         [[observation_time_key_label, 1], [observation_time_key_entry, 2], [observation_time_key_test, 3]],
@@ -676,22 +681,24 @@ def reduction_alignment_window():
         c3 = int(current_version.split('.')[2]) * 100
 
         version = '0.0.0'
-        for i in urlopen('https://raw.githubusercontent.com/HolomonAstronomicalStation/hops/master/hops/__init__.py').readlines():
+        message = ''
+        for i in urlopen('https://raw.githubusercontent.com/ExoWorldsSpies/hops/master/hops/__init__.py').readlines():
             if len(str(i).split('__version__')) > 1:
                 version = str(i).split()[-1][1:-4]
+            if len(str(i).split('__message__')) > 1:
+                message = str(i).split('__message__ = ')[-1][1:-4]
 
         v1 = int(version.split('.')[0]) * 100 * 100 * 100
         v2 = int(version.split('.')[1]) * 100 * 100
         v3 = int(version.split('.')[2]) * 100
 
         if v1 + v2 + v3 > c1 + c2 + c3:
-            showinfo('Update available', 'There is a newer version ({0}) of the code available!\n\nDownload it from:'
-                                         '\nhttps://github.com/HolomonAstronomicalStation/hops'.format(version))
+            showinfo('Update available', 'There is a newer version ({0}) of the code available!\n\n{1}\n\nDownload and install it from:'
+                                         '\nhttps://github.com/ExoWorldsSpies/hops/archive/master.zip'.format(version, message))
     except:
         pass
     show_content_window.mainloop()
     show_header_window.mainloop()
-    show_help_window.mainloop()
     my_profile_window.mainloop()
     root.mainloop()
 
@@ -752,8 +759,6 @@ def photometry_window():
     running = BooleanVar(root, value=False)
 
     # create widgets
-
-    help_button = Button(root, text='HELP')
 
     position_label = Label(root, text='     Position     ')
 
@@ -834,14 +839,6 @@ def photometry_window():
                                     - targets_aperture[comparison + 1].get() - 1,
                                     'C{0}'.format(comparison + 1), color='#07fefc', fontsize=20, va='top'))
 
-    show_help_window = AddOnWindow('Help', 3, 3, 3)
-    scrollbar = Scrollbar(show_help_window.root)
-    scrollbar.pack(side=RIGHT, fill=Y)
-    help_box = Text(show_help_window.root, yscrollcommand=scrollbar.set, font='Courier')
-    help_box.pack(side=LEFT, fill=BOTH, expand=True)
-    help_box.insert(END, get_photometry_help())
-    scrollbar.config(command=help_box.yview)
-
     # define the function that updates the window
 
     def update_window(event):
@@ -857,14 +854,12 @@ def photometry_window():
             mirror_fov_button['state'] = DISABLED
             photometry_button['state'] = DISABLED
             proceed_to_fitting_button['state'] = DISABLED
-            help_button['state'] = DISABLED
 
         else:
 
             show_fov_button['state'] = NORMAL
             flip_fov_button['state'] = NORMAL
             mirror_fov_button['state'] = NORMAL
-            help_button['state'] = NORMAL
 
             for i_target in range(max_targets):
                 targets_indication_entry[i_target]['state'] = NORMAL
@@ -1028,7 +1023,6 @@ def photometry_window():
 
     def proceed_to_fitting():
         show_fov_window.close()
-        show_help_window.close()
         root.destroy()
 
     # connect actions to widgets
@@ -1039,7 +1033,6 @@ def photometry_window():
     mirror_fov_button['command'] = mirror_fov
     photometry_button['command'] = photometry
     proceed_to_fitting_button['command'] = proceed_to_fitting
-    help_button['command'] = show_help_window.show
 
     for target in range(max_targets):
         targets_aperture_entry[target].bind(sequence='<KeyRelease>', func=update_window)
@@ -1088,7 +1081,6 @@ def photometry_window():
 
     finalise_window(root, position=5)
     show_fov_window.mainloop()
-    show_help_window.mainloop()
     root.mainloop()
 
 
@@ -1240,7 +1232,6 @@ def fitting_window():
 
     exit_hops_button = Button(root, text='EXIT')
 
-    help_button = Button(root, text='HELP')
     my_profile_button = Button(root, text='MY PROFILE')
 
     # define additional windows
@@ -1254,24 +1245,26 @@ def fitting_window():
     canvas.get_tk_widget().pack()
     NavigationToolbar2TkAgg(canvas, show_preview_window.root)
 
-    show_help_window = AddOnWindow('Help', 3, 3, 3)
-    scrollbar = Scrollbar(show_help_window.root)
-    scrollbar.pack(side=RIGHT, fill=Y)
-    help_box = Text(show_help_window.root, yscrollcommand=scrollbar.set, font='Courier')
-    help_box.pack(side=LEFT, fill=BOTH, expand=True)
-    help_box.insert(END, get_fitting_help())
-    scrollbar.config(command=help_box.yview)
+    my_profile_window = AddOnWindow('My Profile', 2, 1.1, 1)
 
-    my_profile_window = AddOnWindow('My Profile', 4, 1, 1)
-    local_headers = {ff.split(':')[0]: ff.split(':')[1][:-1].replace(' ', '')
+    core_headers = {ff.split(':')[0]: read_log_profile(ff.split(':')[0])
+                    for ff in open(log_profile_file, 'r').readlines()}
+
+    local_headers = {ff.split(':')[0]: read_local_log_profile(ff.split(':')[0])
                      for ff in open(local_log_profile_file, 'r').readlines()}
+
     variables = {}
     labels = {}
     entries = {}
-    for row, header in enumerate(local_headers):
-        variables[header] = StringVar(my_profile_window.root, value=local_headers[header])
-        labels[header] = Label(my_profile_window.root, text=header)
-        entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
+    for row, header in enumerate(core_headers):
+        if header in local_headers:
+            variables[header] = StringVar(my_profile_window.root, value=local_headers[header])
+            labels[header] = Label(my_profile_window.root, text=header)
+            entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
+        else:
+            variables[header] = StringVar(my_profile_window.root, value=core_headers[header])
+            labels[header] = Label(my_profile_window.root, text=header)
+            entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
 
     def update_headers():
         for header2 in variables:
@@ -1286,8 +1279,12 @@ def fitting_window():
     update_headers_button['command'] = update_headers
 
     stucture = [[], [[update_headers_button, 2]], []]
-    for header in local_headers:
+    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)+1]:
         stucture.append([[labels[header], 1], [entries[header], 2]])
+
+    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2)+1:]):
+        stucture[3+jj].append([labels[header], 3])
+        stucture[3+jj].append([entries[header], 4])
 
     setup_window(my_profile_window.root, stucture)
 
@@ -1369,7 +1366,6 @@ def fitting_window():
             return_to_photometry_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
             exit_hops_button['state'] = DISABLED
-            help_button['state'] = DISABLED
             my_profile_button['state'] = DISABLED
             show_preview_button['state'] = DISABLED
 
@@ -1401,7 +1397,6 @@ def fitting_window():
             return_to_photometry_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
             exit_hops_button['state'] = NORMAL
-            help_button['state'] = NORMAL
             my_profile_button['state'] = NORMAL
             show_preview_button['state'] = DISABLED
 
@@ -1430,7 +1425,6 @@ def fitting_window():
             camera_entry['state'] = NORMAL
             planet_entry['state'] = 'readonly'
             planet_search_entry['state'] = NORMAL
-            help_button['state'] = NORMAL
             my_profile_button['state'] = NORMAL
             show_preview_button['state'] = NORMAL
 
@@ -1674,7 +1668,6 @@ def fitting_window():
         write_local_log('fitting', True, 'return_to_photometry')
 
         show_preview_window.close()
-        show_help_window.close()
         root.destroy()
 
     def fitting():
@@ -1713,7 +1706,6 @@ def fitting_window():
 
     def exit_hops():
         show_preview_window.close()
-        show_help_window.close()
         root.destroy()
         os._exit(-1)
 
@@ -1742,7 +1734,6 @@ def fitting_window():
     return_to_photometry_button['command'] = return_to_photometry
     fitting_button['command'] = fitting
     exit_hops_button['command'] = exit_hops
-    help_button['command'] = show_help_window.show
     my_profile_button['command'] = my_profile_window.show
 
     # setup window
@@ -1788,7 +1779,6 @@ def fitting_window():
 
     finalise_window(root, position=5)
     show_preview_window.mainloop()
-    show_help_window.mainloop()
     root.mainloop()
 
 
