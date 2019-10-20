@@ -119,8 +119,9 @@ def read_local_log_profile(keyword):
     try:
         x = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
         test = str(x[keyword])
-        if test[0] == ' ':
-            test = test[1:]
+        if len(str(test)) > 0:
+            if test[0] == ' ':
+                test = test[1:]
         return test
     except KeyError:
         return read_log_profile(keyword)
