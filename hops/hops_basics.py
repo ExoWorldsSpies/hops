@@ -34,12 +34,11 @@ import time
 import yaml
 import numpy as np
 import shutil
-import pylightcurve as plc
+import hops.pylightcurve3 as plc
 import matplotlib.cm as cm
 import matplotlib.patches as mpatches
 import matplotlib.patches as mpatch
 
-from .tools import *
 from astropy.io import fits as pf
 from scipy.optimize import curve_fit
 from matplotlib.figure import Figure
@@ -60,11 +59,12 @@ from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation
 
+import tkinter.scrolledtext as scrolledtext
 
 import webbrowser
 
 def openweb():
-    webbrowser.open("https://exoworldsspies.com/software", new=1)
+    webbrowser.open("https://www.exoworldsspies.com/en/software", new=1)
 
 __location__ = os.path.abspath(os.path.dirname(__file__))
 __home__ = os.path.expanduser('~')
@@ -224,11 +224,11 @@ def test_file_number(fits_file):
 
 def test_coordinates(ra_dec_string):
 
-    ra_target, dec_target = ra_dec_string_to_deg(ra_dec_string)
-
-    if ra_target and dec_target:
+    try:
+        ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
+        target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
         return[True, 'Coordinates\naccepted']
-    else:
+    except:
         return [False, 'Wrong\ncoordinates']
 
 # def initialise_window(window, window_name=None, exit_command=None):

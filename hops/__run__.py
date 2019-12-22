@@ -98,20 +98,15 @@ class AddOnWindow:
         self.root.destroy()
 
 
-def initialise_window(window, window_name, windows_to_hide, windows_to_close, exit_python, other_exit_command=None):
+def initialise_window(window, window_name, run, other_exit_command=None):
 
     def exit_command():
-
-        for i in windows_to_close:
-            i.destroy()
-
-        for i in windows_to_hide:
-            i.withdraw()
 
         if other_exit_command:
             other_exit_command()
 
-        if exit_python:
+        if run:
+            run.exit = True
             os._exit(-1)
 
     window.wm_title(window_name)
@@ -120,17 +115,17 @@ def initialise_window(window, window_name, windows_to_hide, windows_to_close, ex
     window.withdraw()
 
 
-def setup_window(window, objects, title_font=None, main_font=None, button_font=None, entries_bd=3):
+def setup_window(window, objects, title_font=None, main_font=None, button_font=None, entries_bd=3, buttons_bd=5):
     screenheigth = window.winfo_screenheight()
 
     if button_font is None:
-        button_font = ['times', int(screenheigth/60), 'bold']
+        button_font = ['times', int(screenheigth/55), 'bold']
 
     if main_font is None:
         main_font = ['times', int(screenheigth/60)]
 
     if title_font is None:
-        title_font = ['times', int(screenheigth/50), 'bold']
+        title_font = ['times', int(screenheigth/40), 'bold']
 
     for row in range(len(objects)):
         if len(objects[row]) == 0:
@@ -140,7 +135,7 @@ def setup_window(window, objects, title_font=None, main_font=None, button_font=N
             for obj in objects[row]:
 
                 if obj[0].winfo_class() == 'Button':
-                    obj[0].configure(font=button_font)
+                    obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
                 elif obj[0].winfo_class() == 'Entry':
                     obj[0].configure(bd=entries_bd, font=main_font)
                 elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
@@ -215,14 +210,14 @@ def finalise_window(window, position=5):
     window.deiconify()
 
 
-def reduction_alignment_window():
+def reduction_alignment_window(run):
 
     # #########
     # create and initialise the window
     # #########
 
     root = Tk()
-    initialise_window(root, 'Reduction & Alignment', [], [root], True)
+    initialise_window(root, 'Reduction & Alignment', run)
 
     # get variables from log and set as tk variables those to be modified
 
@@ -320,8 +315,7 @@ def reduction_alignment_window():
     core_headers = {ff.split(':')[0]: read_log_profile(ff.split(':')[0])
                     for ff in open(log_profile_file, 'r').readlines()}
 
-    local_headers = {ff.split(':')[0]: read_local_log_profile(ff.split(':')[0])
-                     for ff in open(local_log_profile_file, 'r').readlines()}
+    local_headers = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
 
     variables = {}
     labels = {}
@@ -337,24 +331,26 @@ def reduction_alignment_window():
             entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
 
     def update_headers():
+        new_local_profile = {}
         for header2 in variables:
-            local_headers[header2] = variables[header2].get()
-        ww = open(local_log_profile_file, 'w')
-        ww.write('\n'.join(['{0}: {1}'.format(ff, local_headers[ff]) for ff in local_headers]))
-        ww.write('\n')
-        ww.close()
+            new_local_profile[header2] = variables[header2].get()
+        yaml.dump(new_local_profile, open(local_log_profile_file, 'w'), default_flow_style=False)
         update_window(None)
 
     update_headers_button = Button(my_profile_window.root, text='UPDATE')
     update_headers_button['command'] = update_headers
 
     stucture = [[], [[update_headers_button, 2]], []]
-    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)+1]:
+    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)]:
         stucture.append([[labels[header], 1], [entries[header], 2]])
 
-    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2)+1:]):
+    stucture.append([])
+
+    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2):]):
         stucture[3+jj].append([labels[header], 3])
         stucture[3+jj].append([entries[header], 4])
+
+    stucture.append([])
 
     setup_window(my_profile_window.root, stucture)
 
@@ -512,16 +508,25 @@ def reduction_alignment_window():
                         break
 
                 if check_ra[0] and check_dec[0]:
+                    # try:
+                    if isinstance(check_ra[2], str):
+                        target = plc.Target(plc.Hours(check_ra[2]), plc.Degrees(check_dec[2]))
+                    elif isinstance(check_ra[2], float):
+                        target = plc.Target(plc.Degrees(check_ra[2]), plc.Degrees(check_dec[2]))
                     auto_target_ra_dec_entry.configure(
-                        text='{0} {1}'.format(check_ra[2].replace(' ', ':'), check_dec[2].replace(' ', ':')))
+                        text=target.coord)
                     use_auto_target_ra_dec_entry['state'] = NORMAL
+                    # except:
+                    #     auto_target_ra_dec_entry.configure(text='None detected')
+                    #     use_auto_target_ra_dec.set(0)
+                    #     use_auto_target_ra_dec_entry['state'] = DISABLED
                 else:
                     auto_target_ra_dec_entry.configure(text='None detected')
                     use_auto_target_ra_dec.set(0)
                     use_auto_target_ra_dec_entry['state'] = DISABLED
 
                 if use_auto_target_ra_dec.get():
-                    target_ra_dec.set('{0} {1}'.format(check_ra[2].replace(' ', ':'), check_dec[2].replace(' ', ':')))
+                    target_ra_dec.set(target.coord)
                     target_ra_dec_entry['state'] = DISABLED
                 else:
                     target_ra_dec_entry['state'] = NORMAL
@@ -605,6 +610,9 @@ def reduction_alignment_window():
             alr_alignment()
 
         if read_local_log('pipeline', 'reduction_complete') and read_local_log('pipeline', 'alignment_complete'):
+            run.run_from_reduction = False
+            run.run_from_photometry = True
+            run.run_from_fitting = False
             root.destroy()
             show_content_window.close()
             show_header_window.close()
@@ -632,7 +640,7 @@ def reduction_alignment_window():
     show_header_button['command'] = show_header_window.show
     run_reduction_alignment_button['command'] = run_reduction_alignment
 
-    Btn = Button(root, text="USER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
 
     # setup window
 
@@ -644,20 +652,20 @@ def reduction_alignment_window():
     setup_window(root, [
         [[logo_label, 0, 1, 8]],
         [],
-        [[window_label, 1, 3, 1, 'title'], [my_profile_button, 3]],
+        [[window_label, 1, 3, 1, 'title']],
         [],
-        [[directory_label, 1], [directory_entry, 2]],
+        [[directory_label, 1], [directory_entry, 2, 2]],
         [[observation_files_label, 1], [observation_files_entry, 2], [observation_files_test, 3]],
         [[bias_files_label, 1], [bias_files_entry, 2], [bias_files_test, 3]],
         [[dark_files_label, 1], [dark_files_entry, 2], [dark_files_test, 3]],
         [[created_by_label, 0, 1, 3], [flat_files_label, 1], [flat_files_entry, 2], [flat_files_test, 3]],
         [[bin_fits_label, 1], [bin_fits_entry, 2]],
         [[show_files_button, 2]],
-        [[Btn, 0]],
+        [[my_profile_button, 0]],
         [[auto_target_ra_dec_label, 1], [auto_target_ra_dec_entry, 2], [use_auto_target_ra_dec_entry, 3]],
         [[observing_planner_button, 0], [target_ra_dec_label, 1], [target_ra_dec_entry, 2], [target_ra_dec_test, 3]],
         [[exposure_time_key_label, 1], [exposure_time_key_entry, 2], [exposure_time_key_test, 3]],
-        [[observation_date_key_label, 1], [observation_date_key_entry, 2], [observation_date_key_test, 3]],
+        [[Btn, 0, 1, 2], [observation_date_key_label, 1], [observation_date_key_entry, 2], [observation_date_key_test, 3]],
         [[observation_time_key_label, 1], [observation_time_key_entry, 2], [observation_time_key_test, 3]],
         [[show_header_button, 2]],
         [],
@@ -694,7 +702,7 @@ def reduction_alignment_window():
 
         if v1 + v2 + v3 > c1 + c2 + c3:
             showinfo('Update available', 'There is a newer version ({0}) of the code available!\n\n{1}\n\nDownload and install it from:'
-                                         '\nhttps://github.com/ExoWorldsSpies/hops/archive/master.zip'.format(version, message))
+                                         '\nhttps://www.exoworldsspies.com/en/software'.format(version, message))
     except:
         pass
     show_content_window.mainloop()
@@ -703,14 +711,14 @@ def reduction_alignment_window():
     root.mainloop()
 
 
-def photometry_window():
+def photometry_window(run):
 
     # #########
     # create and initialise window
     # #########
 
     root = Tk()
-    initialise_window(root, 'Photometry', [], [root], True)
+    initialise_window(root, 'Photometry', run)
 
     reduction_directory = read_local_log('pipeline', 'reduction_directory')
     light_curve_aperture_file = read_local_log('pipeline', 'light_curve_aperture_file')
@@ -795,6 +803,8 @@ def photometry_window():
 
     proceed_to_fitting_button = Button(root, text='PROCEED TO FITTING')
 
+    return_to_reduction_button = Button(root, text='RETURN TO REDUCTION')
+
     # define additional windows
 
     show_fov_window = AddOnWindow('FOV', None, None, 1)
@@ -854,12 +864,14 @@ def photometry_window():
             mirror_fov_button['state'] = DISABLED
             photometry_button['state'] = DISABLED
             proceed_to_fitting_button['state'] = DISABLED
+            return_to_reduction_button['state'] = DISABLED
 
         else:
 
             show_fov_button['state'] = NORMAL
             flip_fov_button['state'] = NORMAL
             mirror_fov_button['state'] = NORMAL
+            return_to_reduction_button['state'] = NORMAL
 
             for i_target in range(max_targets):
                 targets_indication_entry[i_target]['state'] = NORMAL
@@ -871,28 +883,16 @@ def photometry_window():
 
                     if (event.xdata, event.ydata) == (click_test_x.get(), click_test_y.get()):
 
-                        frame_limit = 2 * search_window_std * star_std
-                        centroids = find_centroids(fits[1].data,
-                                                   x_low=int(event.xdata - frame_limit),
-                                                   x_upper=int(event.xdata + frame_limit),
-                                                   y_low=int(event.ydata - frame_limit),
-                                                   y_upper=int(event.ydata + frame_limit),
-                                                   x_centre=int(event.xdata), y_centre=int(event.ydata),
-                                                   mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                                   std_limit=3.0, burn_limit=burn_limit, star_std=star_std)
+                        star = plc.find_single_star(
+                            fits[1].data, event.xdata, event.ydata,
+                            mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                            burn_limit=burn_limit, star_std=star_std)
 
-                        if centroids.size > 0:
+                        if star:
 
-                            norm, floor, x_mean, y_mean, x_sigma, y_sigma = \
-                                fit_2d_gauss(fits[1].data,
-                                             predicted_x_mean=centroids[0][1], predicted_y_mean=centroids[0][2],
-                                             search_window=search_window_std * star_std)
-
-                            if np.sqrt((x_mean - event.xdata) ** 2 + (y_mean - event.ydata) ** 2) < 3 * x_sigma:
-
-                                targets_x_position[targets_indication.get()].set(round(x_mean, 1))
-                                targets_y_position[targets_indication.get()].set(round(y_mean, 1))
-                                targets_aperture[targets_indication.get()].set(abs(int(4 * x_sigma)))
+                            targets_x_position[targets_indication.get()].set(round(star[0], 1))
+                            targets_y_position[targets_indication.get()].set(round(star[1], 1))
+                            targets_aperture[targets_indication.get()].set(abs(int(3 * star[4])))
 
                         click_test_x.set(-100)
                         click_test_y.set(-100)
@@ -936,9 +936,9 @@ def photometry_window():
                     else:
 
                         targets_box[i_target].set_xy((targets_x_position[i_target].get() -
-                                                      targets_aperture[i_target].get(),
+                                                      targets_aperture[i_target].get() - 0.5,
                                                       targets_y_position[i_target].get() -
-                                                      targets_aperture[i_target].get()))
+                                                      targets_aperture[i_target].get() - 0.5))
 
                         targets_box[i_target].set_width(2 * targets_aperture[i_target].get() + 1)
                         targets_box[i_target].set_height(2 * targets_aperture[i_target].get() + 1)
@@ -981,8 +981,8 @@ def photometry_window():
         write_local_log('photometry', targets_x_position[0].get(), 'target_x_position')
         write_local_log('photometry', targets_y_position[0].get(), 'target_y_position')
         write_local_log('photometry', targets_aperture[0].get(), 'target_aperture')
-        target_polar = cartesian_to_polar(targets_x_position[0].get(), targets_y_position[0].get(),
-                                          fits[1].header[align_x0_key], fits[1].header[align_y0_key])
+        target_polar = plc.cartesian_to_polar(targets_x_position[0].get(), targets_y_position[0].get(),
+                                              fits[1].header[align_x0_key], fits[1].header[align_y0_key])
         write_local_log('photometry', float(target_polar[0]), 'target_r_position')
         write_local_log('photometry', float(target_polar[1]), 'target_u_position')
 
@@ -996,9 +996,9 @@ def photometry_window():
 
             if 0 not in [targets_x_position[i_comparison + 1].get(), targets_y_position[i_comparison + 1].get()]:
 
-                target_polar = cartesian_to_polar(targets_x_position[i_comparison + 1].get(),
-                                                  targets_y_position[i_comparison + 1].get(),
-                                                  fits[1].header[align_x0_key], fits[1].header[align_y0_key])
+                target_polar = plc.cartesian_to_polar(targets_x_position[i_comparison + 1].get(),
+                                                      targets_y_position[i_comparison + 1].get(),
+                                                      fits[1].header[align_x0_key], fits[1].header[align_y0_key])
 
             else:
 
@@ -1022,6 +1022,16 @@ def photometry_window():
         canvas.draw()
 
     def proceed_to_fitting():
+        run.run_from_reduction = False
+        run.run_from_photometry = False
+        run.run_from_fitting = True
+        show_fov_window.close()
+        root.destroy()
+
+    def return_to_reduction():
+        run.run_from_reduction = True
+        run.run_from_photometry = False
+        run.run_from_fitting = False
         show_fov_window.close()
         root.destroy()
 
@@ -1033,13 +1043,14 @@ def photometry_window():
     mirror_fov_button['command'] = mirror_fov
     photometry_button['command'] = photometry
     proceed_to_fitting_button['command'] = proceed_to_fitting
+    return_to_reduction_button['command'] = return_to_reduction
 
     for target in range(max_targets):
         targets_aperture_entry[target].bind(sequence='<KeyRelease>', func=update_window)
 
     # setup window
 
-    Btn = Button(root, text="USER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
 
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
@@ -1058,21 +1069,21 @@ def photometry_window():
         if target == 3:
             setup_list.append([[created_by_label, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4]])
+                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
         elif target == 5:
             setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4]])
+                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
         else:
             setup_list.append([[targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4]])
+                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
 
-    setup_list.append([[show_fov_button, 4]])
-    setup_list.append([[flip_fov_button, 4]])
-    setup_list.append([[mirror_fov_button, 4]])
+    setup_list.append([[show_fov_button, 4, 2]])
+    setup_list.append([[flip_fov_button, 4], [mirror_fov_button, 5]])
     setup_list.append([])
     setup_list.append([[photometry_button, 1, 4]])
     setup_list.append([[proceed_to_fitting_button, 1, 4]])
+    setup_list.append([[return_to_reduction_button, 1, 4]])
     setup_list.append([])
 
     setup_window(root, setup_list)
@@ -1084,14 +1095,14 @@ def photometry_window():
     root.mainloop()
 
 
-def fitting_window():
+def fitting_window(run):
 
     # #########
     # create and initialise window
     # #########
 
     root = Tk()
-    initialise_window(root, 'Fitting', [], [root], True)
+    initialise_window(root, 'Fitting', run)
 
     # get variables from log and set as tk variables those to be modified
 
@@ -1228,9 +1239,9 @@ def fitting_window():
 
     return_to_photometry_button = Button(root, text='RETURN TO PHOTOMETRY')
 
-    fitting_button = Button(root, text='RUN FITTING')
+    return_to_reduction_button = Button(root, text='RETURN TO REDUCTION')
 
-    exit_hops_button = Button(root, text='EXIT')
+    fitting_button = Button(root, text='RUN FITTING', bg='green')
 
     my_profile_button = Button(root, text='MY PROFILE')
 
@@ -1250,8 +1261,7 @@ def fitting_window():
     core_headers = {ff.split(':')[0]: read_log_profile(ff.split(':')[0])
                     for ff in open(log_profile_file, 'r').readlines()}
 
-    local_headers = {ff.split(':')[0]: read_local_log_profile(ff.split(':')[0])
-                     for ff in open(local_log_profile_file, 'r').readlines()}
+    local_headers = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
 
     variables = {}
     labels = {}
@@ -1267,20 +1277,20 @@ def fitting_window():
             entries[header] = Entry(my_profile_window.root, textvariable=variables[header])
 
     def update_headers():
+        new_local_profile = {}
         for header2 in variables:
-            local_headers[header2] = variables[header2].get()
-        ww = open(local_log_profile_file, 'w')
-        ww.write('\n'.join(['{0}: {1}'.format(ff, local_headers[ff]) for ff in local_headers]))
-        ww.write('\n')
-        ww.close()
+            new_local_profile[header2] = variables[header2].get()
+        yaml.dump(new_local_profile, open(local_log_profile_file, 'w'), default_flow_style=False)
         update_window(None)
 
     update_headers_button = Button(my_profile_window.root, text='UPDATE')
     update_headers_button['command'] = update_headers
 
     stucture = [[], [[update_headers_button, 2]], []]
-    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)+1]:
+    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)]:
         stucture.append([[labels[header], 1], [entries[header], 2]])
+
+    stucture.append([])
 
     for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2)+1:]):
         stucture[3+jj].append([labels[header], 3])
@@ -1364,8 +1374,8 @@ def fitting_window():
             planet_entry['state'] = DISABLED
             planet_search_entry['state'] = DISABLED
             return_to_photometry_button['state'] = DISABLED
+            return_to_reduction_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
-            exit_hops_button['state'] = DISABLED
             my_profile_button['state'] = DISABLED
             show_preview_button['state'] = DISABLED
 
@@ -1395,8 +1405,8 @@ def fitting_window():
             planet_entry['state'] = DISABLED
             planet_search_entry['state'] = DISABLED
             return_to_photometry_button['state'] = DISABLED
+            return_to_reduction_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
-            exit_hops_button['state'] = NORMAL
             my_profile_button['state'] = NORMAL
             show_preview_button['state'] = DISABLED
 
@@ -1530,7 +1540,7 @@ def fitting_window():
                 show_preview_button['state'] = DISABLED
 
             return_to_photometry_button['state'] = NORMAL
-            exit_hops_button['state'] = NORMAL
+            return_to_reduction_button['state'] = NORMAL
 
         try:
 
@@ -1622,10 +1632,10 @@ def fitting_window():
                 ax2.set_ylabel(r'$\mathrm{normalised} \ \mathrm{flux}$', fontsize=20)
                 ax2.set_xlabel(r'$\mathrm{phase}$', fontsize=20)
 
-                canvas.draw()
-
         except:
             pass
+
+        canvas.draw()
 
     update_window(None)
 
@@ -1665,9 +1675,46 @@ def fitting_window():
         write_local_log('fitting', telescope.get(), 'telescope')
         write_local_log('fitting', camera.get(), 'camera')
         write_local_log('fitting', phot_filter.get(), 'phot_filter')
-        write_local_log('fitting', True, 'return_to_photometry')
+
+        run.run_from_reduction = False
+        run.run_from_photometry = True
+        run.run_from_fitting = False
 
         show_preview_window.close()
+        my_profile_window.close()
+        root.destroy()
+
+    def return_to_reduction():
+
+        write_local_log('fitting', light_curve_file.get(), 'light_curve_file')
+        write_local_log('fitting', planet_search.get(), 'planet_search')
+        write_local_log('fitting', planet.get(), 'planet')
+        write_local_log('fitting', binning.get(), 'binning')
+        write_local_log('fitting', scatter.get(), 'scatter')
+        write_local_log('fitting', iterations.get(), 'iterations')
+        write_local_log('fitting', burn.get(), 'burn')
+        write_local_log('fitting', metallicity.get(), 'metallicity')
+        write_local_log('fitting', temperature.get(), 'temperature')
+        write_local_log('fitting', logg.get(), 'logg')
+        write_local_log('fitting', period.get(), 'period')
+        write_local_log('fitting', mid_time.get(), 'mid_time')
+        write_local_log('fitting', rp_over_rs.get(), 'rp_over_rs')
+        write_local_log('fitting', sma_over_rs.get(), 'sma_over_rs')
+        write_local_log('fitting', inclination.get(), 'inclination')
+        write_local_log('fitting', eccentricity.get(), 'eccentricity')
+        write_local_log('fitting', periastron.get(), 'periastron')
+        write_local_log('fitting', target_ra_dec.get(), 'target_ra_dec')
+        write_local_log('fitting', observer.get(), 'observer')
+        write_local_log('fitting', observatory.get(), 'observatory')
+        write_local_log('fitting', telescope.get(), 'telescope')
+        write_local_log('fitting', camera.get(), 'camera')
+        write_local_log('fitting', phot_filter.get(), 'phot_filter')
+
+        run.run_from_reduction = True
+        run.run_from_photometry = False
+        run.run_from_fitting = False
+        show_preview_window.close()
+        my_profile_window.close()
         root.destroy()
 
     def fitting():
@@ -1704,11 +1751,6 @@ def fitting_window():
         running.set(False)
         update_window(None)
 
-    def exit_hops():
-        show_preview_window.close()
-        root.destroy()
-        os._exit(-1)
-
     # connect widgets to functions
 
     light_curve_file_entry.bind('<<ComboboxSelected>>', update_window)
@@ -1732,13 +1774,13 @@ def fitting_window():
     target_ra_dec_entry.bind(sequence='<KeyRelease>', func=update_window)
     show_preview_button['command'] = show_preview_window.show
     return_to_photometry_button['command'] = return_to_photometry
+    return_to_reduction_button['command'] = return_to_reduction
     fitting_button['command'] = fitting
-    exit_hops_button['command'] = exit_hops
     my_profile_button['command'] = my_profile_window.show
 
     # setup window
 
-    Btn = Button(root, text="USER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
 
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
@@ -1747,7 +1789,7 @@ def fitting_window():
 
     setup_window(root, [
         [],
-        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title'], [my_profile_button, 4]],
+        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
         [],
         [[light_curve_file_label, 1], [light_curve_file_entry, 2, 3, 1]],
         [[binning_label, 1], [binning_entry, 2], [scatter_label, 3], [scatter_entry, 4]],
@@ -1757,8 +1799,8 @@ def fitting_window():
          [observatory_entry, 4]],
         [[observer_label, 3], [observer_entry, 4]],
         [],
-        [[Btn, 0], [planet_label, 1], [planet_search_entry, 2], [target_ra_dec_label, 3], [target_ra_dec_entry, 4]],
-        [[planet_entry, 2], [target_ra_dec_test, 4]],
+        [[my_profile_button, 0], [planet_label, 1], [planet_search_entry, 2], [target_ra_dec_label, 3], [target_ra_dec_entry, 4]],
+        [[Btn, 0, 1, 2], [planet_entry, 2], [target_ra_dec_test, 4]],
         [],
         [[period_label, 1], [period_entry, 2], [metallicity_label, 3], [metallicity_entry, 4]],
         [[mid_time_label, 1], [mid_time_entry, 2], [temperature_label, 3], [temperature_entry, 4]],
@@ -1767,11 +1809,9 @@ def fitting_window():
         [[inclination_label, 1], [inclination_entry, 2], [iterations_label, 3], [iterations_entry, 4]],
         [[eccentricity_label, 1], [eccentricity_entry, 2], [burn_label, 3], [burn_entry, 4]],
         [[periastron_label, 1], [periastron_entry, 2]],
-        [[show_preview_button, 2]],
-        [],
-        [[fitting_button, 1, 4]],
-        [[return_to_photometry_button, 1, 4]],
-        [[exit_hops_button, 1, 4]],
+        [[show_preview_button, 2], [fitting_button, 3, 2]],
+        [[return_to_photometry_button, 3, 2]],
+        [[return_to_reduction_button, 3, 2]],
         []
     ])
 
@@ -1779,18 +1819,37 @@ def fitting_window():
 
     finalise_window(root, position=5)
     show_preview_window.mainloop()
+    my_profile_window.mainloop()
     root.mainloop()
+
+
+class Run:
+
+    def __init__(self):
+        self.run_from_reduction = True
+        self.run_from_photometry = False
+        self.run_from_fitting = False
+        self.exit = False
+
+    def run(self):
+
+        if not self.exit and self.run_from_reduction:
+            reduction_alignment_window(self)
+            return None
+
+        if not self.exit and self.run_from_photometry:
+            photometry_window(self)
+            return None
+
+        if not self.exit and self.run_from_fitting:
+            fitting_window(self)
+            return None
 
 
 def run_app():
     print('Loading... Please wait for the main window to appear.')
-    reduction_alignment_window()
-    photometry_window()
-    fitting_window()
-    return_to_photometry = read_local_log('fitting', 'return_to_photometry')
-    while return_to_photometry:
-        write_local_log('fitting', False, 'return_to_photometry')
-        photometry_window()
-        fitting_window()
-        return_to_photometry = read_local_log('fitting', 'return_to_photometry')
-        print(return_to_photometry)
+
+    run = Run()
+
+    while not run.exit:
+        run.run()

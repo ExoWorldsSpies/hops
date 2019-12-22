@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from .hops_basics import *
-
+from .counter import Counter
 
 class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
 
@@ -131,7 +131,7 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
                          fontsize=20, ha='right', va='top')
 
         fig.subplots_adjust(hspace=0, wspace=0)
-        fig.savefig(os.path.join(fitting_directory, 'corner.pdf'), bbox_inches='tight', transparent=False)
+        fig.savefig(os.path.join(fitting_directory, 'corner.pdf'), transparent=False)
 
     def plot_hops_output(self, target, data_dates, observer, observatory, fitting_directory):
 
@@ -258,9 +258,9 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
                      np.std(self.results['detrended_output_series']['residuals'][set_indices]),
                      fontsize=fsmain)
 
-            fig.savefig(os.path.join(fitting_directory, 'detrended_model_300dpi.jpg'), dpi=300, transparent=True)
-            fig.savefig(os.path.join(fitting_directory, 'detrended_model_900dpi.jpg'), dpi=900, transparent=True)
-            fig.savefig(os.path.join(fitting_directory, 'detrended_model_1200dpi.jpg'), dpi=1200, transparent=True)
+            fig.savefig(os.path.join(fitting_directory, 'detrended_model_300dpi.jpg'), dpi=300, transparent=False)
+            fig.savefig(os.path.join(fitting_directory, 'detrended_model_900dpi.jpg'), dpi=900, transparent=False)
+            fig.savefig(os.path.join(fitting_directory, 'detrended_model_1200dpi.jpg'), dpi=1200, transparent=False)
 
             return fig
 
@@ -405,8 +405,10 @@ def fitting():
     light_curve_0 = light_curve_0[flag]
     light_curve_1 = light_curve_1[flag]
 
-    ra_target, dec_target = ra_dec_string_to_deg(target_ra_dec)
-    light_curve_0 = np.array([plc.jd_utc_to_bjd_tdb(ra_target, dec_target, ff) for ff in light_curve_0])
+    ra_dec_string = read_local_log('photometry', 'target_ra_dec')
+    ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
+    target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
+    light_curve_0 = np.array([plc.JD(ff).bjd_tdb(target) for ff in light_curve_0])
 
     if not os.path.isdir(fitting_directory):
         os.mkdir(fitting_directory)
@@ -487,8 +489,7 @@ def fitting():
                                          precision=3,
                                          exp_time=exp_time,
                                          time_factor=int(exp_time / 10),
-                                         counter=False,
-                                         counter_window='FITTING'
+                                         counter=Counter('FITTING', 'FITTING', 100, 100)
                                          )
 
     mcmc_fit.run_mcmc()
@@ -498,7 +499,7 @@ def fitting():
     mcmc_fit.plot_hops_corner(fitting_directory)
     figure = mcmc_fit.plot_hops_output(
         planet_search,
-        ['{0} {1} (UT)\nDur: {2}h / Exp: {3}s\nFiler: {4}'.format(date, local_time_1, obs_duration, exp_time,
+        ['{0} {1} (UT)\nDur: {2}h / Exp: {3}s\nFilter: {4}'.format(date, local_time_1, obs_duration, exp_time,
                                                                   phot_filter)],
         observer, '{0} / {1} / {2}'.format(observatory, telescope, camera), fitting_directory)
     shutil.copy('log.yaml', '{0}{1}log.yaml'.format(fitting_directory, os.sep))

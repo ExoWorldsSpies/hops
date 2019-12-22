@@ -165,11 +165,12 @@ def photometry():
             # calculate heliocentric julian date
 
             if observation_date_key == observation_time_key:
-                local_time = ' '.join(fits[1].header[observation_date_key].split('T'))
+                observation_time = ' '.join(fits[1].header[observation_date_key].split('T'))
             else:
-                local_time = ' '.join([fits[1].header[observation_date_key], fits[1].header[observation_time_key]])
+                observation_time = ' '.join([fits[1].header[observation_date_key].split('T')[0],
+                                             fits[1].header[observation_time_key]])
 
-            julian_date = plc.ut_to_jd(local_time)
+            julian_date = plc.UTC(observation_time).jd
 
             ref_x_position = fits[1].header[align_x0_key]
             ref_y_position = fits[1].header[align_y0_key]
@@ -184,45 +185,6 @@ def photometry():
             gauss_targets_flux_test = []
             gauss_targets_sky_test = []
 
-            for target in range(max_comparisons + 1):
-
-                if targets_aperture[target] > 0:
-
-                    norm, floor, x_mean, y_mean, x_std, y_std = \
-                        fit_2d_gauss_point(fits[1].data,
-                                           predicted_x_mean=(ref_x_position + targets_r_position[target] *
-                                                             np.cos(ref_u_position + targets_u_position[target])),
-                                           predicted_y_mean=(ref_y_position + targets_r_position[target] *
-                                                             np.sin(ref_u_position + targets_u_position[target])),
-                                           search_window=search_window_std * 3 * star_std, stde=star_std, snr_lim=False)
-
-                    gauss_targets_x_position_test.append(x_mean)
-                    gauss_targets_y_position_test.append(y_mean)
-                    gauss_targets_x_std_test.append(x_std)
-                    gauss_targets_y_std_test.append(y_std)
-                    gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
-                    gauss_targets_sky_test.append(floor)
-
-            if np.nan in gauss_targets_x_position_test:
-
-                gauss_targets_files_test = []
-                gauss_targets_jd_test = []
-                gauss_targets_x_position_test = []
-                gauss_targets_y_position_test = []
-                gauss_targets_x_std_test = []
-                gauss_targets_y_std_test = []
-                gauss_targets_flux_test = []
-                gauss_targets_sky_test = []
-
-            gauss_targets_files += gauss_targets_files_test
-            gauss_targets_jd += gauss_targets_jd_test
-            gauss_targets_x_position += gauss_targets_x_position_test
-            gauss_targets_y_position += gauss_targets_y_position_test
-            gauss_targets_x_std += gauss_targets_x_std_test
-            gauss_targets_y_std += gauss_targets_y_std_test
-            gauss_targets_flux += gauss_targets_flux_test
-            gauss_targets_sky += gauss_targets_sky_test
-
             apperture_targets_files_test = [science_file]
             apperture_targets_jd_test = [julian_date]
             apperture_targets_x_position_test = []
@@ -230,65 +192,82 @@ def photometry():
             apperture_targets_flux_test = []
             apperture_targets_sky_test = []
 
-            skip = False
+            skip_gauss = False
+            skip_aperture = False
+
             for target in range(max_comparisons + 1):
 
                 if targets_aperture[target] > 0:
 
-                    x_mean = (ref_x_position + targets_r_position[target] *
-                              np.cos(ref_u_position + targets_u_position[target]))
-                    y_mean = (ref_y_position + targets_r_position[target] *
-                              np.sin(ref_u_position + targets_u_position[target]))
+                    star = plc.find_single_star(fits[1].data,
+                                                (ref_x_position + targets_r_position[target] *
+                                                             np.cos(ref_u_position + targets_u_position[target])),
+                                                (ref_y_position + targets_r_position[target] *
+                                                             np.sin(ref_u_position + targets_u_position[target])),
+                                                mean=fits[1].header[mean_key], std=fits[1].header[std_key]
+                                                )
 
-                    centroids = find_centroids(fits[1].data,
-                                               x_low=int(x_mean - search_window_std * star_std),
-                                               x_upper=int(x_mean + search_window_std * star_std + 1),
-                                               y_low=int(y_mean - search_window_std * star_std),
-                                               y_upper=int(y_mean + search_window_std * star_std + 1),
-                                               x_centre=int(x_mean), y_centre=int(y_mean),
-                                               mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                               star_std=star_std)
+                    if star:
 
-                    if len(centroids) == 0:
-                        skip = True
-                        break
+                        x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
 
-                    x_mean = centroids[0][1]
-                    y_mean = centroids[0][2]
+                        gauss_targets_x_position_test.append(x_mean)
+                        gauss_targets_y_position_test.append(y_mean)
+                        gauss_targets_x_std_test.append(x_std)
+                        gauss_targets_y_std_test.append(y_std)
+                        gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
+                        gauss_targets_sky_test.append(floor)
 
-                    flux_area = fits[1].data[int(y_mean) - targets_aperture[target]:
-                                             int(y_mean) + targets_aperture[target] + 1,
-                                             int(x_mean) - targets_aperture[target]:
-                                             int(x_mean) + targets_aperture[target] + 1]
-                    flux_pixels = (2 * targets_aperture[target] + 1) ** 2
-                    flux = np.sum(flux_area)
+                        try:
+                            x_mean, y_mean, = centroid_x, centroid_y
 
-                    sky_area_1 = int(sky_inner_aperture * targets_aperture[target])
-                    sky_area_2 = int(sky_outer_aperture * targets_aperture[target])
-                    fits[1].data[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
-                                 int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
-                    sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
-                                            int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
-                    sky_area = sky_area[np.where((sky_area > 0) &
-                                                 (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-                                                     std_key]))]
-                    sky = np.sum(sky_area)
-                    sky_pixels = sky_area.size
+                            flux_area = fits[1].data[int(y_mean) - targets_aperture[target]:
+                                                     int(y_mean) + targets_aperture[target] + 1,
+                                        int(x_mean) - targets_aperture[target]:
+                                        int(x_mean) + targets_aperture[target] + 1]
+                            flux_pixels = (2 * targets_aperture[target] + 1) ** 2
+                            flux = np.sum(flux_area)
 
-                    apperture_targets_x_position_test.append(x_mean)
-                    apperture_targets_y_position_test.append(y_mean)
-                    apperture_targets_flux_test.append(flux - flux_pixels * sky / sky_pixels)
-                    apperture_targets_sky_test.append(sky / sky_pixels)
+                            sky_area_1 = int(sky_inner_aperture * targets_aperture[target])
+                            sky_area_2 = int(sky_outer_aperture * targets_aperture[target])
+                            fits[1].data[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
+                            int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
+                            sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
+                                       int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
+                            sky_area = sky_area[np.where((sky_area > 0) &
+                                                         (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
+                                                             std_key]))]
+                            sky = np.sum(sky_area)
+                            sky_pixels = sky_area.size
 
-            if not skip:
+                            apperture_targets_x_position_test.append(x_mean)
+                            apperture_targets_y_position_test.append(y_mean)
+                            apperture_targets_flux_test.append(flux - flux_pixels * sky / sky_pixels)
+                            apperture_targets_sky_test.append(sky / sky_pixels)
+                        except:
+                            skip_aperture = True
+
+                    else:
+                        skip_gauss = True
+                        skip_aperture = True
+
+            if not skip_gauss:
+                gauss_targets_files += gauss_targets_files_test
+                gauss_targets_jd += gauss_targets_jd_test
+                gauss_targets_x_position += gauss_targets_x_position_test
+                gauss_targets_y_position += gauss_targets_y_position_test
+                gauss_targets_x_std += gauss_targets_x_std_test
+                gauss_targets_y_std += gauss_targets_y_std_test
+                gauss_targets_flux += gauss_targets_flux_test
+                gauss_targets_sky += gauss_targets_sky_test
+
+            if not skip_aperture:
                 apperture_targets_files += apperture_targets_files_test
                 apperture_targets_jd += apperture_targets_jd_test
                 apperture_targets_x_position += apperture_targets_x_position_test
                 apperture_targets_y_position += apperture_targets_y_position_test
                 apperture_targets_flux += apperture_targets_flux_test
                 apperture_targets_sky += apperture_targets_sky_test
-            else:
-                print(science_file, ': Stars not found!')
 
         # counter
 
@@ -416,19 +395,35 @@ def photometry():
         ax.legend()
 
         if comparisons_number > 1:
+
+            all_relative_gauss = []
+            all_relative_aperture = []
+
             for comp in range(comparisons_number):
                 test_aperture_flux = list(targets_flux[1:])
                 test_gauss_flux = list(targets_gauss_flux[1:])
                 del test_aperture_flux[comp]
                 del test_gauss_flux[comp]
+                all_relative_aperture.append(targets_flux[1:][comp] / np.sum(test_aperture_flux, 0))
+                all_relative_gauss.append(targets_gauss_flux[1:][comp] / np.sum(test_gauss_flux, 0))
+
+            # for comp in range(comparisons_number):
+            #     for comp_cor in range(comparisons_number):
+            #         print('aperture', comp, comp_cor, plc.correlation(all_relative_aperture[comp],
+            #         all_relative_aperture[comp_cor]))
+            #
+            # for comp in range(comparisons_number):
+            #     for comp_cor in range(comparisons_number):
+            #         print('gauss', comp, comp_cor, plc.correlation(all_relative_gauss[comp],
+            #         all_relative_gauss[comp_cor]))
+
+            for comp in range(comparisons_number):
+
                 ax = f.add_subplot(comparisons_number + 1, 1, comp + 2)
                 ax.plot(targets_jd - targets_jd[0],
-                        (targets_flux[1:][comp] / np.sum(test_aperture_flux, 0)
-                         / np.median(targets_flux[1:][comp] / np.sum(test_aperture_flux, 0))), 'ko', ms=3)
+                        all_relative_aperture[comp] / np.median(all_relative_aperture[comp]), 'ko', ms=3)
                 ax.plot(gauss_targets_jd - gauss_targets_jd[0],
-                        (targets_gauss_flux[1:][comp] / np.sum(test_gauss_flux, 0) /
-                         np.median(targets_gauss_flux[1:][comp] / np.sum(test_gauss_flux, 0))),
-                        'ro', ms=3, mec='r')
+                        all_relative_gauss[comp] / np.median(all_relative_gauss[comp]), 'ro', ms=3, mec='r')
                 ax.tick_params(labelbottom=False)
                 ax.set_title(r'${0}{1}{2}$'.format('\mathrm{', "Comparison \, {0}".format(comp + 1), '}'))
 
@@ -456,11 +451,13 @@ def photometry():
 
         catalogue = plc.oec_catalogue()
         catalogue_planets = []
-        ra_target, dec_target = ra_dec_string_to_deg(read_local_log('photometry', 'target_ra_dec'))
+        ra_dec_string = read_local_log('photometry', 'target_ra_dec')
+        ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
+        target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
         for catalogue_planet in catalogue.planets:
             if not np.isnan(catalogue_planet.system.dec):
-                catalogue_planets.append([np.sqrt((catalogue_planet.system.dec.deg - dec_target) ** 2
-                                                  + (catalogue_planet.system.ra.deg - ra_target) ** 2),
+                catalogue_planets.append([np.sqrt((catalogue_planet.system.dec.deg - target.dec.deg) ** 2
+                                                  + (catalogue_planet.system.ra.deg - target.ra.deg) ** 2),
                                           catalogue_planet.name])
         catalogue_planets.sort()
 

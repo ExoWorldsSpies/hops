@@ -12,13 +12,20 @@ observation_files: Autosave
 bias_files: bias
 dark_files: dark
 flat_files: flat
-bin_fits: 1
-observatory: 'My Observatory'
-observatory_lat: '+00 00 00'
-observatory_long: '00 00 00'
-observatory_elev: '0'
-observatory_time_zone: '0'
+bin_fits: '1'
 observer: ''
 telescope: ''
 camera: ''
 filter: ''
+observatory: 'My Observatory'
+observatory_lat: '+00 00 00'
+observatory_long: '00 00 00'
+observatory_time_zone: '0'
+observatory_horizon_s: '0'
+observatory_horizon_sw: '0'
+observatory_horizon_w: '0'
+observatory_horizon_nw: '0'
+observatory_horizon_n: '0'
+observatory_horizon_ne: '0'
+observatory_horizon_e: '0'
+observatory_horizon_se: '0'

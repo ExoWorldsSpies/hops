@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from .hops_basics import *
 
+
 def initialise_window(window, window_name, windows_to_hide, windows_to_close, exit_python):
 
     def exit_command():
@@ -124,10 +125,10 @@ def test_float_positive_input(input_str, typing):
         return True
 
 
-def test_coordinates(ra_dec_string):
+def test_coordinates(ra_string, dec_string):
 
     try:
-        coord = SkyCoord(ra_dec_string, unit=(u.hourangle, u.deg))
+        coord = plc.Target(plc.Hours(ra_string), plc.Degrees(dec_string))
         return [True, 'Coordinates\naccepted']
     except:
         return [False, 'Wrong\ncoordinates']
@@ -162,16 +163,92 @@ def test_date(year_month_string):
         return [False, 'Wrong\ndate']
 
 
-def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mont_string, ax, name, observatory_name):
+def target_azimuth_altitude(target_ra, target_dec, observatory_latitude, sidereal_time):
 
+    observatory_latitude *= np.pi / 180
+    target_dec *= np.pi / 180
+
+    ha = sidereal_time - target_ra / 15
+    if ha < 0:
+        ha += 24
+
+    altitude = np.arcsin(np.clip(np.sin(target_dec) * np.sin(observatory_latitude)
+                         + np.cos(target_dec) * np.cos(observatory_latitude) * np.cos(ha * 15 * np.pi / 180), -1, 1))
+
+    azimuth = np.pi - np.arccos(np.clip((np.sin(target_dec) - np.sin(altitude) * np.sin(observatory_latitude))/
+                                (np.cos(altitude) * np.cos(observatory_latitude)), -1, 1))
+
+    if ha >= 12:
+        azimuth = 2 * np.pi - azimuth
+
+    return azimuth * 180 / np.pi, altitude * 180 / np.pi
+
+
+def get_target_events(target_ra, target_dec, observatory_latitude, horizon):
+
+    # horizon
+
+    horizon_list = []
+    for horizon_line in horizon.split('\n'):
+        if horizon_line != '':
+            horizon_list.append(horizon_line.split())
+    if len(horizon_list) == 1:
+        def horizon(azimuth):
+            return float(horizon_list[0][0])
+    else:
+        horizon_list.append([360.0, horizon_list[0][0]])
+        horizon_data = np.swapaxes(np.array(horizon_list, dtype=float), 0, 1)
+        horizon = plc.interp1d(horizon_data[0], horizon_data[1])
+
+    # horizon
+
+    sidereal_time_list = list(np.arange(0, 24, 0.1)) + [24]
+    sidereal_time_altitude_list = []
+
+    for sidereal_time in sidereal_time_list:
+        azimuth, altitude = target_azimuth_altitude(target_ra, target_dec, observatory_latitude, sidereal_time)
+        sidereal_time_altitude_list.append([sidereal_time, altitude - horizon(azimuth)])
+
+    sidereal_time_altitude_list.sort()
+    sidereal_time_altitude_list = np.swapaxes(sidereal_time_altitude_list, 0, 1)
+    sidereal_time_altitude_function = plc.interp1d(np.array(sidereal_time_altitude_list[0]), np.array(sidereal_time_altitude_list[1]))
+
+    def target_horizon_diference(x, st):
+        return sidereal_time_altitude_function(st)
+
+    # plt.plot(sidereal_time_altitude_list[0], sidereal_time_altitude_list[1], 'o')
+    # plt.show()
+
+    # find events
+
+    events = []
+
+    test_alt = sidereal_time_altitude_function(sidereal_time_list[0])
+    for sidereal_time in sidereal_time_list:
+        new_test_alt = sidereal_time_altitude_function(sidereal_time)
+        if test_alt * new_test_alt < 0:
+            popt, pcov = plc.curve_fit(target_horizon_diference, [0], [0], p0=[sidereal_time - 0.1])
+            if test_alt < new_test_alt:
+                events.append([popt[0], 'target_rise'])
+            else:
+                events.append([popt[0], 'target_set'])
+        else:
+            pass
+
+        test_alt = new_test_alt
+
+    return events, sidereal_time_altitude_function
+
+
+def avc_plot(latitude, longitude, tmzn, horizon, target_ra, target_dec, year_mont_string, ax, name, observatory_name):
     ax.cla()
 
-    coord = SkyCoord(target_ra_dec_string, unit=(u.hourangle, u.deg))
-    targetra = coord.ra.deg
-    targetdec = coord.dec.deg
+    target = plc.Target(plc.Hours(target_ra), plc.Degrees(target_dec))
+    observatory = plc.Observatory(plc.Degrees(latitude), plc.Degrees(longitude), tmzn, horizon)
+    observation = plc.Observation(target, observatory)
+
     year = int(year_mont_string.split()[0])
     month = int(year_mont_string.split()[1])
-    horizon = float(horizon)
 
     months = ['xx', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
               'November', 'December']
@@ -180,122 +257,36 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
     else:
         days = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-    bear_mountain = EarthLocation(lat=lat, lon=long)
-    utcoffset = tmzn * u.hour
-
-    time_0 = Time('{0}-{1}-1 12:00:00'.format(year, month), location=bear_mountain) - utcoffset
+    time_0 = plc.LT('{0}-{1}-1 12:00:00'.format(year, month), observatory)
     jd_0 = time_0.jd
-    st_0 = time_0.sidereal_time('apparent').hour
+
+    time_1 = plc.JD(jd_0 + days[month])
 
     events = []
 
     # mid-day splits
 
     for jj in range(days[month] + 1):
-        events.append([time_0 + jj * u.day, 'mid-day'])
+        events.append([plc.JD(time_0.jd + jj), 'mid-day'])
 
     # target rise/set events
 
-    if targetdec > - (90 - bear_mountain.lat.deg - horizon) and targetdec < 90 - (bear_mountain.lat.deg - horizon):
-
-        alt_rise = horizon
-        rise_ha = np.arccos(np.sin(alt_rise*np.pi/180)/np.cos(targetdec*np.pi/180)/np.cos(bear_mountain.lat.deg*np.pi/180)
-                            - np.tan(targetdec*np.pi/180)*np.tan(bear_mountain.lat.deg*np.pi/180))*12/np.pi
-        if rise_ha < 12:
-            rise_ha = 24 - rise_ha
-
-        rise_st = rise_ha + targetra / 15
-        if rise_st > 24:
-            rise_st -= 24
-
-        alt_set = horizon
-        set_ha = np.arccos(np.sin(alt_set*np.pi/180)/np.cos(targetdec*np.pi/180)/np.cos(bear_mountain.lat.deg*np.pi/180)
-                           - np.tan(targetdec*np.pi/180)*np.tan(bear_mountain.lat.deg*np.pi/180))*12/np.pi
-        if set_ha > 12:
-            set_ha = 24 - set_ha
-
-        set_st = set_ha + targetra / 15
-        if set_st > 24:
-            set_st -= 24
-
-        if rise_st < st_0:
-            next_rise_in_st_hours = 24 + rise_st - st_0
-        else:
-            next_rise_in_st_hours = rise_st - st_0
-
-        if set_st < st_0:
-            next_set_in_st_hours = 24 + set_st - st_0
-        else:
-            next_set_in_st_hours = set_st - st_0
-
-        for jj in range(days[month] + 1):
-            dt = (jj*24 + next_rise_in_st_hours) * (365.25/366.25)
-            if dt < days[month] * 24:
-                xx = Time('{0}-{1}-1 12:00:00'.format(year, month, jj), location=bear_mountain) - utcoffset + dt * u.hour
-                events.append([xx, 'target_rise'])
-
-        for jj in range(days[month] + 1):
-            dt = (jj*24 + next_set_in_st_hours) * (365.25/366.25)
-            if dt < days[month] * 24:
-                xx = Time('{0}-{1}-1 12:00:00'.format(year, month, jj), location=bear_mountain) - utcoffset + dt * u.hour
-                events.append([xx, 'target_set'])
+    events += observation.rise_set_events(time_0, time_1)
 
     # sun rise/set events
 
-    def get_sun_altitude(time_object):
-
-        check_jd = int(time_object.jd)
-        sun_t = plc.hjd_dict[check_jd]['t']
-        sun_ra = plc.hjd_dict[check_jd]['ra']
-        sun_dec = plc.hjd_dict[check_jd]['dec']
-
-        sun_ra = plc.interp1d(sun_t, sun_ra, kind='cubic')(check_jd)
-        sun_ra = sun_ra - int(sun_ra / (2 * np.pi)) * 2 * np.pi
-        sun_ra *= 180 / np.pi
-        sun_dec = plc.interp1d(sun_t, sun_dec, kind='cubic')(check_jd)
-
-        st = time_object.sidereal_time('apparent').hour
-        ha = st - sun_ra / 15
-        if ha < 0:
-            ha += 24
-
-        alt = np.arcsin(np.sin(sun_dec)*np.sin(bear_mountain.lat.deg*np.pi/180)
-                        + np.cos(sun_dec)*np.cos(bear_mountain.lat.deg*np.pi/180)*np.cos(ha*15*np.pi/180))
-
-        return alt * 180 / np.pi
-
-    def get_target_altitude(time_object):
-
-        st = time_object.sidereal_time('apparent').hour
-        ha = st - targetra / 15
-        if ha < 0:
-            ha += 24
-
-        alt = np.arcsin(np.sin(targetdec*np.pi/180)*np.sin(bear_mountain.lat.deg*np.pi/180)
-                        + np.cos(targetdec*np.pi/180)*np.cos(bear_mountain.lat.deg*np.pi/180)*np.cos(ha*15*np.pi/180))
-
-        return alt * 180 / np.pi
-
     for jj in range(days[month]):
 
-        check_time = Time('{0}-{1}-{2} 12:00:00'.format(year, month, int(jj+1)), location=bear_mountain) - utcoffset
-        check_st = check_time.sidereal_time('apparent').hour
+        check_time = plc.JD(time_0.jd + jj)
+        check_st = check_time.lst(observatory).hours
 
-        check_jd = int((check_time + 12 * u.hour).jd)
-        sun_t = plc.hjd_dict[check_jd]['t']
-        sun_ra = plc.hjd_dict[check_jd]['ra']
-        sun_dec = plc.hjd_dict[check_jd]['dec']
-
-        sun_ra = plc.interp1d(sun_t, sun_ra, kind='cubic')(check_jd)
-        sun_ra = sun_ra - int(sun_ra / (2 * np.pi)) * 2 * np.pi
-        sun_ra *= 180 / np.pi
-        sun_dec = plc.interp1d(sun_t, sun_dec, kind='cubic')(check_jd)
+        sun = check_time.get_sun()
 
         # sun rise/set
 
-        if sun_dec * 100 / np.pi > - (90 - bear_mountain.lat.deg) and sun_dec * 100 / np.pi < 90 - (bear_mountain.lat.deg):
+        if - (90 - observatory.latitude.deg_pm) < sun.dec.deg_pm < 90 - observatory.latitude.deg_pm:
 
-            rise_ha = np.arccos(- np.tan(sun_dec)*np.tan(bear_mountain.lat.deg*np.pi/180))*12/np.pi
+            rise_ha = np.arccos(- sun.dec.tan * observatory.latitude.tan) * 12 / np.pi
 
             if rise_ha < 12:
                 set_ha = rise_ha
@@ -303,11 +294,11 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
             else:
                 set_ha = 24 - rise_ha
 
-            rise_st = rise_ha + sun_ra / 15
+            rise_st = rise_ha + sun.ra.hours
             if rise_st > 24:
                 rise_st -= 24
 
-            set_st = set_ha + sun_ra / 15
+            set_st = set_ha + sun.ra.hours
             if set_st > 24:
                 set_st -= 24
 
@@ -321,31 +312,31 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
             else:
                 next_set_in_st_hours = set_st - check_st
 
-            dt = next_rise_in_st_hours * (365.25/366.25)
+            dt = next_rise_in_st_hours * (23.9344696 / 24)
             if dt < 24:
-                events.append([check_time + dt * u.hour, 'sun_rise'])
+                events.append([plc.JD(check_time.jd + dt / 24), 'sun_rise'])
 
-            dt = next_set_in_st_hours * (365.25 / 366.25)
+            dt = next_set_in_st_hours * (23.9344696 / 24)
             if dt < 24:
-                events.append([check_time + dt * u.hour, 'sun_set'])
+                events.append([plc.JD(check_time.jd + dt / 24), 'sun_set'])
 
         # sun -18 rise/set
 
-        if sun_dec * 100 / np.pi > - (90 - bear_mountain.lat.deg + 18) and sun_dec * 100 / np.pi < 90 - (bear_mountain.lat.deg + 18):
+        if - (90 - observatory.latitude.deg_pm + 18.0) < sun.dec.deg_pm < 90 - (observatory.latitude.deg_pm + 18):
 
-            rise_ha = np.arccos(np.sin((-18.0)*np.pi/180)/np.cos(sun_dec)/np.cos(bear_mountain.lat.deg*np.pi/180)
-                                - np.tan(sun_dec)*np.tan(bear_mountain.lat.deg*np.pi/180))*12/np.pi
+            rise_ha = np.arccos(np.sin((-18.0) * np.pi / 180) / sun.dec.cos / observatory.latitude.cos
+                                - sun.dec.tan * observatory.latitude.tan) * 12 / np.pi
             if rise_ha < 12:
                 set_ha = rise_ha
                 rise_ha = 24 - rise_ha
             else:
                 set_ha = 24 - rise_ha
 
-            rise_st = rise_ha + sun_ra / 15
+            rise_st = rise_ha + sun.ra.hours
             if rise_st > 24:
                 rise_st -= 24
 
-            set_st = set_ha + sun_ra / 15
+            set_st = set_ha + sun.ra.hours
             if set_st > 24:
                 set_st -= 24
 
@@ -359,26 +350,24 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
             else:
                 next_set_in_st_hours = set_st - check_st
 
-            dt = next_rise_in_st_hours * (365.25/366.25)
+            dt = next_rise_in_st_hours * (23.9344696 / 24)
             if dt < 24:
-                events.append([check_time + dt * u.hour, 'sun_rise 18'])
+                events.append([plc.JD(check_time.jd + dt / 24), 'sun_rise_18'])
 
-            dt = next_set_in_st_hours * (365.25 / 366.25)
+            dt = next_set_in_st_hours * (23.9344696 / 24)
             if dt < 24:
-                events.append([check_time + dt * u.hour, 'sun_set 18'])
+                events.append([plc.JD(check_time.jd + dt / 24), 'sun_set_18'])
 
     events2 = [[ff[0].jd, ff[0], ff[1]] for ff in events]
-    events2.sort()
+    events2.sort(key=lambda ff: ff[0])
 
     #
-    maxalt = int(round(90 - bear_mountain.lat.deg + targetdec, 0))
-    if maxalt > 90:
-        maxalt = 180 - maxalt
-    maxalt = str(maxalt)
+    maxalt = str(round(observation.max_altitude.deg_pm, 1))
 
     ax.xaxis.tick_top()
 
-    ax.set_title(observatory_name + '\n' + name + '   ' + months[month] + ' ' + str(year) + '    max. alt. = ' + maxalt + ' degrees')
+    ax.set_title(observatory_name + '\n' + name + '   ' + months[month] + ' ' + str(year) +
+                 '    max. alt. = ' + maxalt + ' degrees')
     ax.set_xlim((0, 1))
     ax.set_xlabel('HOUR / UTC {0:+.1f}'.format(tmzn))
     ax.set_xticks(np.arange(0, 24.5, 1))
@@ -391,7 +380,7 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
                    labelright=False, labelleft=True)
     ax.grid(True, axis='y', linestyle='--')
 
-    check_full_moon = Time('1992-5-16 16:02:33')
+    check_full_moon = plc.UTC('2000-1-21 04:41:00')
 
     for jj, ii in enumerate(events2[:-1]):
 
@@ -407,22 +396,18 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
         if time_range[1] == 0:
             time_range[1] = 24
 
-        test_target = get_target_altitude(ii[1] + dt_jd*u.day)
-
-        alpha=1
-        if test_target < horizon:
+        alpha = 1
+        if not observation.is_target_visible(plc.JD(ii[0] + dt_jd)):
             color = 'w'
             alpha = 0
         else:
-            sun_alt = get_sun_altitude(ii[1] + dt_jd*u.day)
-            if sun_alt > 0:
+            sun_az, sun_alt = observation.sun_azimuth_altitude(plc.JD(ii[0] + dt_jd))
+            if sun_alt.deg_pm > 0:
                 color = 'y'
-            elif sun_alt > -18:
+            elif sun_alt .deg_pm > -18:
                 color = 'r'
             else:
                 color = str(0.8 * (1 - moonphase))
-
-        # print(day, time_range, color)
 
         ax.plot(time_range, [day, day], linewidth=2.5, color=color, alpha=alpha)
 
@@ -430,19 +415,21 @@ def avc_plot(lat, long, tmzn, horizon, elevation, target_ra_dec_string, year_mon
 
         if ii[2] == 'target_set':
             ax.plot(time_range[0], day, 'k*', mec='k', markersize=8)
-            if time_range[0] > 20.5 / 24:
+            if time_range[0] > 20.5:
                 align = 'right'
             else:
                 align = 'left'
-            ax.text(time_range[0] + shift[align], day + 0.4, 'set: ' + str(ii[1] + tmzn*u.hour).split()[1][:5], va='center', ha=align, fontsize=9)
+            ax.text(time_range[0] + shift[align], day + 0.4, 'set: ' + (ii[1].utc + datetime.timedelta(days=tmzn/24)).isoformat().split('T')[1][:5],
+                    va='center', ha=align, fontsize=9)
 
         if ii[2] == 'target_rise':
             ax.plot(time_range[0], day, 'w*', mec='k', markersize=8, markeredgewidth=0.5)
-            if time_range[0] < 3.5 / 24:
+            if time_range[0] < 3.5:
                 align = 'left'
             else:
                 align = 'right'
-            ax.text(time_range[0] + shift[align], day + 0.4, 'rise: ' + str(ii[1] + tmzn*u.hour).split()[1][:5], va='center', ha=align, fontsize=9)
+            ax.text(time_range[0] + shift[align], day + 0.4, 'rise: ' + (ii[1].utc + datetime.timedelta(days=tmzn/24)).isoformat().split('T')[1][:5],
+                    va='center', ha=align, fontsize=9)
 
 
 def run_observing_planner():
@@ -461,14 +448,21 @@ def run_observing_planner():
 
     object_search = StringVar(root, value='Orion nebula')
     skyobject = StringVar(root, value=' ')
-    target_ra_dec = StringVar(root, value=' ')
+    target_ra = StringVar(root, value=' ')
+    target_dec = StringVar(root, value=' ')
     now = datetime.datetime.now()
     obs_year_month = StringVar(root, value='{0} {1}'.format(now.year, now.month))
     latitude = StringVar(root, value=read_local_log_profile('observatory_lat'))
     longitude = StringVar(root, value=read_local_log_profile('observatory_long'))
-    horizon = StringVar(root, value='20.0')
+    horizon_s = StringVar(root, value=read_local_log_profile('observatory_horizon_s'))
+    horizon_sw = StringVar(root, value=read_local_log_profile('observatory_horizon_sw'))
+    horizon_w = StringVar(root, value=read_local_log_profile('observatory_horizon_w'))
+    horizon_nw = StringVar(root, value=read_local_log_profile('observatory_horizon_nw'))
+    horizon_n = StringVar(root, value=read_local_log_profile('observatory_horizon_n'))
+    horizon_ne = StringVar(root, value=read_local_log_profile('observatory_horizon_ne'))
+    horizon_e = StringVar(root, value=read_local_log_profile('observatory_horizon_e'))
+    horizon_se = StringVar(root, value=read_local_log_profile('observatory_horizon_se'))
     observatory = StringVar(root, value=read_local_log_profile('observatory'))
-    elevation = IntVar(root, value=read_local_log_profile('observatory_elev'))
     timezone = IntVar(root, value=read_local_log_profile('observatory_time_zone'))
 
     # set progress variables, useful for updating the window
@@ -498,17 +492,36 @@ def run_observing_planner():
     longitude_label = Label(root, text='Longitude')
     longitude_entry = Entry(root, textvariable=longitude)
 
-    horizon_label = Label(root, text='Horizon (deg)')
-    horizon_entry = Entry(root, textvariable=horizon)
+    horizon_s_label = Label(root, text='Horizon altitude S (deg)')
+    horizon_s_entry = Entry(root, textvariable=horizon_s)
+
+    horizon_sw_label = Label(root, text='Horizon altitude SW (deg)')
+    horizon_sw_entry = Entry(root, textvariable=horizon_sw)
+
+    horizon_w_label = Label(root, text='Horizon altitude W (deg)')
+    horizon_w_entry = Entry(root, textvariable=horizon_w)
+
+    horizon_nw_label = Label(root, text='Horizon altitude NW (deg)')
+    horizon_nw_entry = Entry(root, textvariable=horizon_nw)
+
+    horizon_n_label = Label(root, text='Horizon altitude N (deg)')
+    horizon_n_entry = Entry(root, textvariable=horizon_n)
+
+    horizon_ne_label = Label(root, text='Horizon altitude NE (deg)')
+    horizon_ne_entry = Entry(root, textvariable=horizon_ne)
+
+    horizon_e_label = Label(root, text='Horizon altitude E (deg)')
+    horizon_e_entry = Entry(root, textvariable=horizon_e)
+
+    horizon_se_label = Label(root, text='Horizon altitude SE (deg)')
+    horizon_se_entry = Entry(root, textvariable=horizon_se)
 
     timezone_label = Label(root, text='Time Zone')
     timezone_entry = Entry(root, textvariable=timezone)
 
-    elevation_label = Label(root, text='Elevation (m)')
-    elevation_entry = Entry(root, textvariable=elevation)
-
     target_ra_dec_label = Label(root, text='Manual target RA DEC\n(hh:mm:ss +/-dd:mm:ss)')
-    target_ra_dec_entry = Entry(root, textvariable=target_ra_dec, width=30)
+    target_ra_entry = Entry(root, textvariable=target_ra, width=30)
+    target_dec_entry = Entry(root, textvariable=target_dec, width=30)
     target_ra_dec_test = Label(root, text=' ')
 
     obs_year_month_label = Label(root, text='Observation year and month\n(yyyy mm)')
@@ -568,17 +581,19 @@ def run_observing_planner():
 
             try:
                 result_table = Simbad.query_object(skyobject.get())[0]
-                target_ra_dec.set('{0} {1}'.format(result_table['RA'], result_table['DEC']))
+                target_ra.set(str(result_table['RA']))
+                target_dec.set(str(result_table['DEC']))
 
             except requests.exceptions.ConnectionError:
-                target_ra_dec.set('Import manually')
+                target_ra.set('Import manually')
+                target_dec.set('Import manually')
                 skyobject.set('No connection')
 
             update_object.set(False)
 
         object_entry.selection_clear()
 
-        check_ra_dec = test_coordinates(target_ra_dec_entry.get())
+        check_ra_dec = test_coordinates(target_ra_entry.get(), target_dec_entry.get(),)
         target_ra_dec_test.configure(text=check_ra_dec[1])
         check_year_month = test_date(obs_year_month_entry.get())
         obs_year_month_test.configure(text=check_year_month[1])
@@ -590,12 +605,24 @@ def run_observing_planner():
 
         if plot_window:
 
-            try:
-                avc_plot(latitude.get(), longitude.get(), timezone.get(), horizon.get(), elevation.get(),
-                         target_ra_dec.get(), obs_year_month.get(), ax1, skyobject.get(), observatory.get())
+            # try:
+                avc_plot(latitude.get(), longitude.get(), timezone.get(),
+                         [
+                             [0, horizon_s.get()],
+                             [45, horizon_sw.get()],
+                             [90, horizon_w.get()],
+                             [135, horizon_nw.get()],
+                             [180, horizon_n.get()],
+                             [225, horizon_ne.get()],
+                             [270, horizon_e.get()],
+                             [315, horizon_se.get()],
 
-            except IndexError:
-                pass
+                         ],
+                         target_ra.get(), target_dec.get(), obs_year_month.get(), ax1, skyobject.get(),
+                         observatory.get())
+            #
+            # except IndexError:
+            #     pass
 
         canvas.draw()
 
@@ -641,18 +668,21 @@ def run_observing_planner():
         [[observatory_label, 2]],
         [[observatory_entry, 2]],
         [],
-        [[latitude_label, 1], [elevation_label, 2]],
-        [[latitude_entry, 1], [elevation_entry, 2], [timezone_label, 3]],
-        [[longitude_label, 1], [horizon_label, 2], [timezone_entry, 3]],
-        [[longitude_entry, 1], [horizon_entry, 2]],
+        [[latitude_label, 1], [horizon_s_label, 2], [horizon_s_entry, 3]],
+        [[latitude_entry, 1], [horizon_sw_label, 2], [horizon_sw_entry, 3]],
+        [[horizon_w_label, 2], [horizon_w_entry, 3]],
+        [[longitude_label, 1],[horizon_nw_label, 2], [horizon_nw_entry, 3]],
+        [[longitude_entry, 1], [horizon_n_label, 2], [horizon_n_entry, 3]],
+        [[horizon_ne_label, 2], [horizon_ne_entry, 3]],
+        [[timezone_label, 1], [horizon_e_label, 2], [horizon_e_entry, 3]],
+        [[timezone_entry, 1], [horizon_se_label, 2], [horizon_se_entry, 3]],
         [],
-        [[object_label, 2]],
-        [[object_search_entry, 2]],
-        [[search_object_button, 2]],
+        [[object_label, 1]],
+        [[object_search_entry, 1], [object_entry, 2]],
+        [[search_object_button, 1]],
         [],
-        [[object_entry, 2]],
-        [],
-        [[target_ra_dec_label, 1], [target_ra_dec_entry, 2], [target_ra_dec_test, 3]],
+        [[target_ra_dec_label, 1], [target_ra_entry, 2], [target_ra_dec_test, 3]],
+        [[target_dec_entry, 2]],
         [[obs_year_month_label, 1], [obs_year_month_entry, 2], [obs_year_month_test, 3]],
         [],
         [[plot_button, 2]],

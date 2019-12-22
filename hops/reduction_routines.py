@@ -133,11 +133,7 @@ def reduction():
                         pass
                 fits = [fits[sci_id]]
 
-            try:
-                bias_frames.append(float(fits[0].header['BZERO']) +
-                                   float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data)
-            except KeyError:
-                bias_frames.append(1.0 * np.ones_like(fits[0].data) * fits[0].data)
+            bias_frames.append(np.ones_like(fits[0].data) * fits[0].data)
 
     if len(bias_frames) > 0:
         if master_bias_method == 'median':
@@ -146,12 +142,10 @@ def reduction():
             master_bias = np.mean(bias_frames, 0)
         else:
             master_bias = np.median(bias_frames, 0)
-        master_bias_check = False
     else:
         master_bias = 0.0
-        master_bias_check = True
 
-    print(np.median(master_bias), master_bias_check)
+    print('Median Bias: ', round(np.median(master_bias), 3))
 
     # create master dark
 
@@ -171,14 +165,7 @@ def reduction():
                         pass
                 fits = [fits[sci_id]]
 
-            try:
-                if master_bias_check:
-                    dark_frame = float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-                else:
-                    dark_frame = float(fits[0].header['BZERO']) + \
-                                 float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-            except KeyError:
-                dark_frame = 1.0 * np.ones_like(fits[0].data) * fits[0].data
+            dark_frame = np.ones_like(fits[0].data) * fits[0].data
             dark_frames.append((dark_frame - master_bias) / fits[0].header[exposure_time_key])
 
     if len(dark_frames) > 0:
@@ -191,7 +178,7 @@ def reduction():
     else:
         master_dark = 0.0
 
-    print(np.median(master_dark))
+    print('Median Dark: ', round(np.median(master_dark), 3))
 
     # create master flat
 
@@ -211,30 +198,22 @@ def reduction():
                         pass
                 fits = [fits[sci_id]]
 
-            try:
-                if master_bias_check:
-                    flat_frame = float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-                else:
-                    flat_frame = float(fits[0].header['BZERO']) + \
-                                 float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-            except KeyError:
-                flat_frame = 1.0 * np.ones_like(fits[0].data) * fits[0].data
+            flat_frame = np.ones_like(fits[0].data) * fits[0].data
             flat_frames.append(flat_frame - master_bias - fits[0].header[exposure_time_key] * master_dark)
 
+    print('Median of each Flat: ', ' '.join([str(round(np.median(ff))) for ff in flat_frames]))
     if len(flat_frames) > 0:
-        if master_flat_method == 'median':
-            flat_frames = [ff / np.median(ff) for ff in flat_frames]
-            master_flat = np.median(flat_frames, 0)
-        elif master_flat_method == 'mean':
+        if master_flat_method == 'mean':
+            flat_frames = [ff / np.mean(ff) for ff in flat_frames]
             master_flat = np.mean(flat_frames, 0)
         else:
             flat_frames = [ff / np.median(ff) for ff in flat_frames]
             master_flat = np.median(flat_frames, 0)
+        print('Median Flat: ', round(np.median(master_flat), 3))
         master_flat = master_flat / np.median(master_flat)
+        master_flat = np.where(master_flat == 0, 1, master_flat)
     else:
         master_flat = 1.0
-
-    print(np.median(master_flat))
 
     # setup counter window
 
@@ -284,6 +263,8 @@ def reduction():
 
     for counter, science_file in enumerate(observation_files):
 
+        print('\n', os.path.split(science_file)[1])
+
         # correct it with master bias_files, master dark_files and master flat_files
 
         fits = pf.open(science_file, memmap=False)
@@ -300,43 +281,35 @@ def reduction():
                     pass
             fits = [fits[sci_id]]
 
-        try:
-            if master_bias_check:
-                data_frame = float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-            else:
-                data_frame = float(fits[0].header['BZERO']) + float(fits[0].header['BSCALE']) * np.ones_like(fits[0].data) * fits[0].data
-        except KeyError:
-            data_frame = 1.0 * np.ones_like(fits[0].data) * fits[0].data
-
+        data_frame = np.ones_like(fits[0].data) * fits[0].data
         data_frame = (data_frame - master_bias - fits[0].header[exposure_time_key] * master_dark) / master_flat
 
         if bin_fits > 1:
-            data_frame = bin_frame(data_frame, bin_fits)
+            data_frame = plc.bin_frame(data_frame, bin_fits)
 
-        fits[0].header.set('BZERO', 0.0)
-        fits[0].header.set('BSCALE', 1.0)
+        try:
+            distribution = plc.one_d_distribution(data_frame.flatten()[::int(200000.0/bin_to)], gaussian_fit=True)
+            mean = distribution[2]
+            std = distribution[3]
+        except:
+            mean = np.median(data_frame)
+            std = plc.mad(data_frame) * 1.5
 
-        norm, floor, mean, std = fit_distribution1d_gaussian(data_frame, binning=bin_to/100000.0)
-
-        if np.isnan(norm):
-            mean = np.mean(data_frame)
-            std = np.std(data_frame)
+        print('Sky / pixel / s: {0} +/- {1}'.format(round(mean / fits[0].header[exposure_time_key], 2),
+                                                    round(std / fits[0].header[exposure_time_key], 2)))
 
         if observation_date_key == observation_time_key:
-            local_time = ' '.join(fits[0].header[observation_date_key].split('T'))
-            if counter == 1:
-                write_local_log('fitting', fits[0].header[observation_date_key].split('T')[0], 'date')
+            observation_time = ' '.join(fits[0].header[observation_date_key].split('T'))
         else:
-            local_time = ' '.join([fits[0].header[observation_date_key].split('T')[0],
-                                   fits[0].header[observation_time_key]])
-            if counter == 1:
-                write_local_log('fitting', fits[0].header[observation_date_key].split('T')[0], 'date')
+            observation_time = ' '.join([fits[0].header[observation_date_key].split('T')[0],
+                                         fits[0].header[observation_time_key]])
 
-        ra_target, dec_target = ra_dec_string_to_deg(target_ra_dec)
+        observation_time = plc.UTC(observation_time)
 
-        heliocentric_julian_date = plc.ut_to_hjd(ra_target, dec_target, local_time)
+        if counter == 1:
+            write_local_log('fitting', observation_time.utc.isoformat().split('T')[0], 'date')
 
-        testx.append(heliocentric_julian_date)
+        testx.append(observation_time.jd)
         testy.append(mean / fits[0].header[exposure_time_key])
         testz.append(std)
 
@@ -344,17 +317,15 @@ def reduction():
         fits[0].header.set(std_key, std)
 
         # write the new fits file
+        # important to keep it like this for windows!
+        time_in_file = observation_time.utc.isoformat()
+        time_in_file = time_in_file.split('.')[0]
+        time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
 
-        if observation_date_key == observation_time_key:
-                local_time = fits[0].header[observation_date_key]
-                local_time = '{0}_'.format(local_time.replace('-', '_').replace('T', '_').replace(':', '_'))
-        else:
-                local_time = '{0}_{1}_'.format(fits[0].header[observation_date_key].split('T')[0].replace('-', '_'),
-                                               fits[0].header[observation_time_key].replace(':', '_'))
+        hdu = pf.ImageHDU(header=fits[0].header, data=np.array(data_frame, dtype=np.float32))
 
-        hdu = pf.ImageHDU(header=fits[0].header, data=np.array(np.round(data_frame, 0), dtype=np.int32))
-        hdu.writeto('{0}{1}{2}{3}{4}'.format(reduction_directory,
-                                             os.sep, reduction_prefix, local_time, science_file.split(os.sep)[-1]))
+        plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '{0}{1}{2}{3}_{4}'.format(reduction_directory,
+                                             os.sep, reduction_prefix, time_in_file, science_file.split(os.sep)[-1]))
 
         if counter == 0:
             ax.cla()
@@ -430,8 +401,8 @@ def reduction():
         time_dt = np.median(np.array(testx[1:]) - np.array(testx[:-1]))
         arrow = mpatches.Arrow(testx[0], 0, 0, testy[0], width=time_dt, fc='r')
         ax.add_patch(arrow)
-        ax.set_xlabel('time (m)')
-        ax.set_ylabel('sky (counts / pixel / second)')
+        ax.set_xlabel('Time (minutes from observation start)')
+        ax.set_ylabel('Sky (counts / pixel / second)')
         ax.tick_params(top='on', bottom='off', labeltop='on', labelbottom='off')
         ax.xaxis.set_label_position('top')
 

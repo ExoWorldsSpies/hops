@@ -88,7 +88,6 @@ def alignment():
     reduction_directory = read_local_log('pipeline', 'reduction_directory')
     mean_key = read_local_log('pipeline_keywords', 'mean_key')
     std_key = read_local_log('pipeline_keywords', 'std_key')
-    align_star_area_key = read_local_log('pipeline_keywords', 'align_star_area_key')
     align_x0_key = read_local_log('pipeline_keywords', 'align_x0_key')
     align_y0_key = read_local_log('pipeline_keywords', 'align_y0_key')
     align_u0_key = read_local_log('pipeline_keywords', 'align_u0_key')
@@ -96,7 +95,6 @@ def alignment():
     frame_upper_std = read_local_log('windows', 'frame_upper_std')
     bin_fits = int(read_local_log('reduction', 'bin_fits'))
     burn_limit = int(read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
-    star_std = read_local_log('alignment', 'star_std')
     search_window_std = read_local_log('alignment', 'search_window_std')
     shift_tolerance = read_local_log('alignment', 'shift_tolerance_p')
     rotation_tolerance = read_local_log('alignment', 'rotation_tolerance')
@@ -110,72 +108,52 @@ def alignment():
     shift_tolerance = int(max(len(fits[1].data), len(fits[1].data[0])) * (shift_tolerance / 100.0))
     y_length, x_length = fits[1].data.shape
 
-    centroids = []
-    std_limit = 5.0
-    while len(centroids) == 0 and std_limit >= 2.0:
-        centroids = find_centroids(fits[1].data, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                   std_limit=std_limit, burn_limit=7.0 * burn_limit / 8, star_std=2)
-        std_limit -= 1.0
-    calibration_stars = [[-pp[3], pp[1], pp[2], pp[0]] for pp in centroids]
+    stars = []
+    std_limit = 20.0
+    psf = ((2, 0), (2, 0))
+    while len(stars) < min_calibration_stars_number and std_limit >= 5.0:
+        stars, psf = plc.find_all_stars(fits[1].data,
+                                        mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                        std_limit=std_limit, burn_limit=2.0 * burn_limit / 3, star_std=2,
+                                        order_by_flux=False)
+        std_limit -= 5.0
 
-    new_star_std = []
-    for calibration_centroid in calibration_stars[:100]:
-        norm, floor, x_mean, y_mean, x_sigma, y_sigma = \
-            fit_2d_gauss_point(fits[1].data,
-                               predicted_x_mean=calibration_centroid[1],
-                               predicted_y_mean=calibration_centroid[2],
-                               search_window=2 * star_std)
-        if not np.isnan(x_mean * y_mean):
-            new_star_std.append(x_sigma)
-    star_std = max(1, int(np.median(new_star_std)) - 1)
+    star_std = int(max(1, round(max(psf[0], psf[1]))))
+
     write_local_log('alignment', star_std, 'star_std')
 
-    centroids = []
-    std_limit = 5.0
-    while len(centroids) == 0 and std_limit >= 2.0:
-        centroids = find_centroids(fits[1].data, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                   std_limit=std_limit, burn_limit=7.0 * burn_limit / 8, star_std=2 * star_std)
-        std_limit -= 1.0
-    calibration_stars = [[-pp[3], pp[1], pp[2], pp[0]] for pp in centroids]
+    stars = sorted(stars, key=lambda x: -x[-1] / (x[-2]**3))
 
-    x_ref_position = np.nan
-    y_ref_position = np.nan
-    while np.isnan(x_ref_position * y_ref_position):
-        norm, floor, x_mean, y_mean, x_sigma, y_sigma = fit_2d_gauss_point(
-            fits[1].data,
-            predicted_x_mean=calibration_stars[0][1], predicted_y_mean=calibration_stars[0][2],
-            search_window=search_window_std * star_std)
-        x_ref_position, y_ref_position = x_mean, y_mean
-        del calibration_stars[0]
+    x_ref_position = stars[0][0]
+    y_ref_position = stars[0][1]
 
-    centroids = find_centroids(fits[1].data, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                               std_limit=3.0, burn_limit=7.0 * burn_limit / 8, star_std=star_std)
-    calibration_stars = [[-pp[3], pp[1], pp[2], pp[0]] for pp in centroids]
-    calibration_stars.sort()
+    del stars[0]
 
     # take the rest as calibration stars and calculate their polar coordinates relatively to the first
     calibration_stars_polar = []
-    for calibration_star in calibration_stars[:100]:
-        norm, floor, x_mean, y_mean, x_sigma, y_sigma = \
-            fit_2d_gauss_point(fits[1].data,
-                               predicted_x_mean=calibration_star[1],
-                               predicted_y_mean=calibration_star[2],
-                               search_window=search_window_std * star_std, stde=star_std)
-        x_position, y_position = x_mean, y_mean
-        r_position, u_position = cartesian_to_polar(x_position, y_position, x_ref_position, y_ref_position)
-        if not np.isnan(x_position * y_position) and r_position > search_window_std * star_std:
+    for star in stars:
+        r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
+        if r_position > 5 * star_std:
             calibration_stars_polar.append([r_position, u_position])
+        if len(calibration_stars_polar) > 100:
+            break
 
-    calibration_stars_polar_snr = [ff for ff in calibration_stars_polar]
+    stars = sorted(stars, key=lambda x: -x[-1])
 
-    calibration_stars_polar.sort()
+    calibration_stars_polar_snr = []
+    for star in stars:
+        r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
+        if r_position > 5 * star_std:
+            calibration_stars_polar_snr.append([r_position, u_position])
+        if len(calibration_stars_polar_snr) > 100:
+            break
 
     if len(calibration_stars_polar) <= min_calibration_stars_number:
         check_num = len(calibration_stars_polar) - 0.5
-    elif len(calibration_stars_polar) <= 10:
-        check_num = min_calibration_stars_number - 0.5
+        check_num_snr = len(calibration_stars_polar) - 0.5
     else:
-        check_num = 9.5
+        check_num = max(min_calibration_stars_number - 0.5, int(len(calibration_stars_polar)) / 10 - 0.5)
+        check_num_snr = min_calibration_stars_number - 0.5
 
     x0, y0, u0, comparisons = x_ref_position, y_ref_position, 0, calibration_stars_polar
     x0, y0, u0, comparisons_snr = x_ref_position, y_ref_position, 0, calibration_stars_polar_snr
@@ -234,57 +212,61 @@ def alignment():
     skip_time = 0
     lt0 = time.time()
     for counter, science_file in enumerate(science):
+        print('\n', science_file)
 
         fits = pf.open(science_file, mode='update')
 
+        ax.cla()
+        ax.imshow(fits[1].data, origin='lower', cmap=cm.Greys_r,
+                  vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
+                  vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
+        ax.axis('off')
+        circle = mpatches.Circle((-100, -100), 20 * star_std, ec='r', fill=False)
+        ax.add_patch(circle)
+
+        rotation_detected = False
+
         # super fast detection test
+        print('Test no shift', x0, y0, u0)
+        star = plc.find_single_star(fits[1].data, x0, y0, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                    burn_limit=burn_limit, star_std=star_std)
 
-        centroids = find_centroids(fits[1].data,
-                                   x_low=int(x0 - search_window_std * star_std), x_upper=int(x0 + search_window_std * star_std + 1),
-                                   y_low=int(y0 - search_window_std * star_std), y_upper=int(y0 + search_window_std * star_std + 1),
-                                   x_centre=int(x0), y_centre=int(y0),
-                                   mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                   std_limit=2.0, burn_limit=2 * burn_limit, star_std=star_std)
-
-        if len(centroids) > 0:
+        if star:
 
             tests = []
 
-            for ref_star in centroids:
+            max_x = star[0]
+            max_y = star[1]
+            print(science_file)
+            print('Testing star at: ', max_x, max_y, ', with rotation:', u0)
 
-                max_x = ref_star[1]
-                max_y = ref_star[2]
-                print(science_file)
-                print('Testing star at: ', max_x, max_y,)
+            test = 0
 
-                test = 0
+            for comp in comparisons:
 
-                for comp in comparisons:
+                check_x = int(max_x + comp[0] * np.cos(u0 + comp[1]))
+                check_y = int(max_y + comp[0] * np.sin(u0 + comp[1]))
+                if 0 < check_x < x_length and 0 < check_y < y_length:
+                    check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
+                                       check_x - star_std:check_x + star_std + 1])
+                    check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
+                    if check_sum > check_lim:
+                        test += 1
+                    else:
+                        test -= 1
+                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
-                    check_x = int(max_x + comp[0] * np.cos(u0 + comp[1]))
-                    check_y = int(max_y + comp[0] * np.sin(u0 + comp[1]))
-                    if 0 < check_x < x_length and 0 < check_y < y_length:
-                        check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
-                                           check_x - star_std:check_x + star_std + 1])
-                        check_lim = (fits[1].header[mean_key] + 2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
-                        if check_sum > check_lim:
-                            test += 1
-                        else:
-                            test -= 1
-                    print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
-
-                    if abs(test) > check_num:
-                        break
-
-                tests.append([test, max_x, max_y])
-                print([test, max_x, max_y])
-
-                if test > check_num:
+                if abs(test) > check_num:
                     break
+
+            tests.append([test, max_x, max_y])
+            print([test, max_x, max_y])
 
             tests.sort()
             test, max_x, max_y = tests[-1]
+
             if test < check_num:
+
                 stars_detected = False
 
             else:
@@ -293,79 +275,42 @@ def alignment():
                 y0 = max_y
                 u0 = u0
 
-            # check for snr drop
-
-            if not stars_detected:
-
-                tests = []
-
-                for ref_star in centroids:
-
-                    max_x = ref_star[1]
-                    max_y = ref_star[2]
-                    print(science_file)
-                    print('!SNR! Testing star at: ', max_x, max_y,)
-
-                    test = 0
-
-                    for comp in comparisons_snr:
-
-                        check_x = int(max_x + comp[0] * np.cos(u0 + comp[1]))
-                        check_y = int(max_y + comp[0] * np.sin(u0 + comp[1]))
-                        if 0 < check_x < x_length and 0 < check_y < y_length:
-                            check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
-                                               check_x - star_std:check_x + star_std + 1])
-                            check_lim = (fits[1].header[mean_key] + 2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
-                            if check_sum > check_lim:
-                                test += 1
-                            else:
-                                test -= 1
-                        print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
-
-                        if abs(test) > min_calibration_stars_number - 0.5:
-                            break
-
-                    tests.append([test, max_x, max_y])
-                    print([test, max_x, max_y])
-
-                    if test > min_calibration_stars_number - 0.5:
-                        break
-
-                tests.sort()
-                test, max_x, max_y = tests[-1]
-                if test < min_calibration_stars_number - 0.5:
-                    stars_detected = False
-
-                else:
-                    stars_detected = True
-                    x0 = max_x
-                    y0 = max_y
-                    u0 = u0
-
         else:
             stars_detected = False
 
-        # look for reasonable field shift
+        print(stars_detected, x0, y0, u0)
+        # super fast detection test
 
+        delta_skip_time = time.time()
+        # look for reasonable field shift
         if not stars_detected:
 
-            centroids = find_centroids(fits[1].data,
-                                       x_low=int(x0 - shift_tolerance), x_upper=int(x0 + shift_tolerance + 1),
-                                       y_low=int(y0 - shift_tolerance), y_upper=int(y0 + shift_tolerance + 1),
-                                       x_centre=int(x0), y_centre=int(y0),
-                                       mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                       std_limit=2.0, burn_limit=2 * burn_limit, star_std=star_std)
+            print('Test small shift')
+            label3.configure(text='     {0}     \nTesting small shift and rotation'.format(science_file.split(os.sep)[-1]))
+            label5.configure(text='     -%    ')
+            label7.configure(text='     -h -m -s     ')
+            canvas.draw()
+            root.update()
 
-            if len(centroids) > 0:
+            stars = plc.find_all_stars(fits[1].data, x_low=x0 - shift_tolerance, x_upper=x0 + shift_tolerance,
+                                       y_low=y0 - shift_tolerance, y_upper=y0 + shift_tolerance, x_centre=x0,
+                                       y_centre=y0, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                       burn_limit=burn_limit, star_std=star_std)[0]
+
+            if stars:
 
                 tests = []
 
-                for ref_star in centroids:
+                for star in stars:
 
-                    max_x = ref_star[1]
-                    max_y = ref_star[2]
+                    max_x = star[0]
+                    max_y = star[1]
+                    circle.set_center((max_x, max_y))
+                    canvas.draw()
+                    root.update()
+
                     print(science_file)
-                    print('Testing star at: ', max_x, max_y,)
+                    print('Testing star at: ', max_x, max_y, ',with rotation:', u0)
 
                     test = 0
 
@@ -376,7 +321,8 @@ def alignment():
                         if 0 < check_x < x_length and 0 < check_y < y_length:
                             check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
                                                check_x - star_std:check_x + star_std + 1])
-                            check_lim = (fits[1].header[mean_key] + 2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
+                            check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * (
+                                        (2 * star_std + 1) ** 2)
                             if check_sum > check_lim:
                                 test += 1
                             else:
@@ -394,45 +340,98 @@ def alignment():
 
                 tests.sort()
                 test, max_x, max_y = tests[-1]
+
                 if test < check_num:
-                    stars_detected = False
+
+                    tests = []
+
+                    for star in stars:
+
+                        max_x = star[0]
+                        max_y = star[1]
+                        circle.set_center((max_x, max_y))
+                        canvas.draw()
+                        root.update()
+                        print(science_file)
+                        print('LOW-SNR Testing star at: ', max_x, max_y, ', with rotation:', u0)
+
+                        test = 0
+
+                        for comp in comparisons_snr:
+
+                            check_x = int(max_x + comp[0] * np.cos(u0 + comp[1]))
+                            check_y = int(max_y + comp[0] * np.sin(u0 + comp[1]))
+                            if 0 < check_x < x_length and 0 < check_y < y_length:
+                                check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
+                                                   check_x - star_std:check_x + star_std + 1])
+                                check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * (
+                                            (2 * star_std + 1) ** 2)
+                                if check_sum > check_lim:
+                                    test += 1
+                                else:
+                                    test -= 1
+                            print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+
+                            if abs(test) > check_num_snr:
+                                break
+
+                        tests.append([test, max_x, max_y])
+                        print([test, max_x, max_y])
+
+                        if test > check_num_snr:
+                            break
+
+                        tests.sort()
+                        test, max_x, max_y = tests[-1]
+
+                        if test < min_calibration_stars_number - 0.5:
+                            stars_detected = False
+
+                        else:
+                            stars_detected = True
+                            x0 = max_x
+                            y0 = max_y
+                            u0 = u0
+                            rotation_detected = True
 
                 else:
                     stars_detected = True
                     x0 = max_x
                     y0 = max_y
                     u0 = u0
+                    rotation_detected = True
 
             else:
                 stars_detected = False
 
+            print(stars_detected, x0, y0, u0)
+        # look for reasonable field shift
+
         # look for reasonable field rotation
-
-        delta_skip_time = time.time()
-
         if not stars_detected:
 
-            # centroids = find_centroids(fits[1].data,
-            #                            x_low=int(x0 - shift_tolerance), x_upper=int(x0 + shift_tolerance + 1),
-            #                            y_low=int(y0 - shift_tolerance), y_upper=int(y0 + shift_tolerance + 1),
-            #                            x_centre=int(x0), y_centre=int(y0),
-            #                            mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-            #                            std_limit=2.0, burn_limit=2 * burn_limit, star_std=star_std)
+            print('Test small rotation')
 
             ustep = np.arcsin(float(star_std) / comparisons[int(len(comparisons) / 2)][0])
+            angles = np.append(np.arange(-rotation_tolerance, rotation_tolerance, ustep),
+                               np.arange(-rotation_tolerance, rotation_tolerance, ustep) + np.pi)
 
-            if len(centroids) > 0:
+            if stars:
 
                 tests = []
 
-                for ref_star in centroids:
+                for star in stars:
 
                     test = 0
 
-                    for rotation in np.arange(-rotation_tolerance, rotation_tolerance, ustep):
+                    max_x = star[0]
+                    max_y = star[1]
+                    circle.set_center((max_x, max_y))
+                    canvas.draw()
+                    root.update()
 
-                        max_x = ref_star[1]
-                        max_y = ref_star[2]
+                    for rotation in angles:
+
                         print(science_file)
                         print('Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
@@ -445,8 +444,8 @@ def alignment():
                             if 0 < check_x < x_length and 0 < check_y < y_length:
                                 check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
                                                    check_x - star_std:check_x + star_std + 1])
-                                check_lim = (fits[1].header[mean_key] +
-                                             2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
+                                check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * (
+                                        (2 * star_std + 1) ** 2)
                                 if check_sum > check_lim:
                                     test += 1
                                 else:
@@ -468,26 +467,83 @@ def alignment():
                 tests.sort()
                 test, max_x, max_y, rotation = tests[-1]
                 if test < check_num:
-                    stars_detected = False
+
+                    for star in stars:
+
+                        test = 0
+
+                        max_x = star[0]
+                        max_y = star[1]
+                        circle.set_center((max_x, max_y))
+                        canvas.draw()
+                        root.update()
+
+                        for rotation in angles:
+
+                            print(science_file)
+                            print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
+
+                            test = 0
+
+                            for comp in comparisons_snr:
+
+                                check_x = int(max_x + comp[0] * np.cos(rotation + comp[1]))
+                                check_y = int(max_y + comp[0] * np.sin(rotation + comp[1]))
+                                if 0 < check_x < x_length and 0 < check_y < y_length:
+                                    check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
+                                                       check_x - star_std:check_x + star_std + 1])
+                                    check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * (
+                                            (2 * star_std + 1) ** 2)
+                                    if check_sum > check_lim:
+                                        test += 1
+                                    else:
+                                        test -= 1
+                                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+
+                                if abs(test) > check_num_snr:
+                                    break
+
+                            tests.append([test, max_x, max_y, rotation])
+                            print([test, max_x, max_y, rotation])
+
+                            if test > check_num_snr:
+                                break
+
+                        if test > check_num_snr:
+                            break
+
+                    tests.sort()
+                    test, max_x, max_y, rotation = tests[-1]
+                    if test < check_num_snr:
+                        stars_detected = False
+
+                    else:
+                        stars_detected = True
+                        x0 = max_x
+                        y0 = max_y
+                        u0 = rotation
+                        rotation_detected = True
 
                 else:
                     stars_detected = True
                     x0 = max_x
                     y0 = max_y
                     u0 = rotation
+                    rotation_detected = True
 
             else:
                 stars_detected = False
 
+            print(stars_detected, x0, y0, u0)
+        # look for reasonable field rotation
+
         if not stars_detected:
+            circle.set_center((-100, -100))
+            canvas.draw()
+            root.update()
             label3.configure(text='     {0}     '.format(science_file.split(os.sep)[-1]))
             label5.configure(text='     -%    ')
             label7.configure(text='     -h -m -s     ')
-            ax.cla()
-            ax.imshow(fits[1].data, origin='lower', cmap=cm.Greys_r,
-                      vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
-                      vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
-            ax.axis('off')
             canvas.draw()
             root.update()
             skip_frame = askyesno('Alignment',
@@ -497,49 +553,62 @@ def alignment():
         else:
             skip_frame = False
 
-        # look for large shift or large field rotation
+        # look for large field shift
         if not stars_detected and not skip_frame:
 
-            centroids = find_centroids(fits[1].data, x_centre=int(x0), y_centre=int(y0),
-                                       mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                       std_limit=2.0, burn_limit=2 * burn_limit, star_std=star_std)
+            print('Test large shift')
+            label3.configure(text='     {0}     \nTesting large shift and rotation'.format(science_file.split(os.sep)[-1]))
+            label5.configure(text='     -%    ')
+            label7.configure(text='     -h -m -s     ')
+            canvas.draw()
+            root.update()
 
-            if len(centroids) > 0:
+            stars = plc.find_all_stars(fits[1].data, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                       burn_limit=burn_limit, star_std=star_std, order_by_flux=True)[0]
+
+            if stars:
 
                 tests = []
 
-                for ref_star in centroids:
+                for star in stars:
 
-                    max_x = ref_star[1]
-                    max_y = ref_star[2]
+                    max_x = star[0]
+                    max_y = star[1]
+                    circle.set_center((max_x, max_y))
+                    canvas.draw()
+                    root.update()
+                    print(science_file)
+                    print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', u0)
 
                     test = 0
 
-                    for comp in comparisons:
+                    for comp in comparisons_snr:
 
                         check_x = int(max_x + comp[0] * np.cos(u0 + comp[1]))
                         check_y = int(max_y + comp[0] * np.sin(u0 + comp[1]))
                         if 0 < check_x < x_length and 0 < check_y < y_length:
                             check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
                                                check_x - star_std:check_x + star_std + 1])
-                            check_lim = (fits[1].header[mean_key] + 2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
+                            check_lim = (fits[1].header[mean_key] + 3 * fits[1].header[std_key]) * (
+                                    (2 * star_std + 1) ** 2)
                             if check_sum > check_lim:
                                 test += 1
                             else:
                                 test -= 1
+                            print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
-                        if abs(test) > check_num:
+                        if abs(test) > check_num_snr:
                             break
 
                     tests.append([test, max_x, max_y])
                     print([test, max_x, max_y])
 
-                    if test > check_num:
+                    if test > check_num_snr:
                         break
 
                 tests.sort()
                 test, max_x, max_y = tests[-1]
-                if test < check_num:
+                if test < check_num_snr:
                     stars_detected = False
 
                 else:
@@ -547,122 +616,136 @@ def alignment():
                     x0 = max_x
                     y0 = max_y
                     u0 = u0
+                    rotation_detected = True
 
             else:
                 stars_detected = False
 
-            # if the wider search works then update the values, otherwise continue to the rotation search
-            if not stars_detected:
+            print(stars_detected, x0, y0, u0)
+        # look for large field shift
 
-                ustep = np.arcsin(float(star_std) / comparisons[int(len(comparisons) / 2)][0])
-                centroids = find_centroids(fits[1].data,
-                                           x_centre=x0, y_centre=y0,
-                                           mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                           std_limit=2.0, burn_limit=2 * burn_limit, star_std=star_std,
-                                           flux_order=True)
+        # look for large field rotation
+        if not stars_detected and not skip_frame:
 
-                if len(centroids) > 0:
+            print('Test large rotation')
 
-                    tests = []
+            ustep = np.arcsin(float(star_std) / comparisons[int(len(comparisons) / 2)][0])
 
-                    angles = np.array([np.pi, 0])
-                    for ff in range(1, int(np.pi/ustep) + 1):
-                        angles = np.append(angles, np.pi - ff * ustep)
-                        angles = np.append(angles, np.pi + ff * ustep)
-                        angles = np.append(angles, 0 - ff * ustep)
-                        angles = np.append(angles, 0 + ff * ustep)
+            angles = np.array([np.pi, 0])
+            for ff in range(1, int(np.pi / ustep) + 1):
+                angles = np.append(angles, np.pi - ff * ustep)
+                angles = np.append(angles, np.pi + ff * ustep)
+                angles = np.append(angles, 0 - ff * ustep)
+                angles = np.append(angles, 0 + ff * ustep)
 
-                    for rotation in angles:
+            if stars:
+
+                tests = []
+
+                for rotation in angles:
+
+                    test = 0
+
+                    for star in stars:
+
+                        max_x = star[0]
+                        max_y = star[1]
+                        circle.set_center((max_x, max_y))
+                        canvas.draw()
+                        root.update()
+                        print(science_file)
+                        print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
                         test = 0
 
-                        for ref_star in centroids:
+                        for comp in comparisons_snr:
 
-                            max_x = ref_star[1]
-                            max_y = ref_star[2]
+                            check_x = int(max_x + comp[0] * np.cos(rotation + comp[1]))
+                            check_y = int(max_y + comp[0] * np.sin(rotation + comp[1]))
+                            if 0 < check_x < x_length and 0 < check_y < y_length:
+                                check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
+                                                   check_x - star_std:check_x + star_std + 1])
+                                check_lim = (fits[1].header[mean_key] +
+                                             2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
+                                if check_sum > check_lim:
+                                    test += 1
+                                else:
+                                    test -= 1
+                                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
-                            test = 0
-
-                            for comp in comparisons:
-
-                                check_x = int(max_x + comp[0] * np.cos(rotation + comp[1]))
-                                check_y = int(max_y + comp[0] * np.sin(rotation + comp[1]))
-                                if 0 < check_x < x_length and 0 < check_y < y_length:
-                                    check_sum = np.sum(fits[1].data[check_y - star_std:check_y + star_std + 1,
-                                                       check_x - star_std:check_x + star_std + 1])
-                                    check_lim = (fits[1].header[mean_key] +
-                                                 2 * fits[1].header[std_key]) * ((2 * star_std + 1) ** 2)
-                                    if check_sum > check_lim:
-                                        test += 1
-                                    else:
-                                        test -= 1
-
-                                if abs(test) > check_num:
-                                    break
-
-                            tests.append([test, max_x, max_y, rotation])
-                            print([test, max_x, max_y, rotation])
-
-                            if test > check_num:
+                            if abs(test) > check_num_snr:
                                 break
 
-                        if test > check_num:
-                                break
+                        tests.append([test, max_x, max_y, rotation])
+                        print([test, max_x, max_y, rotation])
 
-                    tests.sort()
-                    test, max_x, max_y, rotation = tests[-1]
-                    if test < check_num:
-                        stars_detected = False
+                        if test > check_num_snr:
+                            break
 
-                    else:
-                        stars_detected = True
-                        x0 = max_x
-                        y0 = max_y
-                        u0 = rotation
+                    if test > check_num_snr:
+                            break
+
+                tests.sort()
+                test, max_x, max_y, rotation = tests[-1]
+                if test < check_num_snr:
+                    stars_detected = False
 
                 else:
-                    stars_detected = False
+                    stars_detected = True
+                    x0 = max_x
+                    y0 = max_y
+                    u0 = rotation
+                    rotation_detected = True
+
+            else:
+                stars_detected = False
+
+            print(stars_detected, x0, y0, u0)
+        # look for large field rotation
 
         skip_time += time.time() - delta_skip_time
 
-        norm, floor, x_mean, y_mean, x_sigma, y_sigma = \
-            fit_2d_gauss_point(fits[1].data, predicted_x_mean=x0, predicted_y_mean=y0,
-                               search_window=search_window_std * star_std, stde=star_std)
-
-        if np.isnan(x_mean * y_mean):
-            stars_detected = False
-            print(science_file)
-        else:
-            x0, y0 = x_mean, y_mean
-
         if stars_detected:
+
+            if rotation_detected:
+
+                test_u0 = []
+
+                for ii in comparisons[:int(check_num + 0.5)]:
+                    star = plc.find_single_star(fits[1].data,
+                                                x0 + ii[0] * np.cos(u0 + ii[1]),
+                                                y0 + ii[0] * np.sin(u0 + ii[1]),
+                                                mean=fits[1].header[mean_key],
+                                                std=fits[1].header[std_key],
+                                                burn_limit=burn_limit, star_std=star_std)
+                    if star:
+                        diff = plc.cartesian_to_polar(star[0], star[1], x0, y0)[1] - ii[1]
+                        if diff < 0:
+                            diff += 2 * np.pi
+                        test_u0.append(diff)
+
+                if len(test_u0) > 0:
+                    u0 = np.mean(test_u0)
 
             fits[1].header.set(align_x0_key, x0)
             fits[1].header.set(align_y0_key, y0)
             fits[1].header.set(align_u0_key, u0)
-            fits[1].header.set(align_star_area_key, np.sqrt(x_sigma ** 2 + y_sigma ** 2))
 
-            ax.cla()
-            ax.imshow(fits[1].data, origin='lower', cmap=cm.Greys_r,
-                      vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
-                      vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
-            ax.axis('off')
-
-            circle = mpatches.Circle((x0, y0), 2 * search_window_std * star_std, ec='r', fill=False)
+            circle = mpatches.Circle((x0, y0), 20 * star_std, ec='r', fill=False)
             ax.add_patch(circle)
-            for ii in comparisons[:10]:
+            for ii in comparisons[:int(check_num + 0.5)]:
                 circle = mpatches.Circle((x0 + ii[0] * np.cos(u0 + ii[1]), y0 + ii[0] * np.sin(u0 + ii[1])),
-                                         2 * search_window_std * star_std, ec='w', fill=False)
+                                         20 * star_std, ec='w', fill=False)
                 ax.add_patch(circle)
 
             canvas.draw()
+            root.update()
 
         else:
 
             fits[1].header.set(align_x0_key, False)
             fits[1].header.set(align_y0_key, False)
             fits[1].header.set(align_u0_key, False)
-            fits[1].header.set(align_star_area_key, False)
 
         fits.flush()
         fits.close()
