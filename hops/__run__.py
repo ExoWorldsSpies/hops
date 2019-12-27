@@ -1319,12 +1319,14 @@ def fitting_window(run):
             try:
                 catalogue_planets = []
 
-                ra_target, dec_target = ra_dec_string_to_deg(read_local_log('photometry', 'target_ra_dec'))
+                ra_target, dec_target = read_local_log('photometry', 'target_ra_dec').split(' ')
+                target = plc.Target(plc.Hours(ra_target), plc.Degrees(dec_target))
 
                 for catalogue_planet in catalogue.planets:
                     if not np.isnan(catalogue_planet.system.dec):
-                        catalogue_planets.append([np.sqrt((catalogue_planet.system.dec.deg - dec_target) ** 2
-                                                          + (catalogue_planet.system.ra.deg - ra_target) ** 2),
+                        test_target = plc.Target(plc.Degrees(catalogue_planet.system.ra.deg),
+                                                 plc.Degrees(catalogue_planet.system.dec.deg))
+                        catalogue_planets.append([test_target.distance_from_target(target).rad,
                                                   catalogue_planet.name])
                 catalogue_planets.sort()
 
@@ -1447,24 +1449,32 @@ def fitting_window(run):
 
             if update_planet.get():
 
-                parameters = plc.find_oec_parameters(planet.get(), catalogue=catalogue)
-                coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
-                planet_search.set(planet.get())
-                logg.set(parameters[1])
-                temperature.set(parameters[2])
-                metallicity.set(parameters[3])
-                rp_over_rs.set(parameters[4])
-                period.set(parameters[6])
-                sma_over_rs.set(parameters[7])
-                eccentricity.set(parameters[8])
-                inclination.set(parameters[9])
-                periastron.set(parameters[10])
-                mid_time.set(parameters[11])
-                target_ra_dec.set(coordinates)
+                try:
+
+                    parameters = plc.find_oec_parameters(planet.get(), catalogue=catalogue)
+                    coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
+                    planet_search.set(planet.get())
+                    logg.set(parameters[1])
+                    temperature.set(parameters[2])
+                    metallicity.set(parameters[3])
+                    rp_over_rs.set(parameters[4])
+                    period.set(parameters[6])
+                    sma_over_rs.set(parameters[7])
+                    eccentricity.set(parameters[8])
+                    inclination.set(parameters[9])
+                    periastron.set(parameters[10])
+                    mid_time.set(parameters[11])
+                    target_ra_dec.set(coordinates)
+
+                except:
+                    pass
 
             if target_ra_dec.get() == 'hh:mm:ss +dd:mm:ss':
-                coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
-                target_ra_dec.set(coordinates)
+                try:
+                    coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
+                    target_ra_dec.set(coordinates)
+                except:
+                    pass
 
             if phot_filter.get() == 'default':
                 for key in read_local_log_profile('filter_key').split(','):

@@ -15,14 +15,17 @@ def one_d_distribution(datax, step=None, abs_step=None, min_value=None, max_valu
     datax = np.array(datax, dtype=np.float)
     datax = datax.flatten()
 
-    if min_value is None:
+    if min_value is None and max_value is None:
         min_value = np.min(datax)
-
-    if max_value is None:
         max_value = np.max(datax)
+    else:
+        if max_value is None:
+            max_value = np.max(datax)
+        if min_value is None:
+            min_value = np.min(datax)
 
-    datax = datax[np.where(datax < max_value)]
-    datax = datax[np.where(datax > min_value)]
+        datax = datax[np.where(datax < max_value)]
+        datax = datax[np.where(datax > min_value)]
 
     if abs_step is not None:
         step = abs_step

@@ -280,6 +280,14 @@ class Target:
                                                                  str(int(dec_print.dms.s)).zfill(2),
                                                                  str(round(dec_print.dms.s - int(dec_print.dms.s), 4))[2:])
 
+    def distance_from_target(self, target):
+
+        if not isinstance(target, Target):
+            raise PyLCInputError('A plc.Target object needs to be passed.')
+
+        return Rad(np.arccos(
+            self.dec.sin * target.dec.sin + self.dec.cos * target.dec.cos * np.cos(self.ra.rad - target.ra.rad)))
+
     def __str__(self):
         return 'plc.Target(RA = {0} deg, DEC = {1} deg'.format(self.ra.deg, self.dec.deg_pm)
 

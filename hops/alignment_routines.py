@@ -135,8 +135,6 @@ def alignment():
         r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
         if r_position > 5 * star_std:
             calibration_stars_polar.append([r_position, u_position])
-        if len(calibration_stars_polar) > 100:
-            break
 
     stars = sorted(stars, key=lambda x: -x[-1])
 
@@ -145,15 +143,13 @@ def alignment():
         r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
         if r_position > 5 * star_std:
             calibration_stars_polar_snr.append([r_position, u_position])
-        if len(calibration_stars_polar_snr) > 100:
-            break
 
     if len(calibration_stars_polar) <= min_calibration_stars_number:
         check_num = len(calibration_stars_polar) - 0.5
         check_num_snr = len(calibration_stars_polar) - 0.5
     else:
         check_num = max(min_calibration_stars_number - 0.5, int(len(calibration_stars_polar)) / 10 - 0.5)
-        check_num_snr = min_calibration_stars_number - 0.5
+        check_num_snr = max(min_calibration_stars_number - 0.5, int(len(calibration_stars_polar)) / 20 - 0.5)
 
     x0, y0, u0, comparisons = x_ref_position, y_ref_position, 0, calibration_stars_polar
     x0, y0, u0, comparisons_snr = x_ref_position, y_ref_position, 0, calibration_stars_polar_snr
