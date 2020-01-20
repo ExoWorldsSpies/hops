@@ -706,6 +706,8 @@ def alignment():
             if rotation_detected:
 
                 test_u0 = []
+                test_cos = []
+                test_sin = []
 
                 for ii in comparisons[:int(check_num + 0.5)]:
                     star = plc.find_single_star(fits[1].data,
@@ -719,9 +721,17 @@ def alignment():
                         if diff < 0:
                             diff += 2 * np.pi
                         test_u0.append(diff)
+                        test_cos.append(np.cos(diff))
+                        test_sin.append(np.sin(diff))
 
                 if len(test_u0) > 0:
-                    u0 = np.mean(test_u0)
+                    test_u0 = np.mean(test_u0)
+                    test_cos = np.mean(test_cos)
+                    test_sin = np.mean(test_sin)
+
+                    u0 = np.arccos(test_cos)
+                    if test_sin < 0:
+                        u0 = np.pi + (np.pi - u0)
 
             fits[1].header.set(align_x0_key, x0)
             fits[1].header.set(align_y0_key, y0)
