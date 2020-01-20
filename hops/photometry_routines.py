@@ -480,7 +480,7 @@ def photometry():
         w.write('\n'.join([
             'The ExoClock Project is an effort to keep the ephemerides of exoplanets as precise as \n'
             'possible for planning future observations. If you have observed an exoplnaet you can\n'
-            'contribute your observation at: \n\nhttps://ariel-gbfu.azurewebsites.net\n\n'
+            'contribute your observation at: \n\nhttps://www.exoclock.space\n\n'
             'File to upload: {0} \n(this is a suggestion based on the scatter \nof your light curves, '
             'you can also try \nuploading {1})'.format(*files_to_upload),
             '',

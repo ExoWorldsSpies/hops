@@ -85,10 +85,19 @@ if not os.path.isfile(local_log_profile_file):
 
 if not os.path.isfile(local_log_user_file):
     shutil.copy(log_user_file, local_log_user_file)
+else:
+    try:
+        test = yaml.load(open(local_log_profile_file, 'r'), Loader=yaml.SafeLoader)
+    except:
+        shutil.copy(log_user_file, local_log_user_file)
 
 
 def initiate_local_log_file():
-    if not os.path.isfile(local_log_file):
+    # if not os.path.isfile(local_log_file):
+    #     shutil.copy(log_file, os.path.join(os.path.abspath('.'), local_log_file))
+    try:
+        test = yaml.load(open(local_log_file, 'r'), Loader=yaml.SafeLoader)
+    except:
         shutil.copy(log_file, os.path.join(os.path.abspath('.'), local_log_file))
 
 
