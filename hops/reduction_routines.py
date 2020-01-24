@@ -267,19 +267,21 @@ def reduction():
 
         # correct it with master bias_files, master dark_files and master flat_files
 
-        fits = pf.open(science_file, memmap=False)
+        fits_file = pf.open(science_file, memmap=False)
 
         try:
-            fits = [fits['SCI']]
+            fits = [fits_file['SCI']]
         except KeyError:
             sci_id = 0
-            for sci_id in range(len(fits)):
+            for sci_id in range(len(fits_file)):
                 try:
-                    if (fits[sci_id].data).all():
+                    if (fits_file[sci_id].data).all():
                         break
                 except:
                     pass
-            fits = [fits[sci_id]]
+            fits = [fits_file[sci_id]]
+
+        fits_file.close()
 
         data_frame = np.ones_like(fits[0].data) * fits[0].data
         data_frame = (data_frame - master_bias - fits[0].header[exposure_time_key] * master_dark) / master_flat
@@ -374,7 +376,7 @@ def reduction():
         if not trash:
             list_to_remove = []
         else:
-            list_to_remove = np.int_(trash)
+            list_to_remove = list(np.int_(trash))
 
         root = Tk()
         f = Figure()
@@ -414,6 +416,8 @@ def reduction():
                    vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
                    vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
         ax2.axis('off')
+
+        fits.close()
 
         ax3.text(-100105, -100100, 'Select faulty frames', va='center', ha='center')
         ax3.text(-100111, -100101, '>On the time-sky graph above\n'
