@@ -1079,7 +1079,7 @@ def photometry_window(run):
         [],
         [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
         [],
-        [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5]],
+        [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5, 2]],
     ]
 
     for target in range(max_targets):
@@ -1099,12 +1099,12 @@ def photometry_window(run):
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
                                [targets_aperture_entry[target], 5, 2]])
 
-    setup_list.append([[show_fov_button, 4, 2]])
-    setup_list.append([[flip_fov_button, 4], [mirror_fov_button, 5]])
+    setup_list.append([[show_fov_button, 5, 2]])
+    setup_list.append([[flip_fov_button, 5], [mirror_fov_button, 6]])
     setup_list.append([])
-    setup_list.append([[photometry_button, 1, 4]])
-    setup_list.append([[proceed_to_fitting_button, 1, 4]])
-    setup_list.append([[return_to_reduction_button, 1, 4]])
+    setup_list.append([[photometry_button, 1, 6]])
+    setup_list.append([[proceed_to_fitting_button, 1, 6]])
+    setup_list.append([[return_to_reduction_button, 1, 6]])
     setup_list.append([])
 
     setup_window(root, setup_list)
