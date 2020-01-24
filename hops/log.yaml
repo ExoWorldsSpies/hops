@@ -95,7 +95,7 @@ windows:
   - bold
   button_height: 2
   button_width: 30
-  created_by: "HOPS 2.5.2, Copyright (c) 2017-2019, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
+  created_by: "HOPS 2.5.3, Copyright (c) 2017-2019, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
   entries_bd: 3
   fitting_window: FITTING
   frame_low_std: -3
