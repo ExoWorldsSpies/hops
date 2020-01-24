@@ -751,6 +751,10 @@ def photometry_window(run):
         if not targets_y_position[-1].get():
             targets_y_position[-1].set(0)
 
+    targets_peak_counts = [DoubleVar(root, value=0)]
+    for comparison in range(max_comparisons):
+        targets_peak_counts.append(DoubleVar(root, value=0))
+
     targets_aperture = [IntVar(root, value=read_local_log('photometry', 'target_aperture'))]
     for comparison in range(max_comparisons):
         targets_aperture.append(
@@ -768,7 +772,11 @@ def photometry_window(run):
 
     # create widgets
 
-    position_label = Label(root, text='     Position     ')
+    position_x_label = Label(root, text='X')
+
+    position_y_label = Label(root, text='Y')
+
+    peak_counts_label = Label(root, text='Peak')
 
     box_semi_length_label = Label(root, text='Box semi-length')
 
@@ -784,6 +792,10 @@ def photometry_window(run):
     targets_y_position_label = [Label(root, textvar=targets_y_position[0])]
     for comparison in range(max_comparisons):
         targets_y_position_label.append(Label(root, textvar=targets_y_position[comparison + 1]))
+
+    targets_peak_counts_label = [Label(root, textvar=targets_peak_counts[0])]
+    for comparison in range(max_comparisons):
+        targets_peak_counts_label.append(Label(root, textvar=targets_peak_counts[comparison + 1]))
 
     targets_aperture_entry = [Entry(root, textvar=targets_aperture[0], validate='key')]
     for comparison in range(max_comparisons):
@@ -948,6 +960,12 @@ def photometry_window(run):
                         targets_text[i_target].set_y(targets_y_position[i_target].get() -
                                                      targets_aperture[i_target].get() - 1)
 
+                        y1 = int(targets_y_position[i_target].get() - targets_aperture[i_target].get())
+                        y2 = y1 + int(2 * targets_aperture[i_target].get()) + 2
+                        x1 = int(targets_x_position[i_target].get() - targets_aperture[i_target].get())
+                        x2 = x1 + int(2 * targets_aperture[i_target].get()) + 2
+                        targets_peak_counts[i_target].set(int(np.max(fits[1].data[y1:y2, x1:x2])))
+
                         targets_aperture_entry[i_target]['state'] = NORMAL
 
             except ValueError:
@@ -987,12 +1005,12 @@ def photometry_window(run):
         write_local_log('photometry', float(target_polar[1]), 'target_u_position')
 
         for i_comparison in range(max_comparisons):
-            write_local_log('photometry', int(targets_x_position[i_comparison + 1].get()),
-                      'comparison_{0}_x_position'.format(i_comparison + 1))
-            write_local_log('photometry', int(targets_y_position[i_comparison + 1].get()),
-                      'comparison_{0}_y_position'.format(i_comparison + 1))
+            write_local_log('photometry', targets_x_position[i_comparison + 1].get(),
+                            'comparison_{0}_x_position'.format(i_comparison + 1))
+            write_local_log('photometry', targets_y_position[i_comparison + 1].get(),
+                            'comparison_{0}_y_position'.format(i_comparison + 1))
             write_local_log('photometry', targets_aperture[i_comparison + 1].get(),
-                      'comparison_{0}_aperture'.format(i_comparison + 1))
+                            'comparison_{0}_aperture'.format(i_comparison + 1))
 
             if 0 not in [targets_x_position[i_comparison + 1].get(), targets_y_position[i_comparison + 1].get()]:
 
@@ -1061,7 +1079,7 @@ def photometry_window(run):
         [],
         [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
         [],
-        [[position_label, 2, 2], [box_semi_length_label, 4]],
+        [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5]],
     ]
 
     for target in range(max_targets):
@@ -1069,14 +1087,17 @@ def photometry_window(run):
         if target == 3:
             setup_list.append([[created_by_label, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
+                               [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
+                               [targets_aperture_entry[target], 5, 2]])
         elif target == 5:
             setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
+                               [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
+                               [targets_aperture_entry[target], 5, 2]])
         else:
             setup_list.append([[targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
-                               [targets_y_position_label[target], 3], [targets_aperture_entry[target], 4, 2]])
+                               [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
+                               [targets_aperture_entry[target], 5, 2]])
 
     setup_list.append([[show_fov_button, 4, 2]])
     setup_list.append([[flip_fov_button, 4], [mirror_fov_button, 5]])
