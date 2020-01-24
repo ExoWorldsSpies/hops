@@ -898,7 +898,7 @@ def photometry_window(run):
                         star = plc.find_single_star(
                             fits[1].data, event.xdata, event.ydata,
                             mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                            burn_limit=burn_limit, star_std=star_std)
+                            burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std)
 
                         if star:
 
