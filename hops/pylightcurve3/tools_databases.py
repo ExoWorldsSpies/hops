@@ -11,8 +11,13 @@ import time
 import pickle
 import shutil
 import datetime
-
+import ssl
+import urllib
 from urllib.request import urlretrieve
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
 
 class Database:
@@ -89,8 +94,13 @@ class Database:
                 for dbx_file in dbx_files:
                     if not os.path.isfile(os.path.join(package_path, dbx_files[dbx_file]['local_path'])):
                         print(dbx_file)
-                        urlretrieve(dbx_files[dbx_file]['link'], os.path.join(package_path,
-                                                                              dbx_files[dbx_file]['local_path']))
+                        try:
+                            urlretrieve(dbx_files[dbx_file]['link'], os.path.join(package_path,
+                                                                                  dbx_files[dbx_file]['local_path']))
+                        except:
+                            with urllib.request.urlopen(dbx_files[dbx_file]['link'], context=ctx) as u, \
+                                        open(os.path.join(package_path, dbx_files[dbx_file]['local_path']), 'wb') as f:
+                                f.write(u.read())
 
                 for update_file in glob.glob(os.path.join(directory_path, 'update_*')):
                     shutil.move(update_file, update_file.replace('update_', ''))
