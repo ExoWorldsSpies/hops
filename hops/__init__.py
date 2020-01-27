@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-__version__ = '2.5.3'
+__version__ = '2.5.4'
 __message__ = 'New feature - Observation planner that takes into account your horizon!\nImportant update - More stable alignment for faint targets.'
 
 from .__run__ import run_app

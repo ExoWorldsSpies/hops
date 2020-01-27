@@ -91,12 +91,11 @@ def photometry():
     align_x0_key = read_local_log('pipeline_keywords', 'align_x0_key')
     align_y0_key = read_local_log('pipeline_keywords', 'align_y0_key')
     align_u0_key = read_local_log('pipeline_keywords', 'align_u0_key')
-    # exposure_time_key = read_log('pipeline_keywords', 'exposure_time_key')
+    exposure_time_key = read_log('pipeline_keywords', 'exposure_time_key')
     observation_date_key = read_local_log('pipeline_keywords', 'observation_date_key')
     observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
+    mid_exposure = read_local_log('photometry', 'mid_exposure')
     star_std = read_local_log('alignment', 'star_std')
-    search_window_std = read_local_log('alignment', 'search_window_std')
-    target_ra_dec = read_local_log('photometry', 'target_ra_dec')
     sky_inner_aperture = read_local_log('photometry', 'sky_inner_aperture')
     sky_outer_aperture = read_local_log('photometry', 'sky_outer_aperture')
     max_comparisons = read_local_log('photometry', 'max_comparisons')
@@ -170,7 +169,9 @@ def photometry():
                 observation_time = ' '.join([fits[1].header[observation_date_key].split('T')[0],
                                              fits[1].header[observation_time_key]])
 
-            julian_date = plc.UTC(observation_time).jd
+            exp_time = fits[1].header[exposure_time_key]
+
+            julian_date = plc.UTC(observation_time).jd - 0.5 * float(mid_exposure) * exp_time / 60.0 / 60.0 / 24.0
 
             ref_x_position = fits[1].header[align_x0_key]
             ref_y_position = fits[1].header[align_y0_key]
@@ -204,7 +205,8 @@ def photometry():
                                                              np.cos(ref_u_position + targets_u_position[target])),
                                                 (ref_y_position + targets_r_position[target] *
                                                              np.sin(ref_u_position + targets_u_position[target])),
-                                                mean=fits[1].header[mean_key], std=fits[1].header[std_key]
+                                                mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                                burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std
                                                 )
 
                     if star:
@@ -445,7 +447,6 @@ def photometry():
         shutil.move(light_curve_aperture_file, '{0}/{1}'.format(photometry_directory, light_curve_aperture_file))
         shutil.copy('log.yaml', '{0}/log.yaml'.format(photometry_directory))
 
-        exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
         fits = pf.open(science[np.random.randint(len(science))])
         exp_time = round(fits[1].header[exposure_time_key], 1)
 
@@ -479,7 +480,7 @@ def photometry():
         w = open('{0}/ExoClock_info.txt'.format(photometry_directory), 'w')
         w.write('\n'.join([
             'The ExoClock Project is an effort to keep the ephemerides of exoplanets as precise as \n'
-            'possible for planning future observations. If you have observed an exoplnaet you can\n'
+            'possible for planning future observations. If you have observed an exoplanet you can\n'
             'contribute your observation at: \n\nhttps://www.exoclock.space\n\n'
             'File to upload: {0} \n(this is a suggestion based on the scatter \nof your light curves, '
             'you can also try \nuploading {1})'.format(*files_to_upload),
@@ -487,7 +488,9 @@ def photometry():
             'Planet: {0} \n(this is the closest known exoplanet found \nin the catalogue, if this is not the '
             'target \nyou observed, please ignore)'.format(str(catalogue_planets[0][1]).replace(' ', '')),
             '',
-            'Time  format: JD_UTC \n(UTC-based Julian date)',
+            'Time format: JD_UTC \n(UTC-based Julian date)',
+            '',
+            'Time stamp: Exposure start \n(the time produced refers to the beginning of each exposure)',
             '',
             'Flux format: Flux \n(flux of target over summed flux of comparisons)',
             '',

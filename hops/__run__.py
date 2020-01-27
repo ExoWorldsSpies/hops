@@ -234,6 +234,7 @@ def reduction_alignment_window(run):
     target_ra_dec = StringVar(root, value=read_log('photometry', 'target_ra_dec'))
     auto_target_ra_dec = StringVar(root, value=read_log('photometry', 'auto_target_ra_dec'))
     use_auto_target_ra_dec = BooleanVar(root, value=read_log('photometry', 'use_auto_target_ra_dec'))
+    mid_exposure = BooleanVar(root, value=read_log('photometry', 'mid_exposure'))
 
     # set progress variables, useful for updating the window
 
@@ -289,6 +290,10 @@ def reduction_alignment_window(run):
     target_ra_dec_label = Label(root, text='Manual target RA DEC\n(hh:mm:ss +/-dd:mm:ss)')
     target_ra_dec_entry = Entry(root, textvariable=target_ra_dec)
     target_ra_dec_test = Label(root, text=' ')
+
+    mid_exposure_entry = Checkbutton(root, text='If the time stamp in your fits files refers to the mid-exposure\n'
+                                                'instead of the exposure start, please tick this box.',
+                                     variable=mid_exposure)
 
     show_header_button = Button(root, text='Show header')
 
@@ -375,6 +380,7 @@ def reduction_alignment_window(run):
             observation_time_key_entry['state'] = DISABLED
             target_ra_dec_entry['state'] = DISABLED
             use_auto_target_ra_dec_entry['state'] = DISABLED
+            mid_exposure_entry['state'] = DISABLED
             show_header_button['state'] = DISABLED
             run_reduction_alignment_button['state'] = DISABLED
             observing_planner_button['state'] = DISABLED
@@ -394,6 +400,7 @@ def reduction_alignment_window(run):
             observation_time_key_entry['state'] = DISABLED
             target_ra_dec_entry['state'] = DISABLED
             use_auto_target_ra_dec_entry['state'] = DISABLED
+            mid_exposure_entry['state'] = DISABLED
             show_header_button['state'] = DISABLED
             run_reduction_alignment_button['state'] = DISABLED
             observing_planner_button['state'] = NORMAL
@@ -420,6 +427,7 @@ def reduction_alignment_window(run):
                 auto_target_ra_dec.set(read_local_log('photometry', 'auto_target_ra_dec'))
                 auto_target_ra_dec_entry.configure(text=auto_target_ra_dec.get())
                 use_auto_target_ra_dec.set(read_local_log('photometry', 'use_auto_target_ra_dec'))
+                mid_exposure.set(read_local_log('photometry', 'mid_exposure'))
 
             observation_files_entry['state'] = NORMAL
             bias_files_entry['state'] = NORMAL
@@ -458,6 +466,7 @@ def reduction_alignment_window(run):
                 observation_time_key_entry['state'] = DISABLED
                 target_ra_dec_entry['state'] = DISABLED
                 use_auto_target_ra_dec_entry['state'] = DISABLED
+                mid_exposure_entry['state'] = DISABLED
                 show_header_button['state'] = DISABLED
                 run_reduction_alignment_button['state'] = DISABLED
 
@@ -465,6 +474,7 @@ def reduction_alignment_window(run):
 
                 target_ra_dec_entry['state'] = NORMAL
                 use_auto_target_ra_dec_entry['state'] = NORMAL
+                mid_exposure_entry['state'] = NORMAL
                 exposure_time_key_entry['state'] = NORMAL
                 observation_date_key_entry['state'] = NORMAL
                 observation_time_key_entry['state'] = NORMAL
@@ -600,6 +610,7 @@ def reduction_alignment_window(run):
         write_local_log('reduction', bins_test, 'bin_fits')
         write_local_log('photometry', target_ra_dec.get(), 'target_ra_dec')
         write_local_log('photometry', use_auto_target_ra_dec.get(), 'use_auto_target_ra_dec')
+        write_local_log('photometry', mid_exposure.get(), 'mid_exposure')
         write_local_log('pipeline_keywords', exposure_time_key.get(), 'exposure_time_key')
         write_local_log('pipeline_keywords', observation_date_key.get(), 'observation_date_key')
         write_local_log('pipeline_keywords', observation_time_key.get(), 'observation_time_key')
@@ -667,6 +678,7 @@ def reduction_alignment_window(run):
         [[exposure_time_key_label, 1], [exposure_time_key_entry, 2], [exposure_time_key_test, 3]],
         [[Btn, 0, 1, 2], [observation_date_key_label, 1], [observation_date_key_entry, 2], [observation_date_key_test, 3]],
         [[observation_time_key_label, 1], [observation_time_key_entry, 2], [observation_time_key_test, 3]],
+        [[mid_exposure_entry, 1, 3]],
         [[show_header_button, 2]],
         [],
         [[run_reduction_alignment_button, 1, 3]],
@@ -1308,14 +1320,16 @@ def fitting_window(run):
     update_headers_button['command'] = update_headers
 
     stucture = [[], [[update_headers_button, 2]], []]
-    for header in list(core_headers.keys())[:int(len(list(core_headers.keys()))/2)]:
+    for header in list(core_headers.keys())[:int(len(list(core_headers.keys())) / 2)]:
         stucture.append([[labels[header], 1], [entries[header], 2]])
 
     stucture.append([])
 
-    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys()))/2)+1:]):
-        stucture[3+jj].append([labels[header], 3])
-        stucture[3+jj].append([entries[header], 4])
+    for jj, header in enumerate(list(core_headers.keys())[int(len(list(core_headers.keys())) / 2):]):
+        stucture[3 + jj].append([labels[header], 3])
+        stucture[3 + jj].append([entries[header], 4])
+
+    stucture.append([])
 
     setup_window(my_profile_window.root, stucture)
 

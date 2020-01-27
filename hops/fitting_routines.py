@@ -405,8 +405,7 @@ def fitting():
     light_curve_0 = light_curve_0[flag]
     light_curve_1 = light_curve_1[flag]
 
-    ra_dec_string = read_local_log('photometry', 'target_ra_dec')
-    ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
+    ra_dec_string = target_ra_dec.replace(':', ' ').split(' ')
     target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
     light_curve_0 = np.array([plc.JD(ff).bjd_tdb(target) for ff in light_curve_0])
 
@@ -461,10 +460,13 @@ def fitting():
     obs_duration = round((light_curve_0[-1] - light_curve_0[0]) * 24, 1)
 
     fits = pf.open(science[np.random.randint(len(science))])
-    exp_time = round(fits[1].header[exposure_time_key], 1)
+    exp_time = fits[1].header[exposure_time_key]
 
-    mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, np.ones_like(light_curve_1) *
-                                         np.std(0.5 * (light_curve_1[:-1] - light_curve_1[1:]))]],
+    sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
+    sigma = np.std(sigma, 0)
+
+    mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0 + 0.5 * exp_time / 60.0 / 60.0 / 24.0,
+                                           light_curve_1, sigma]],
                                          method='claret',
                                          limb_darkening_coefficients=limb_darkening_coefficients,
                                          rp_over_rs=rp_over_rs,
@@ -487,8 +489,8 @@ def fitting():
                                          fit_periastron=periastron_fit,
                                          fit_mid_time=mid_time_fit,
                                          precision=3,
-                                         exp_time=exp_time,
-                                         time_factor=int(exp_time / 10),
+                                         exp_time=round(exp_time, 1),
+                                         time_factor=int(round(exp_time, 1) / 10),
                                          counter=Counter('FITTING', 'FITTING', 100, 100)
                                          )
 
@@ -503,6 +505,37 @@ def fitting():
                                                                   phot_filter)],
         observer, '{0} / {1} / {2}'.format(observatory, telescope, camera), fitting_directory)
     shutil.copy('log.yaml', '{0}{1}log.yaml'.format(fitting_directory, os.sep))
+
+    w = open('{0}/output_description.txt'.format(fitting_directory), 'w')
+    w.write('\n'.join([
+        '--- results.txt ---',
+        'Contains the fitting results, where N0, L0, Q0 are the 0th, 1st and 2nd order systematics,',
+        'fitted on the light curve at the same time as the transit, ldc1, ldc2, ldc3, ldc4 are the limb darkening',
+        'coefficients calculated for the specific filter and stellar properties given during the fitting process,',
+        'rp is the planet to star radius ratio (no units), a is the semi-major axis relatively to the stellar radius',
+        '(no units), e is the eccentricity (no units), i is the inclination (degrees), w is the argument of periastron',
+        '(degrees) and mt is the mid-transit time (BJD_TDB).',
+        '',
+        '--- set_1_model.txt ---',
+        'Contains the data and the final model. The columns contain the following information (in order):',
+        '1. mid-exposure time in BJD_TDB',
+        '2. orbital phase',
+        '3. relative flux',
+        '4. uncertainty on the relative flux used during fitting',
+        '5. model',
+        '6. fitting residuals',
+        '',
+        '--- set_1_detrended_model.txt ---',
+        'Contains the detrended data and the final model, where all fluxes have been divided by the best-fit model for',
+        'the systematics. The columns contain the following information (in order):',
+        '1. mid-exposure time in BJD_TDB',
+        '2. orbital phase',
+        '3. detrended relative flux',
+        '4. detrended uncertainty on the relative flux used during fitting',
+        '5. detrended model',
+        '6. detrended fitting residuals',
+    ]))
+    w.close()
 
     roott = Tk()
     exit_var_2 = BooleanVar(value=False)
