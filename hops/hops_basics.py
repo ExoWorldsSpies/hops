@@ -66,6 +66,14 @@ import webbrowser
 def openweb():
     webbrowser.open("https://www.exoworldsspies.com/en/software", new=1)
 
+def openweb_simbad(radec_string):
+
+    def mock(radec_string=radec_string):
+        radec_string = radec_string.replace('+', '%2B').replace(' ', '+')
+        webbrowser.open("http://simbad.u-strasbg.fr/simbad/sim-coo?Coord={0}&CooFrame=ICRS&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=20&Radius.unit=arcmin&submit=submit+query&CoordList=".format(radec_string), new=1)
+
+    return mock
+
 __location__ = os.path.abspath(os.path.dirname(__file__))
 __home__ = os.path.expanduser('~')
 

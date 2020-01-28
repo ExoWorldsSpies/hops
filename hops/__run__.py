@@ -748,6 +748,7 @@ def photometry_window(run):
     search_window_std = read_local_log('alignment', 'search_window_std')
     max_comparisons = read_local_log('photometry', 'max_comparisons')
     max_targets = max_comparisons + 1
+    target_ra_dec = read_local_log('fitting', 'target_ra_dec')
 
     targets_x_position = [DoubleVar(root, value=read_local_log('photometry', 'target_x_position'))]
     for comparison in range(max_comparisons):
@@ -783,6 +784,10 @@ def photometry_window(run):
     running = BooleanVar(root, value=False)
 
     # create widgets
+
+    help_label =Label(root, text="Remember, the best comparison stars need to be:\n"
+                                 "a) close to your target, b) of similar magnitude to the target,\n"
+                                 "c) of similar colour to the target, d) photometrically stable, i.e. not variables!")
 
     position_x_label = Label(root, text='X')
 
@@ -1082,26 +1087,31 @@ def photometry_window(run):
 
     Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
 
+    Btn2 = Button(root, text="CHECK SIMBAD", command=openweb_simbad(target_ra_dec))
+
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
     window_label = Label(root, text='Photometry')
     created_by_label = Label(root, text=read_log('windows', 'created_by').replace(',', '\n'))
 
     setup_list = [
+        [[logo_label, 0, 1, 8]],
         [],
-        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
+        [[window_label, 1, 6, 1, 'title']],
+        [[help_label, 1, 6]],
+        [[Btn2, 1, 6]],
         [],
         [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5, 2]],
     ]
 
     for target in range(max_targets):
 
-        if target == 3:
+        if target == 0:
             setup_list.append([[created_by_label, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
                                [targets_aperture_entry[target], 5, 2]])
-        elif target == 5:
+        elif target == 2:
             setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
@@ -1115,8 +1125,7 @@ def photometry_window(run):
     setup_list.append([[flip_fov_button, 5], [mirror_fov_button, 6]])
     setup_list.append([])
     setup_list.append([[photometry_button, 1, 6]])
-    setup_list.append([[proceed_to_fitting_button, 1, 6]])
-    setup_list.append([[return_to_reduction_button, 1, 6]])
+    setup_list.append([[proceed_to_fitting_button, 1, 3], [return_to_reduction_button, 4, 3]])
     setup_list.append([])
 
     setup_window(root, setup_list)
@@ -1163,7 +1172,7 @@ def fitting_window(run):
     inclination = DoubleVar(value=read_local_log('fitting', 'inclination'))
     eccentricity = DoubleVar(value=read_local_log('fitting', 'eccentricity'))
     periastron = DoubleVar(value=read_local_log('fitting', 'periastron'))
-    target_ra_dec = StringVar(root, value=read_log('fitting', 'target_ra_dec'))
+    target_ra_dec = StringVar(root, value=read_local_log('fitting', 'target_ra_dec'))
     observer = StringVar(value=read_local_log('fitting', 'observer'))
     observatory = StringVar(value=read_local_log('fitting', 'observatory'))
     telescope = StringVar(value=read_local_log('fitting', 'telescope'))
