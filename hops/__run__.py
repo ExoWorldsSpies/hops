@@ -748,7 +748,7 @@ def photometry_window(run):
     search_window_std = read_local_log('alignment', 'search_window_std')
     max_comparisons = read_local_log('photometry', 'max_comparisons')
     max_targets = max_comparisons + 1
-    target_ra_dec = read_local_log('fitting', 'target_ra_dec')
+    target_ra_dec = read_local_log('photometry', 'target_ra_dec')
 
     targets_x_position = [DoubleVar(root, value=read_local_log('photometry', 'target_x_position'))]
     for comparison in range(max_comparisons):
