@@ -91,7 +91,7 @@ def photometry():
     align_x0_key = read_local_log('pipeline_keywords', 'align_x0_key')
     align_y0_key = read_local_log('pipeline_keywords', 'align_y0_key')
     align_u0_key = read_local_log('pipeline_keywords', 'align_u0_key')
-    exposure_time_key = read_log('pipeline_keywords', 'exposure_time_key')
+    exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
     observation_date_key = read_local_log('pipeline_keywords', 'observation_date_key')
     observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
     mid_exposure = read_local_log('photometry', 'mid_exposure')

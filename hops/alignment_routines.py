@@ -111,7 +111,7 @@ def alignment():
     stars = []
     std_limit = 20.0
     psf = ((2, 0), (2, 0))
-    while len(stars) < min_calibration_stars_number and std_limit >= 5.0:
+    while len(stars) < 100 and std_limit >= 5.0:
         stars, psf = plc.find_all_stars(fits[1].data,
                                         mean=fits[1].header[mean_key], std=fits[1].header[std_key],
                                         std_limit=std_limit, burn_limit=2.0 * burn_limit / 3, star_std=2,

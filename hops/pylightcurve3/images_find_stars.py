@@ -23,11 +23,14 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
                                    np.arange(y_min, y_max + 1) + 0.5)
 
         dataz = data_array[y_min: y_max + 1, x_min: x_max + 1]
-        popt, pcov = fit_two_d_gaussian(datax, datay, dataz, positive=True, maxfev=1000)
+        popt, pcov = fit_two_d_gaussian(datax, datay, dataz, point_xy=(centroid_x, centroid_y),
+                                        sigma=star_std, positive=True, maxfev=1000)
 
-        if (popt[0] > mean + std_limit * std and popt[0] + popt[1] < burn_limit
-                and pcov[0][0] > 0 and popt[0] > std_limit * np.sqrt(pcov[0][0])):
-
+        if popt[0] > std_limit * std and popt[0] + popt[1] < burn_limit:
+            if np.sqrt(pcov[0][0]) != np.inf:
+                if popt[0] > std_limit * np.sqrt(pcov[0][0]):
+                    star = (popt, pcov)
+            else:
                 star = (popt, pcov)
 
     except:

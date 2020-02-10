@@ -451,7 +451,7 @@ def run_observing_planner():
     target_ra = StringVar(root, value=' ')
     target_dec = StringVar(root, value=' ')
     now = datetime.datetime.now()
-    obs_year_month = StringVar(root, value='{0} {1}'.format(now.year, now.month))
+    obs_year_month = StringVar(root, value='{0} {1}'.format(now.year, str(now.month).zfill(2)))
     latitude = StringVar(root, value=read_local_log_profile('observatory_lat'))
     longitude = StringVar(root, value=read_local_log_profile('observatory_long'))
     horizon_s = StringVar(root, value=read_local_log_profile('observatory_horizon_s'))

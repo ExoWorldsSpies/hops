@@ -13,7 +13,7 @@ class Databases:
     def __init__(self):
 
         self.clablimb = Database('clablimb', 'pylightcurve', __file__, date_to_update='191023').path
-        self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='191028',
+        self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='200210',
                                   expire_date='200628', frequencey=30).path
         self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='191026', frequencey=1).path
 
