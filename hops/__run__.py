@@ -706,6 +706,7 @@ def reduction_alignment_window(run):
                 version = str(i).split()[-1][1:-4]
             if len(str(i).split('__message__')) > 1:
                 message = str(i).split('__message__ = ')[-1][1:-4]
+        message = message.replace('\\\\n', '\n')
 
         v1 = int(version.split('.')[0]) * 100 * 100 * 100
         v2 = int(version.split('.')[1]) * 100 * 100
