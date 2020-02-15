@@ -518,18 +518,17 @@ def reduction_alignment_window(run):
                         break
 
                 if check_ra[0] and check_dec[0]:
-                    # try:
-                    if isinstance(check_ra[2], str):
-                        target = plc.Target(plc.Hours(check_ra[2]), plc.Degrees(check_dec[2]))
-                    elif isinstance(check_ra[2], float):
-                        target = plc.Target(plc.Degrees(check_ra[2]), plc.Degrees(check_dec[2]))
-                    auto_target_ra_dec_entry.configure(
-                        text=target.coord)
-                    use_auto_target_ra_dec_entry['state'] = NORMAL
-                    # except:
-                    #     auto_target_ra_dec_entry.configure(text='None detected')
-                    #     use_auto_target_ra_dec.set(0)
-                    #     use_auto_target_ra_dec_entry['state'] = DISABLED
+                    try:
+                        if isinstance(check_ra[2], str):
+                            target = plc.Target(plc.Hours(check_ra[2].replace(',', '.')), plc.Degrees(check_dec[2].replace(',', '.')))
+                        elif isinstance(check_ra[2], float):
+                            target = plc.Target(plc.Degrees(check_ra[2]), plc.Degrees(check_dec[2]))
+                        auto_target_ra_dec_entry.configure(text=target.coord)
+                        use_auto_target_ra_dec_entry['state'] = NORMAL
+                    except:
+                        auto_target_ra_dec_entry.configure(text='None detected')
+                        use_auto_target_ra_dec.set(0)
+                        use_auto_target_ra_dec_entry['state'] = DISABLED
                 else:
                     auto_target_ra_dec_entry.configure(text='None detected')
                     use_auto_target_ra_dec.set(0)
@@ -940,6 +939,7 @@ def photometry_window(run):
                         targets_x_position[targets_indication.get()].set(0)
                         targets_y_position[targets_indication.get()].set(0)
                         targets_aperture[targets_indication.get()].set(0)
+                        targets_peak_counts[targets_indication.get()].set(0)
 
                         click_off_axis.set(False)
 

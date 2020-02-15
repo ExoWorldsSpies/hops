@@ -14,7 +14,7 @@ from ._1databases import databases
 
 def oec_catalogue():
 
-        oec_file = glob.glob(os.path.join(databases.oec, '*'))[0]
+        oec_file = os.path.join(databases.oec, 'systems.xml.gz')
 
         return exodata.OECDatabase(gzip.GzipFile(oec_file), stream=True)
 

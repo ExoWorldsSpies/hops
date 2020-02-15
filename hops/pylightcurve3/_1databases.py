@@ -15,7 +15,7 @@ class Databases:
         self.clablimb = Database('clablimb', 'pylightcurve', __file__, date_to_update='191023').path
         self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='200210',
                                   expire_date='200628', frequencey=30).path
-        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='191026', frequencey=1).path
+        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200215', frequencey=1).path
 
     def phoenix(self):
         return Database('phoenixplc3', 'pylightcurve', __file__, date_to_update='181213', ask_size='3.5GB').path
