@@ -87,6 +87,14 @@ class Database:
                 dbx_files = pickle.load(open(info_file_path, 'rb'))
                 dbx_files = dbx_files['{0}_{1}'.format(database_name, directory_name)]
 
+                if database_name == 'clablimb':
+                    if os.path.isfile(glob.glob(os.path.join(directory_path, '*.pickle'))[0]):
+                        try:
+                            xx = pickle.load(open(glob.glob(os.path.join(directory_path, '*.pickle'))[0], 'rb'))
+                            del xx
+                        except:
+                            os.remove(glob.glob(os.path.join(directory_path, '*.pickle'))[0])
+
                 for current_file in glob.glob(os.path.join(directory_path, '*')):
                     if os.path.split(current_file)[1] not in dbx_files:
                         os.remove(current_file)
