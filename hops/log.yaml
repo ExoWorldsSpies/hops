@@ -5,6 +5,13 @@ alignment:
   search_window_std: 5
   shift_tolerance_p: 10
   star_std: 2
+  star_psf: 0
+  star_psf_x: 0
+  star_psf_y: 0
+  min_x: 0
+  min_y: 0
+  max_x: 0
+  max_y: 0
 fitting:
   binning: 1
   burn: 30000
@@ -30,7 +37,7 @@ fitting:
   period: 0.0
   period_fit: false
   planet: Choose Planet
-  planet_search: ' '
+  manual_planet: False
   rp_over_rs: 0.0
   rp_over_rs_fit:
   - 0.5
@@ -96,7 +103,7 @@ windows:
   - bold
   button_height: 2
   button_width: 30
-  created_by: "HOPS 2.5.6, Copyright (c) 2017-2020, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
+  created_by: "HOPS 2.5.7, Copyright (c) 2017-2020, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
   entries_bd: 3
   fitting_window: FITTING
   frame_low_std: -3

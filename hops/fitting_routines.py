@@ -341,16 +341,12 @@ def fitting():
 
     fitting_directory = read_local_log('pipeline', 'fitting_directory')
     reduction_directory = read_local_log('pipeline', 'reduction_directory')
-    observation_date_key = read_local_log('pipeline_keywords', 'observation_date_key')
-    observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
     exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
     light_curve_file = read_local_log('fitting', 'light_curve_file')
-    binning = read_local_log('fitting', 'binning')
     scatter = read_local_log('fitting', 'scatter')
     iterations = read_local_log('fitting', 'iterations')
     burn = read_local_log('fitting', 'burn')
     planet = read_local_log('fitting', 'planet')
-    planet_search = read_local_log('fitting', 'planet_search')
     metallicity = read_local_log('fitting', 'metallicity')
     temperature = read_local_log('fitting', 'temperature')
     logg = read_local_log('fitting', 'logg')
@@ -374,40 +370,6 @@ def fitting():
     telescope = read_local_log('fitting', 'telescope')
     camera = read_local_log('fitting', 'camera')
     target_ra_dec = read_local_log('fitting', 'target_ra_dec')
-
-    limb_darkening_coefficients = plc.clablimb('claret', logg, max(4000, temperature), metallicity,
-                                               filter_map[phot_filter])
-
-    light_curve = np.loadtxt(light_curve_file, unpack=True)
-
-    if binning > 1:
-        start = len(light_curve[0]) - (len(light_curve[0]) // binning) * binning
-        light_curve_0 = np.mean(np.reshape(light_curve[0][start:],
-                                           (light_curve[0].size // binning, binning)), 1)
-        light_curve_1 = np.mean(np.reshape(light_curve[1][start:],
-                                           (light_curve[1].size // binning, binning)), 1)
-    else:
-        light_curve_0 = light_curve[0]
-        light_curve_1 = light_curve[1]
-
-    light_curve_0 = light_curve_0[np.where(~np.isnan(light_curve_1))]
-    light_curve_1 = light_curve_1[np.where(~np.isnan(light_curve_1))]
-
-    moving_average = []
-    for i in range(-5, 6):
-        moving_average.append(np.roll(light_curve_1, i))
-
-    median = np.median(moving_average, 0)
-    med = np.median([np.abs(ff - median) for ff in moving_average], 0)
-
-    flag = np.where((np.abs(light_curve_1 - median) < scatter * med))[0]
-
-    light_curve_0 = light_curve_0[flag]
-    light_curve_1 = light_curve_1[flag]
-
-    ra_dec_string = target_ra_dec.replace(':', ' ').split(' ')
-    target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
-    light_curve_0 = np.array([plc.JD(ff).bjd_tdb(target) for ff in light_curve_0])
 
     if not os.path.isdir(fitting_directory):
         os.mkdir(fitting_directory)
@@ -448,25 +410,102 @@ def fitting():
         periastron_fit = False
 
     science = find_fits_files(os.path.join(reduction_directory, '*'))
-    fits = pf.open(science[0])
-    if observation_date_key == observation_time_key:
-        date = fits[1].header[observation_date_key].split('T')[0]
-        local_time_1 = fits[1].header[observation_date_key].split('T')[1]
-    else:
-        date = fits[1].header[observation_date_key]
-        local_time_1 = fits[1].header[observation_time_key]
+    exp_time = pf.open(science[np.random.randint(len(science))])[1].header[exposure_time_key]
 
-    local_time_1 = ':'.join(local_time_1.split(':')[:2])
-    obs_duration = round((light_curve_0[-1] - light_curve_0[0]) * 24, 1)
+    light_curve = np.loadtxt(light_curve_file, unpack=True)
 
-    fits = pf.open(science[np.random.randint(len(science))])
-    exp_time = fits[1].header[exposure_time_key]
+    date = plc.JD(light_curve[0][0]).utc.isoformat()[:15].replace('T', ' ')
+    obs_duration = round(24 * (light_curve[0][-1] - light_curve[0][0]), 1)
+
+    # filter out outliers
+
+    light_curve_0 = light_curve[0]
+    light_curve_1 = light_curve[1]
+
+    light_curve_0 = light_curve_0[np.where(~np.isnan(light_curve_1))]
+    light_curve_1 = light_curve_1[np.where(~np.isnan(light_curve_1))]
+
+    moving_average = []
+    for i in range(-10, 11):
+        moving_average.append(np.roll(light_curve_1, i))
+
+    median = np.median(moving_average, 0)
+    med = np.median([np.abs(ff - median) for ff in moving_average], 0)
+
+    flag = np.where((np.abs(light_curve_1 - median) < scatter * med))[0]
+
+    light_curve_0 = light_curve_0[flag]
+    light_curve_1 = light_curve_1[flag]
+
+    # fix timing
+
+    ra_dec_string = target_ra_dec.replace(':', ' ').split(' ')
+    target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
+    light_curve_0 = np.array([plc.JD(ff + 0.5 * exp_time / 60.0 / 60.0 / 24.0).bjd_tdb(target) for ff in light_curve_0])
+
+    # predictions
+
+    limb_darkening_coefficients = plc.clablimb('claret', logg, max(4000, temperature), metallicity,
+                                               filter_map[phot_filter])
+
+    predicted_mid_time = (mid_time + round((np.mean(light_curve_0) - mid_time) / period) * period)
+
+    # define models
+
+    def mcmc_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+
+        data_delta_t = time_array - light_curve_0[0]
+
+        detrend = detrend_zero * (1 + detrend_one * data_delta_t +
+                                  detrend_two * data_delta_t * data_delta_t)
+        transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs,
+                                               period, sma_over_rs, eccentricity,
+                                               inclination, periastron,
+                                               predicted_mid_time + model_mid_time,
+                                               time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
+
+        return detrend * transit_model
+
+    def independent_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+
+        data_delta_t = time_array - light_curve_0[0]
+
+        detrend = detrend_zero * (1 + detrend_one * data_delta_t +
+                                  detrend_two * data_delta_t * data_delta_t)
+        transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs, period,
+                                               sma_over_rs, eccentricity, inclination,
+                                               periastron, predicted_mid_time + model_mid_time,
+                                               time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
+
+        return detrend, transit_model
+
+    # set noise level
 
     sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
     sigma = np.std(sigma, 0)
 
-    mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0 + 0.5 * exp_time / 60.0 / 60.0 / 24.0,
-                                           light_curve_1, sigma]],
+    popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
+                           p0=[np.mean(light_curve_1), 1, -1, rp_over_rs, 0],
+                           sigma=sigma, maxfev=10000)
+
+    fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
+
+    test = []
+    for i in range(-int(len(light_curve_0) / 2), int(len(light_curve_0) / 2)):
+        test.append([np.sum((light_curve_1 / fit_detrend - np.roll(fit_transit_model, i)) ** 2), i])
+    test.sort()
+
+    popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1, p0=[
+        popt[0], popt[1], popt[2], popt[3],
+        popt[4] + (test[0][1]) * exp_time / 60.0 / 60.0 / 24.0],
+                           sigma=sigma, maxfev=10000)
+
+    residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
+
+    sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
+    sigma = np.std(sigma, 0)
+
+    mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, sigma]],
                                          method='claret',
                                          limb_darkening_coefficients=limb_darkening_coefficients,
                                          rp_over_rs=rp_over_rs,
@@ -500,9 +539,8 @@ def fitting():
     mcmc_fit.save_detrended_models(os.path.join(fitting_directory, 'detrended_model.txt'))
     mcmc_fit.plot_hops_corner(fitting_directory)
     figure = mcmc_fit.plot_hops_output(
-        planet_search,
-        ['{0} {1} (UT)\nDur: {2}h / Exp: {3}s\nFilter: {4}'.format(date, local_time_1, obs_duration, exp_time,
-                                                                  phot_filter)],
+        planet,
+        ['{0} (UT)\nDur: {1}h / Exp: {2}s\nFilter: {3}'.format(date, obs_duration, exp_time, phot_filter)],
         observer, '{0} / {1} / {2}'.format(observatory, telescope, camera), fitting_directory)
     shutil.copy('log.yaml', '{0}{1}log.yaml'.format(fitting_directory, os.sep))
 

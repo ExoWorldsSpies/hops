@@ -11,7 +11,7 @@ from .analysis_distributions import *
 
 from .astro_angles_and_time import *
 
-from .catalogues_oec import *
+from .catalogues_ecc import *
 
 from .exoplanet_orbit import *
 from .exoplanet_lc_fitting import *

@@ -239,14 +239,20 @@ def test_file_number(fits_file):
         return [False, 'No files found']
 
 
-def test_coordinates(ra_dec_string):
+def test_coordinates(ra_dec_string, single_line=False):
 
     try:
         ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
         target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
-        return[True, 'Coordinates\naccepted']
+        if single_line:
+            return[True, 'Coordinates accepted']
+        else:
+            return[True, 'Coordinates\naccepted']
     except:
-        return [False, 'Wrong\ncoordinates']
+        if single_line:
+            return [False, 'Wrong coordinates']
+        else:
+            return [False, 'Wrong\ncoordinates']
 
 # def initialise_window(window, window_name=None, exit_command=None):
 #

@@ -210,6 +210,38 @@ def finalise_window(window, position=5):
     window.deiconify()
 
 
+new_avail = ''
+try:
+    location = os.path.abspath(os.path.dirname(__file__))
+
+    current_version = '0.0.0'
+    for i in open(os.path.join(location, '__init__.py')):
+        if len(i.split('__version__')) > 1:
+            current_version = i.split()[-1][1:-1]
+
+    c1 = int(current_version.split('.')[0]) * 100 * 100 * 100
+    c2 = int(current_version.split('.')[1]) * 100 * 100
+    c3 = int(current_version.split('.')[2]) * 100
+
+    version = '0.0.0'
+    message = ''
+    for i in urlopen('https://raw.githubusercontent.com/ExoWorldsSpies/hops/master/hops/__init__.py').readlines():
+        if len(str(i).split('__version__')) > 1:
+            version = str(i).split()[-1][1:-4]
+        if len(str(i).split('__message__')) > 1:
+            message = str(i).split('__message__ = ')[-1][1:-4]
+    message = message.replace('\\\\n', '\n')
+
+    v1 = int(version.split('.')[0]) * 100 * 100 * 100
+    v2 = int(version.split('.')[1]) * 100 * 100
+    v3 = int(version.split('.')[2]) * 100
+
+    if v1 + v2 + v3 > c1 + c2 + c3:
+        new_avail = '\nv{0} now available'.format(version)
+except:
+    pass
+
+
 def reduction_alignment_window(run):
 
     # #########
@@ -650,7 +682,7 @@ def reduction_alignment_window(run):
     show_header_button['command'] = show_header_window.show
     run_reduction_alignment_button['command'] = run_reduction_alignment
 
-    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL{0}".format(new_avail), command=openweb)
 
     # setup window
 
@@ -717,6 +749,7 @@ def reduction_alignment_window(run):
                                          '\nhttps://www.exoworldsspies.com/en/software'.format(version, message))
     except:
         pass
+
     show_content_window.mainloop()
     show_header_window.mainloop()
     my_profile_window.mainloop()
@@ -745,35 +778,53 @@ def photometry_window(run):
     bin_fits = int(read_local_log('reduction', 'bin_fits'))
     burn_limit = int(read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
     star_std = read_local_log('alignment', 'star_std')
-    search_window_std = read_local_log('alignment', 'search_window_std')
+    star_psf = read_local_log('alignment', 'star_psf')
     max_comparisons = read_local_log('photometry', 'max_comparisons')
     max_targets = max_comparisons + 1
     target_ra_dec = read_local_log('photometry', 'target_ra_dec')
+    visible_fov_x_min = read_local_log('alignment', 'min_x')
+    visible_fov_y_min = read_local_log('alignment', 'min_y')
+    visible_fov_x_max = read_local_log('alignment', 'max_x')
+    visible_fov_y_max = read_local_log('alignment', 'max_y')
+
+    all_stars = plc.open_dict('all_stars.pickle')
+    in_fov = all_stars['in_fov']
+    all_stars = all_stars['all_stars']
 
     targets_x_position = [DoubleVar(root, value=read_local_log('photometry', 'target_x_position'))]
+    targets_y_position = [DoubleVar(root, value=read_local_log('photometry', 'target_y_position'))]
+    targets_aperture = [IntVar(root, value=read_local_log('photometry', 'target_aperture'))]
+    targets_peak_counts = [DoubleVar(root, value=0)]
+    targets_flux = [DoubleVar(root, value=0)]
+    targets_note1 = [StringVar(root, value='')]
+    targets_note2 = [StringVar(root, value='')]
+
     for comparison in range(max_comparisons):
         targets_x_position.append(
             DoubleVar(root, value=read_local_log('photometry', 'comparison_{0}_x_position'.format(comparison + 1))))
-        if not targets_x_position[-1].get():
-            targets_x_position[-1].set(0)
 
-    targets_y_position = [DoubleVar(root, value=read_local_log('photometry', 'target_y_position'))]
-    for comparison in range(max_comparisons):
         targets_y_position.append(
             DoubleVar(root, value=read_local_log('photometry', 'comparison_{0}_y_position'.format(comparison + 1))))
-        if not targets_y_position[-1].get():
-            targets_y_position[-1].set(0)
 
-    targets_peak_counts = [DoubleVar(root, value=0)]
-    for comparison in range(max_comparisons):
-        targets_peak_counts.append(DoubleVar(root, value=0))
-
-    targets_aperture = [IntVar(root, value=read_local_log('photometry', 'target_aperture'))]
-    for comparison in range(max_comparisons):
         targets_aperture.append(
             IntVar(root, value=read_local_log('photometry', 'comparison_{0}_aperture'.format(comparison + 1))))
-        if not targets_aperture[-1].get():
+
+        targets_peak_counts.append(DoubleVar(root, value=0))
+        targets_flux.append(DoubleVar(root, value=0))
+        targets_note1.append(StringVar(root, value=''))
+        targets_note2.append(StringVar(root, value=''))
+
+        if not targets_y_position[-1].get():
+            targets_x_position[-1].set(0)
+            targets_y_position[-1].set(0)
             targets_aperture[-1].set(0)
+        elif (targets_x_position[-1].get() < visible_fov_x_min or targets_x_position[-1].get() > visible_fov_x_max
+              or targets_y_position[-1].get() < visible_fov_y_min or targets_y_position[-1].get() > visible_fov_y_max):
+            targets_x_position[-1].set(0)
+            targets_y_position[-1].set(0)
+            targets_aperture[-1].set(0)
+
+
 
     # set progress variables, useful for updating the tk windows
 
@@ -822,6 +873,14 @@ def photometry_window(run):
         targets_aperture_entry[target]['validatecommand'] = \
             (targets_aperture_entry[target].register(test_int_positive_non_zero_input), '%P', '%d')
 
+    targets_note1_label = [Label(root, textvar=targets_note1[0])]
+    for comparison in range(max_comparisons):
+        targets_note1_label.append(Label(root, textvar=targets_note1[comparison + 1]))
+
+    targets_note2_label = [Label(root, textvar=targets_note2[0])]
+    for comparison in range(max_comparisons):
+        targets_note2_label.append(Label(root, textvar=targets_note2[comparison + 1]))
+
     show_fov_button = Button(root, text='Show FOV')
 
     flip_fov_button = Button(root, text='Flip FOV')
@@ -843,6 +902,7 @@ def photometry_window(run):
     f = Figure()
     f.patch.set_facecolor('white')
     ax = f.add_subplot(111)
+    ax.set_aspect(aspect="auto")
     canvas = FigureCanvasTkAgg(f, show_fov_window.root)
     canvas.get_tk_widget().pack()
     NavigationToolbar2TkAgg(canvas, show_fov_window.root)
@@ -851,21 +911,50 @@ def photometry_window(run):
               vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
               vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
 
+    x_length = len(fits[1].data[0])
+    y_length = len(fits[1].data)
+    circles_diameter = 0.02 * max(y_length, x_length)
+
+    ax.add_patch(mpatches.Rectangle((visible_fov_x_min + 5, visible_fov_y_min + 5),
+                                   visible_fov_x_max - visible_fov_x_min - 10,
+                                   visible_fov_y_max - visible_fov_y_min - 10,
+                                   ec='r', fill=False, label='Available FOV'))
+
+    good_comps_boxes1 = []
+    good_comps_boxes2 = []
+
     targets_box = [mpatches.Rectangle((targets_x_position[0].get() - targets_aperture[0].get(),
                                        targets_y_position[0].get() - targets_aperture[0].get()),
                                       2 * targets_aperture[0].get() + 1, 2 * targets_aperture[0].get() + 1,
                                       ec='r', fill=False)]
     for comparison in range(max_comparisons):
-        targets_box.append(mpatches.Rectangle((targets_x_position[comparison + 1].get() -
+        box = mpatches.Rectangle((targets_x_position[comparison + 1].get() -
                                                targets_aperture[comparison + 1].get(),
                                                targets_y_position[comparison + 1].get() -
                                                targets_aperture[comparison + 1].get()),
                                               2 * targets_aperture[comparison + 1].get() + 1,
                                               2 * targets_aperture[comparison + 1].get() + 1,
-                                              ec='#07fefc', fill=False))
+                                              ec='#07fefc', fill=False)
 
-    for target in range(max_targets):
-        ax.add_patch(targets_box[target])
+        if comparison == 0:
+            circle1 = mpatches.Circle((-1000, -1000), circles_diameter, ec='y', fill=False,
+                                      label='Stars of similar flux to the target (+/- 40%)')
+        else:
+            circle1 = mpatches.Circle((-1000, -1000), circles_diameter, ec='y', fill=False,)
+        circle2 = mpatches.Circle((-1000, -1000), circles_diameter, ec='y', fill=False)
+
+        targets_box.append(box)
+        good_comps_boxes1.append(circle1)
+        good_comps_boxes2.append(circle2)
+
+    for box in targets_box:
+        ax.add_patch(box)
+
+    for circle1 in good_comps_boxes1:
+        ax.add_patch(circle1)
+
+    for circle2 in good_comps_boxes2:
+        ax.add_patch(circle2)
 
     targets_text = [ax.text(targets_x_position[0].get(),
                             targets_y_position[0].get() - targets_aperture[0].get() - 1, 'T',
@@ -877,6 +966,8 @@ def photometry_window(run):
                                     targets_y_position[comparison + 1].get()
                                     - targets_aperture[comparison + 1].get() - 1,
                                     'C{0}'.format(comparison + 1), color='#07fefc', fontsize=20, va='top'))
+
+    ax.legend(loc=(0, 1.00001))
 
     # define the function that updates the window
 
@@ -901,6 +992,7 @@ def photometry_window(run):
             flip_fov_button['state'] = NORMAL
             mirror_fov_button['state'] = NORMAL
             return_to_reduction_button['state'] = NORMAL
+            photometry_button['state'] = NORMAL
 
             for i_target in range(max_targets):
                 targets_indication_entry[i_target]['state'] = NORMAL
@@ -917,11 +1009,23 @@ def photometry_window(run):
                             mean=fits[1].header[mean_key], std=fits[1].header[std_key],
                             burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std)
 
-                        if star:
+                        if not star:
+                            showinfo('Star not acceptable.', 'Star could not be located or it is close to saturation.')
+
+                        elif (star[0] < visible_fov_x_min or star[0] > visible_fov_x_max or star[1] < visible_fov_y_min
+                            or star[1] > visible_fov_y_max):
+
+                            showinfo('Star not acceptable.', 'Star moves outside the FOV later.')
+
+                        else:
 
                             targets_x_position[targets_indication.get()].set(round(star[0], 1))
                             targets_y_position[targets_indication.get()].set(round(star[1], 1))
-                            targets_aperture[targets_indication.get()].set(abs(int(3 * star[4])))
+                            if star_psf > 0:
+                                targets_aperture[targets_indication.get()].set(int(round(3 * star_psf, 0)))
+                            else:
+                                targets_aperture[targets_indication.get()].set(int(3 * max(star[4], star[5])))
+                            targets_flux[targets_indication.get()].set(2 * np.pi * star[2] * star[4] * star[5])
 
                         click_test_x.set(-100)
                         click_test_y.set(-100)
@@ -941,6 +1045,9 @@ def photometry_window(run):
                         targets_y_position[targets_indication.get()].set(0)
                         targets_aperture[targets_indication.get()].set(0)
                         targets_peak_counts[targets_indication.get()].set(0)
+                        targets_flux[targets_indication.get()].set(0)
+                        targets_note1[targets_indication.get()].set('')
+                        targets_note2[targets_indication.get()].set('')
 
                         click_off_axis.set(False)
 
@@ -965,23 +1072,77 @@ def photometry_window(run):
 
                     else:
 
-                        targets_box[i_target].set_xy((targets_x_position[i_target].get() -
-                                                      targets_aperture[i_target].get() - 0.5,
-                                                      targets_y_position[i_target].get() -
-                                                      targets_aperture[i_target].get() - 0.5))
+                        # for compatibility with older versions
 
-                        targets_box[i_target].set_width(2 * targets_aperture[i_target].get() + 1)
-                        targets_box[i_target].set_height(2 * targets_aperture[i_target].get() + 1)
+                        if targets_flux[i_target].get() == 0:
 
-                        targets_text[i_target].set_x(targets_x_position[i_target].get() +
-                                                     targets_aperture[i_target].get() + 1)
-                        targets_text[i_target].set_y(targets_y_position[i_target].get() -
-                                                     targets_aperture[i_target].get() - 1)
+                            star = plc.find_single_star(
+                                fits[1].data, targets_x_position[i_target].get(), targets_y_position[i_target].get(),
+                                mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std)
 
-                        y1 = int(targets_y_position[i_target].get() - targets_aperture[i_target].get())
-                        y2 = y1 + int(2 * targets_aperture[i_target].get()) + 2
-                        x1 = int(targets_x_position[i_target].get() - targets_aperture[i_target].get())
-                        x2 = x1 + int(2 * targets_aperture[i_target].get()) + 2
+                            targets_flux[i_target].set(2 * np.pi * star[2] * star[4] * star[5])
+
+                        try:
+                            app = targets_aperture[i_target].get()
+                            if star_psf == 0:
+                                targets_note1[i_target].set('')
+                            elif app < 2 * star_psf:
+                                targets_note1[i_target].set('WARNING\nAperture too small')
+                            else:
+                                targets_note1[i_target].set('')
+                        except TclError:
+                            app = 1
+
+                        # for compatibility with older versions
+
+                        if i_target > 0:
+                            if 0 not in [targets_x_position[0].get(), targets_y_position[0].get()]:
+                                if targets_flux[i_target].get() > 2 * targets_flux[0].get():
+                                    targets_note2[i_target].set('WARNING\nComparison too bright')
+                                elif targets_flux[i_target].get() < 0.5 * targets_flux[0].get():
+                                    targets_note2[i_target].set('WARNING\nComparison too faint')
+                                else:
+                                    targets_note2[i_target].set('')
+                            else:
+                                targets_note2[i_target].set('')
+
+                        if i_target == 0:
+
+                            good_comps = []
+
+                            for j, comp_star in enumerate(all_stars):
+                                if np.sqrt((comp_star[0] - targets_x_position[i_target].get())**2 +
+                                           (comp_star[1] - targets_y_position[i_target].get())**2) > star_std:
+                                    if in_fov[j]:
+                                        if comp_star[-1] < 1.4 * targets_flux[i_target].get():
+                                            if comp_star[-1] > 0.6 * targets_flux[i_target].get():
+                                                good_comps.append(comp_star)
+
+                            good_comps = sorted(good_comps, key=lambda x: np.sqrt((x[0] - targets_x_position[i_target].get()) ** 2 + (x[1] - targets_y_position[i_target].get()) ** 2))
+
+                            for num in range(10):
+
+                                if num < len(good_comps):
+                                    good_comps_boxes1[num].set_center((good_comps[num][0], good_comps[num][1]))
+                                    good_comps_boxes2[num].set_center((good_comps[num][0], good_comps[num][1]))
+                                else:
+                                    good_comps_boxes1[num].set_center((-1000, -1000))
+                                    good_comps_boxes2[num].set_center((-1000, -1000))
+
+                        targets_box[i_target].set_xy((targets_x_position[i_target].get() - app - 0.5,
+                                                      targets_y_position[i_target].get() - app - 0.5))
+
+                        targets_box[i_target].set_width(2 * app + 1)
+                        targets_box[i_target].set_height(2 * app + 1)
+
+                        targets_text[i_target].set_x(targets_x_position[i_target].get() + app + 1)
+                        targets_text[i_target].set_y(targets_y_position[i_target].get() - app - 1)
+
+                        y1 = int(targets_y_position[i_target].get() - app)
+                        y2 = y1 + int(2 * app) + 2
+                        x1 = int(targets_x_position[i_target].get() - app)
+                        x2 = x1 + int(2 * app) + 2
                         targets_peak_counts[i_target].set(int(np.max(fits[1].data[y1:y2, x1:x2])))
 
                         targets_aperture_entry[i_target]['state'] = NORMAL
@@ -989,12 +1150,16 @@ def photometry_window(run):
             except ValueError:
                 photometry_button['state'] = DISABLED
 
+            for i_target in range(max_targets):
+                if 0 not in [targets_x_position[i_target].get(), targets_y_position[i_target].get()]:
+                    try:
+                        app = targets_aperture[i_target].get()
+                    except TclError:
+                        photometry_button['state'] = DISABLED
+
             if 0 in [targets_x_position[0].get(), targets_y_position[0].get(),
                      targets_x_position[1].get(), targets_y_position[1].get()]:
                 photometry_button['state'] = DISABLED
-
-            else:
-                photometry_button['state'] = NORMAL
 
             if (read_local_log('pipeline', 'photometry_complete')
                and len(glob.glob(os.path.join('{0}*'.format(photometry_directory), light_curve_aperture_file))) > 0):
@@ -1086,7 +1251,7 @@ def photometry_window(run):
 
     # setup window
 
-    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL{0}".format(new_avail), command=openweb)
 
     Btn2 = Button(root, text="CHECK SIMBAD", command=openweb_simbad(target_ra_dec))
 
@@ -1098,9 +1263,9 @@ def photometry_window(run):
     setup_list = [
         [[logo_label, 0, 1, 8]],
         [],
-        [[window_label, 1, 6, 1, 'title']],
-        [[help_label, 1, 6]],
-        [[Btn2, 1, 6]],
+        [[window_label, 1, 8, 1, 'title']],
+        [[help_label, 1, 8]],
+        [[Btn2, 1, 8]],
         [],
         [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5, 2]],
     ]
@@ -1111,16 +1276,22 @@ def photometry_window(run):
             setup_list.append([[created_by_label, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
-                               [targets_aperture_entry[target], 5, 2]])
-        elif target == 2:
+                               [targets_aperture_entry[target], 5, 2],
+                               [targets_note1_label[target], 7],
+                               [targets_note2_label[target], 8]])
+        elif target == 3:
             setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
-                               [targets_aperture_entry[target], 5, 2]])
+                               [targets_aperture_entry[target], 5, 2],
+                               [targets_note1_label[target], 7],
+                               [targets_note2_label[target], 8]])
         else:
             setup_list.append([[targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
-                               [targets_aperture_entry[target], 5, 2]])
+                               [targets_aperture_entry[target], 5, 2],
+                               [targets_note1_label[target], 7],
+                               [targets_note2_label[target], 8]])
 
     setup_list.append([[show_fov_button, 5, 2]])
     setup_list.append([[flip_fov_button, 5], [mirror_fov_button, 6]])
@@ -1149,20 +1320,29 @@ def fitting_window(run):
 
     # get variables from log and set as tk variables those to be modified
 
-    catalogue = plc.oec_catalogue()
-
     observation_files = StringVar(root, value=read_local_log('pipeline', 'observation_files'))
+    exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
+
     light_curve_file = StringVar(value=read_local_log('fitting', 'light_curve_file'))
     light_curve_aperture_file = read_local_log('pipeline', 'light_curve_aperture_file')
     light_curve_gauss_file = read_local_log('pipeline', 'light_curve_gauss_file')
     photometry_directory = read_local_log('pipeline', 'photometry_directory')
     light_curve_file.set(glob.glob(os.path.join('{0}*'.format(photometry_directory), light_curve_aperture_file))[-1])
-    planet_search = StringVar(value=read_local_log('fitting', 'planet_search'))
-    planet = StringVar(value=read_local_log('fitting', 'planet'))
-    binning = IntVar(value=read_local_log('fitting', 'binning'))
+
+    observer = StringVar(value=read_local_log('fitting', 'observer'))
+    observatory = StringVar(value=read_local_log('fitting', 'observatory'))
+    telescope = StringVar(value=read_local_log('fitting', 'telescope'))
+    camera = StringVar(value=read_local_log('fitting', 'camera'))
+    phot_filter = StringVar(value=read_local_log('fitting', 'phot_filter'))
+
     scatter = DoubleVar(value=read_local_log('fitting', 'scatter'))
+
     iterations = IntVar(value=read_local_log('fitting', 'iterations'))
     burn = IntVar(value=read_local_log('fitting', 'burn'))
+
+    manual_planet = BooleanVar(root, value=read_log('fitting', 'manual_planet'))
+    planet = StringVar(value=read_local_log('fitting', 'planet'))
+    target_ra_dec = StringVar(root, value=read_local_log('fitting', 'target_ra_dec'))
     metallicity = DoubleVar(value=read_local_log('fitting', 'metallicity'))
     temperature = DoubleVar(value=read_local_log('fitting', 'temperature'))
     logg = DoubleVar(value=read_local_log('fitting', 'logg'))
@@ -1173,18 +1353,53 @@ def fitting_window(run):
     inclination = DoubleVar(value=read_local_log('fitting', 'inclination'))
     eccentricity = DoubleVar(value=read_local_log('fitting', 'eccentricity'))
     periastron = DoubleVar(value=read_local_log('fitting', 'periastron'))
-    target_ra_dec = StringVar(root, value=read_local_log('fitting', 'target_ra_dec'))
-    observer = StringVar(value=read_local_log('fitting', 'observer'))
-    observatory = StringVar(value=read_local_log('fitting', 'observatory'))
-    telescope = StringVar(value=read_local_log('fitting', 'telescope'))
-    camera = StringVar(value=read_local_log('fitting', 'camera'))
-    phot_filter = StringVar(value=read_local_log('fitting', 'phot_filter'))
+
+    ra_target, dec_target = read_local_log('photometry', 'target_ra_dec').split(' ')
+    target = plc.Target(plc.Hours(ra_target), plc.Degrees(dec_target))
+    ecc_planet = plc.find_nearest(target)
+
+    auto_planet = StringVar(value=ecc_planet.planet.name)
+    auto_target_ra_dec = StringVar(value='{0} {1}'.format(ecc_planet.star.ra, ecc_planet.star.dec))
+    auto_metallicity = DoubleVar(value=ecc_planet.star.met)
+    auto_temperature = DoubleVar(value=ecc_planet.star.teff)
+    auto_logg = DoubleVar(value=ecc_planet.star.logg)
+    auto_period = DoubleVar(value=ecc_planet.planet.period)
+    auto_mid_time = DoubleVar(value=0)
+    auto_rp_over_rs = DoubleVar(value=ecc_planet.planet.rp_over_rs)
+    auto_sma_over_rs = DoubleVar(value=ecc_planet.planet.sma_over_rs)
+    auto_eccentricity = DoubleVar(value=ecc_planet.planet.eccentricity)
+    auto_inclination = DoubleVar(value=ecc_planet.planet.inclination)
+    auto_periastron = DoubleVar(value=ecc_planet.planet.periastron)
+    target = plc.Target(plc.Hours(ecc_planet.star.ra), plc.Degrees(ecc_planet.star.dec))
+    if ecc_planet.planet.time_format in ['BJD_TDB', 'BJD_TT']:
+        auto_mid_time.set(ecc_planet.planet.mid_time)
+    elif ecc_planet.planet.time_format == 'BJD_UTC':
+        auto_mid_time.set(plc.BJDUTC(ecc_planet.planet.mid_time, target).bjd_tdb(target))
+    elif ecc_planet.planet.time_format in ['HJD_TDB', 'HJD_TT']:
+        auto_mid_time.set(plc.HJDTDB(ecc_planet.planet.mid_time, target).bjd_tdb(target))
+    elif ecc_planet.planet.time_format == 'HJD_UTC':
+        auto_mid_time.set(plc.HJDUTC(ecc_planet.planet.mid_time, target).bjd_tdb(target))
+    elif ecc_planet.planet.time_format == 'JD_UTC':
+        auto_mid_time.set(plc.JD(ecc_planet.planet.mid_time).bjd_tdb(target))
+
+    if planet.get() == 'Choose Planet':
+        planet.set(auto_planet.get())
+        target_ra_dec.set(auto_target_ra_dec.get())
+        metallicity.set(auto_metallicity.get())
+        temperature.set(auto_temperature.get())
+        logg.set(auto_logg.get())
+        period.set(auto_period.get())
+        mid_time.set(auto_mid_time.get())
+        rp_over_rs.set(auto_rp_over_rs.get())
+        sma_over_rs.set(auto_sma_over_rs.get())
+        inclination.set(auto_inclination.get())
+        eccentricity.set(auto_eccentricity.get())
+        periastron.set(auto_periastron.get())
 
     # set progress variables, useful for updating the window
 
-    update_preview = BooleanVar(root, value=True)
-    update_planet = BooleanVar(root, value=False)
     running = BooleanVar(root, value=False)
+    refit = BooleanVar(root, value=True)
 
     # create widgets
     combostyle = ttk.Style()
@@ -1194,69 +1409,6 @@ def fitting_window(run):
                                                      'fieldbackground': 'white',
                                                      'background': 'white'}}})
     combostyle.theme_use('combostyle')
-
-    light_curve_file_label = Label(root, text='Light-curve file')
-    light_curve_file_entry = ttk.Combobox(root, textvariable=light_curve_file, state='readonly', width=55)
-
-    binning_label = Label(root, text='Binning')
-    binning_entry = Entry(root, textvariable=binning, validate='key')
-    binning_entry['validatecommand'] = (binning_entry.register(test_int_positive_non_zero_input), '%P', '%d')
-
-    scatter_label = Label(root, text='Scatter limit')
-    scatter_entry = Entry(root, textvariable=scatter, validate='key')
-    scatter_entry['validatecommand'] = (scatter_entry.register(test_float_positive_input), '%P', '%d')
-
-    iterations_label = Label(root, text='Iterations')
-    iterations_entry = Entry(root, textvariable=iterations, validate='key')
-    iterations_entry['validatecommand'] = (iterations_entry.register(test_int_positive_non_zero_input), '%P', '%d')
-
-    burn_label = Label(root, text='Burned iterations')
-    burn_entry = Entry(root, textvariable=burn, validate='key')
-    burn_entry['validatecommand'] = (burn_entry.register(test_int_positive_non_zero_input), '%P', '%d')
-
-    metallicity_label = Label(root, text='M* [Fe/H, dex]')
-    metallicity_entry = Entry(root, textvariable=metallicity, validate='key')
-    metallicity_entry['validatecommand'] = (metallicity_entry.register(test_float_input), '%P', '%d')
-
-    temperature_label = Label(root, text='T* [K]')
-    temperature_entry = Entry(root, textvariable=temperature, validate='key')
-    temperature_entry['validatecommand'] = (temperature_entry.register(test_float_positive_input), '%P', '%d')
-
-    logg_label = Label(root, text='log(g*) [cm/s^2]')
-    logg_entry = Entry(root, textvariable=logg, validate='key')
-    logg_entry['validatecommand'] = (logg_entry.register(test_float_positive_input), '%P', '%d')
-
-    period_label = Label(root, text='Period [days]')
-    period_entry = Entry(root, textvariable=period, validate='key')
-    period_entry['validatecommand'] = (period_entry.register(test_float_positive_input), '%P', '%d')
-
-    mid_time_label = Label(root, text='Mid-time [days, BJD_TDB]')
-    mid_time_entry = Entry(root, textvariable=mid_time, validate='key')
-    mid_time_entry['validatecommand'] = (mid_time_entry.register(test_float_positive_input), '%P', '%d')
-
-    rp_over_rs_label = Label(root, text='Rp/Rs')
-    rp_over_rs_entry = Entry(root, textvariable=rp_over_rs, validate='key')
-    rp_over_rs_entry['validatecommand'] = (rp_over_rs_entry.register(test_float_positive_input), '%P', '%d')
-
-    sma_over_rs_label = Label(root, text='a/Rs')
-    sma_over_rs_entry = Entry(root, textvariable=sma_over_rs, validate='key')
-    sma_over_rs_entry['validatecommand'] = (sma_over_rs_entry.register(test_float_positive_input), '%P', '%d')
-
-    inclination_label = Label(root, text='Inclination [deg]')
-    inclination_entry = Entry(root, textvariable=inclination, validate='key')
-    inclination_entry['validatecommand'] = (inclination_entry.register(test_float_positive_input), '%P', '%d')
-
-    eccentricity_label = Label(root, text='Eccentricity')
-    eccentricity_entry = Entry(root, textvariable=eccentricity, validate='key')
-    eccentricity_entry['validatecommand'] = (eccentricity_entry.register(test_float_positive_input), '%P', '%d')
-
-    periastron_label = Label(root, text='Periastron [deg]')
-    periastron_entry = Entry(root, textvariable=periastron, validate='key')
-    periastron_entry['validatecommand'] = (periastron_entry.register(test_float_positive_input), '%P', '%d')
-
-    target_ra_dec_label = Label(root, text='Planet RA DEC\n(hh:mm:ss +/-dd:mm:ss)')
-    target_ra_dec_entry = Entry(root, textvariable=target_ra_dec)
-    target_ra_dec_test = Label(root, text=' ')
 
     observer_label = Label(root, text='Observer')
     observer_entry = Entry(root, textvariable=observer)
@@ -1270,13 +1422,86 @@ def fitting_window(run):
     camera_label = Label(root, text='Camera')
     camera_entry = Entry(root, textvariable=camera)
 
-    planet_label = Label(root, text='Planet')
-    planet_entry = ttk.Combobox(root, textvariable=planet, state='readonly', width=17)
-    planet_search_entry = Entry(root, textvariable=planet_search)
-
     phot_filter_label = Label(root, text='Filter')
     phot_filter_entry = ttk.Combobox(root, textvariable=phot_filter, state='readonly', width=17)
     phot_filter_entry['values'] = tuple([ff for ff in filter_map])
+
+    light_curve_file_label = Label(root, text='Light-curve file')
+    light_curve_file_entry = ttk.Combobox(root, textvariable=light_curve_file, state='readonly', width=55)
+
+    scatter_label = Label(root, text='Scatter limit')
+    scatter_entry = Entry(root, textvariable=scatter, validate='key')
+    scatter_entry['validatecommand'] = (scatter_entry.register(test_float_positive_input), '%P', '%d')
+
+    iterations_label = Label(root, text='MCMC Iterations')
+    iterations_entry = Entry(root, textvariable=iterations, validate='key')
+    iterations_entry['validatecommand'] = (iterations_entry.register(test_int_positive_non_zero_input), '%P', '%d')
+
+    burn_label = Label(root, text='MCMC Burn-in')
+    burn_entry = Entry(root, textvariable=burn, validate='key')
+    burn_entry['validatecommand'] = (burn_entry.register(test_int_positive_non_zero_input), '%P', '%d')
+
+    auto_params_entry = Radiobutton(root, text='Use detected planet param.', variable=manual_planet, value=False)
+    manual_params_entry = Radiobutton(root, text='Enter param. manually', variable=manual_planet, value=True)
+
+    planet_label = Label(root, text='Planet')
+    auto_planet_entry = Entry(root, textvariable=auto_planet, state=DISABLED)
+    planet_entry = Entry(root, textvariable=planet)
+
+    target_ra_dec_label = Label(root, text='Planet RA DEC\n(hh:mm:ss +/-dd:mm:ss)')
+    auto_target_ra_dec_entry = Entry(root, textvariable=auto_target_ra_dec, state=DISABLED)
+    target_ra_dec_entry = Entry(root, textvariable=target_ra_dec)
+    target_ra_dec_test = Label(root, text=' ')
+
+    metallicity_label = Label(root, text='M* [Fe/H, dex]')
+    auto_metallicity_entry = Entry(root, textvariable=auto_metallicity, state=DISABLED)
+    metallicity_entry = Entry(root, textvariable=metallicity, validate='key')
+    metallicity_entry['validatecommand'] = (metallicity_entry.register(test_float_input), '%P', '%d')
+
+    temperature_label = Label(root, text='T* [K]')
+    auto_temperature_entry = Entry(root, textvariable=auto_temperature, state=DISABLED)
+    temperature_entry = Entry(root, textvariable=temperature, validate='key')
+    temperature_entry['validatecommand'] = (temperature_entry.register(test_float_positive_input), '%P', '%d')
+
+    logg_label = Label(root, text='log(g*) [cm/s^2]')
+    auto_logg_entry = Entry(root, textvariable=auto_logg, state=DISABLED)
+    logg_entry = Entry(root, textvariable=logg, validate='key')
+    logg_entry['validatecommand'] = (logg_entry.register(test_float_positive_input), '%P', '%d')
+
+    period_label = Label(root, text='Period [days]')
+    auto_period_entry = Entry(root, textvariable=auto_period, state=DISABLED)
+    period_entry = Entry(root, textvariable=period, validate='key')
+    period_entry['validatecommand'] = (period_entry.register(test_float_positive_input), '%P', '%d')
+
+    mid_time_label = Label(root, text='Mid-time [BJD_TDB]')
+    auto_mid_time_entry = Entry(root, textvariable=auto_mid_time, state=DISABLED)
+    mid_time_entry = Entry(root, textvariable=mid_time, validate='key')
+    mid_time_entry['validatecommand'] = (mid_time_entry.register(test_float_positive_input), '%P', '%d')
+
+    rp_over_rs_label = Label(root, text='Rp/Rs')
+    auto_rp_over_rs_entry = Entry(root, textvariable=auto_rp_over_rs, state=DISABLED)
+    rp_over_rs_entry = Entry(root, textvariable=rp_over_rs, validate='key')
+    rp_over_rs_entry['validatecommand'] = (rp_over_rs_entry.register(test_float_positive_input), '%P', '%d')
+
+    sma_over_rs_label = Label(root, text='a/Rs')
+    auto_sma_over_rs_entry = Entry(root, textvariable=auto_sma_over_rs, state=DISABLED)
+    sma_over_rs_entry = Entry(root, textvariable=sma_over_rs, validate='key')
+    sma_over_rs_entry['validatecommand'] = (sma_over_rs_entry.register(test_float_positive_input), '%P', '%d')
+
+    inclination_label = Label(root, text='Inclination [deg]')
+    auto_inclination_entry = Entry(root, textvariable=auto_inclination, state=DISABLED)
+    inclination_entry = Entry(root, textvariable=inclination, validate='key')
+    inclination_entry['validatecommand'] = (inclination_entry.register(test_float_positive_input), '%P', '%d')
+
+    eccentricity_label = Label(root, text='Eccentricity')
+    auto_eccentricity_entry = Entry(root, textvariable=auto_eccentricity, state=DISABLED)
+    eccentricity_entry = Entry(root, textvariable=eccentricity, validate='key')
+    eccentricity_entry['validatecommand'] = (eccentricity_entry.register(test_float_positive_input), '%P', '%d')
+
+    periastron_label = Label(root, text='Periastron [deg]')
+    auto_periastron_entry = Entry(root, textvariable=auto_periastron, state=DISABLED)
+    periastron_entry = Entry(root, textvariable=periastron, validate='key')
+    periastron_entry['validatecommand'] = (periastron_entry.register(test_float_positive_input), '%P', '%d')
 
     show_preview_button = Button(root, text='Show Preview')
 
@@ -1291,13 +1516,40 @@ def fitting_window(run):
     # define additional windows
 
     show_preview_window = AddOnWindow('Preview', None, None, 1)
-    f = Figure()
-    f.patch.set_facecolor('white')
-    ax1 = f.add_subplot(211)
-    ax2 = f.add_subplot(212)
-    canvas = FigureCanvasTkAgg(f, show_preview_window.root)
+    funit = 1.0
+    fcol = 7
+    frow = 5
+    fbottom = 0.11
+    fright = 0.05
+    fsmain = 10
+    fsbig = 15
+    fig = Figure(figsize=(funit * fcol / (1 - fright), funit * frow / (1 - fbottom)))
+    canvas = FigureCanvasTkAgg(fig, show_preview_window.root)
     canvas.get_tk_widget().pack()
     NavigationToolbar2TkAgg(canvas, show_preview_window.root)
+    try:
+        gs = gridspec.GridSpec(frow, fcol, fig, 0, fbottom, 1.0 - fright, 1.0, 0.0, 0.0)
+    except TypeError:
+        gs = gridspec.GridSpec(frow, fcol, 0, fbottom, 1.0 - fright, 1.0, 0.0, 0.0)
+
+    logo_ax = fig.add_subplot(gs[0, 0])
+    logo_ax.imshow(holomon_logo_jpg)
+    logo_ax.spines['top'].set_visible(False)
+    logo_ax.spines['bottom'].set_visible(False)
+    logo_ax.spines['left'].set_visible(False)
+    logo_ax.spines['right'].set_visible(False)
+    logo_ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+
+    ax1 = fig.add_subplot(gs[1:4, 1:])
+    ax2 = fig.add_subplot(gs[4, 1:])
+    fig.text(0.04, fbottom + 2.5 * (1 - fbottom) / frow, 'relative flux (de-trended)', fontsize=fsbig, va='center',
+             ha='center', rotation='vertical')
+    fig.text(0.04, fbottom + 0.5 * (1 - fbottom) / frow, 'residuals', fontsize=fsbig, va='center',
+             ha='center', rotation='vertical')
+
+    title1 = fig.text(0.5, 0.94, '', fontsize=24, va='center', ha='center')
+    title2 = fig.text(0.97, 0.97, '', fontsize=fsmain, va='top', ha='right')
+    title3 = fig.text((1 - fright) / fcol, 1 - (1 - fbottom) / frow, '', fontsize=fsmain, ha='left', va='bottom')
 
     my_profile_window = AddOnWindow('My Profile', 2, 1.1, 1)
 
@@ -1345,7 +1597,7 @@ def fitting_window(run):
 
     # define the function that updates the window
 
-    def update_window(entry):
+    def update_window(*entry):
 
         if not entry:
             pass
@@ -1359,46 +1611,9 @@ def fitting_window(run):
         all_files.sort()
         light_curve_file_entry['values'] = tuple(all_files)
 
-        if planet.get() == 'Choose Planet':
-
-            try:
-                catalogue_planets = []
-
-                ra_target, dec_target = read_local_log('photometry', 'target_ra_dec').split(' ')
-                target = plc.Target(plc.Hours(ra_target), plc.Degrees(dec_target))
-
-                for catalogue_planet in catalogue.planets:
-                    if not np.isnan(catalogue_planet.system.dec):
-                        test_target = plc.Target(plc.Degrees(catalogue_planet.system.ra.deg),
-                                                 plc.Degrees(catalogue_planet.system.dec.deg))
-                        catalogue_planets.append([test_target.distance_from_target(target).rad,
-                                                  catalogue_planet.name])
-                catalogue_planets.sort()
-
-                planet.set(catalogue_planets[0][1])
-                planet_search.set(catalogue_planets[0][1])
-
-                parameters = plc.find_oec_parameters(planet.get(), catalogue=catalogue)
-                coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
-                logg.set(parameters[1])
-                temperature.set(parameters[2])
-                metallicity.set(parameters[3])
-                rp_over_rs.set(parameters[4])
-                period.set(parameters[6])
-                sma_over_rs.set(parameters[7])
-                eccentricity.set(parameters[8])
-                inclination.set(parameters[9])
-                periastron.set(parameters[10])
-                mid_time.set(parameters[11])
-                target_ra_dec.set(coordinates)
-
-            except:
-                pass
-
         if running.get():
 
             light_curve_file_entry['state'] = DISABLED
-            binning_entry['state'] = DISABLED
             scatter_entry['state'] = DISABLED
             iterations_entry['state'] = DISABLED
             burn_entry['state'] = DISABLED
@@ -1419,7 +1634,7 @@ def fitting_window(run):
             telescope_entry['state'] = DISABLED
             camera_entry['state'] = DISABLED
             planet_entry['state'] = DISABLED
-            planet_search_entry['state'] = DISABLED
+            manual_params_entry['state'] = DISABLED
             return_to_photometry_button['state'] = DISABLED
             return_to_reduction_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
@@ -1429,7 +1644,6 @@ def fitting_window(run):
         elif not os.path.isfile(light_curve_file.get()):
 
             light_curve_file_entry['state'] = NORMAL
-            binning_entry['state'] = DISABLED
             scatter_entry['state'] = DISABLED
             iterations_entry['state'] = DISABLED
             burn_entry['state'] = DISABLED
@@ -1450,7 +1664,7 @@ def fitting_window(run):
             telescope_entry['state'] = DISABLED
             camera_entry['state'] = DISABLED
             planet_entry['state'] = DISABLED
-            planet_search_entry['state'] = DISABLED
+            manual_params_entry['state'] = DISABLED
             return_to_photometry_button['state'] = DISABLED
             return_to_reduction_button['state'] = DISABLED
             fitting_button['state'] = DISABLED
@@ -1460,14 +1674,22 @@ def fitting_window(run):
         else:
 
             light_curve_file_entry['state'] = 'readonly'
-            binning_entry['state'] = NORMAL
             scatter_entry['state'] = NORMAL
             iterations_entry['state'] = NORMAL
             burn_entry['state'] = NORMAL
+            phot_filter_entry['state'] = 'readonly'
+            observer_entry['state'] = NORMAL
+            observatory_entry['state'] = NORMAL
+            telescope_entry['state'] = NORMAL
+            camera_entry['state'] = NORMAL
+            manual_params_entry['state'] = NORMAL
+            my_profile_button['state'] = NORMAL
+            show_preview_button['state'] = NORMAL
+            planet_entry['state'] = NORMAL
+            target_ra_dec_entry['state'] = NORMAL
             metallicity_entry['state'] = NORMAL
             temperature_entry['state'] = NORMAL
             logg_entry['state'] = NORMAL
-            phot_filter_entry['state'] = 'readonly'
             period_entry['state'] = NORMAL
             mid_time_entry['state'] = NORMAL
             rp_over_rs_entry['state'] = NORMAL
@@ -1476,50 +1698,6 @@ def fitting_window(run):
             eccentricity_entry['state'] = NORMAL
             periastron_entry['state'] = NORMAL
             target_ra_dec_entry['state'] = NORMAL
-            observer_entry['state'] = NORMAL
-            observatory_entry['state'] = NORMAL
-            telescope_entry['state'] = NORMAL
-            camera_entry['state'] = NORMAL
-            planet_entry['state'] = 'readonly'
-            planet_search_entry['state'] = NORMAL
-            my_profile_button['state'] = NORMAL
-            show_preview_button['state'] = NORMAL
-
-            if isinstance(catalogue.searchPlanet(planet_search.get()), list):
-                planet_entry['values'] = tuple([ppp.name for ppp in catalogue.searchPlanet(planet_search.get())])
-            elif catalogue.searchPlanet(planet_search.get()):
-                planet_entry['values'] = tuple([catalogue.searchPlanet(planet_search.get()).name])
-            else:
-                planet_entry['values'] = tuple([])
-
-            if update_planet.get():
-
-                try:
-
-                    parameters = plc.find_oec_parameters(planet.get(), catalogue=catalogue)
-                    coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
-                    planet_search.set(planet.get())
-                    logg.set(parameters[1])
-                    temperature.set(parameters[2])
-                    metallicity.set(parameters[3])
-                    rp_over_rs.set(parameters[4])
-                    period.set(parameters[6])
-                    sma_over_rs.set(parameters[7])
-                    eccentricity.set(parameters[8])
-                    inclination.set(parameters[9])
-                    periastron.set(parameters[10])
-                    mid_time.set(parameters[11])
-                    target_ra_dec.set(coordinates)
-
-                except:
-                    pass
-
-            if target_ra_dec.get() == 'hh:mm:ss +dd:mm:ss':
-                try:
-                    coordinates = plc.find_oec_coordinates(planet.get(), catalogue=catalogue, output='str')
-                    target_ra_dec.set(coordinates)
-                except:
-                    pass
 
             if phot_filter.get() == 'default':
                 for key in read_local_log_profile('filter_key').split(','):
@@ -1572,13 +1750,13 @@ def fitting_window(run):
             if not os.path.isfile(light_curve_file.get()):
                 enable_buttons = False
 
-            check_ra_dec = test_coordinates(target_ra_dec_entry.get())
+            check_ra_dec = test_coordinates(target_ra_dec_entry.get(), single_line=True)
             target_ra_dec_test.configure(text=check_ra_dec[1])
 
             if not check_ra_dec[0]:
                 enable_buttons = False
 
-            for input_entry in [binning_entry, scatter_entry, iterations_entry, burn_entry, phot_filter_entry,
+            for input_entry in [scatter_entry, iterations_entry, burn_entry, phot_filter_entry,
                                 metallicity_entry, temperature_entry, logg_entry, period_entry, mid_time_entry,
                                 rp_over_rs_entry, sma_over_rs_entry, inclination_entry, eccentricity_entry,
                                 periastron_entry, target_ra_dec_entry]:
@@ -1597,98 +1775,208 @@ def fitting_window(run):
             return_to_photometry_button['state'] = NORMAL
             return_to_reduction_button['state'] = NORMAL
 
-        try:
+        if manual_planet.get():
+            planet_to_plot = planet.get()
+            target_ra_dec_to_plot = target_ra_dec.get()
+            metallicity_to_plot = metallicity.get()
+            temperature_to_plot = temperature.get()
+            logg_to_plot = logg.get()
+            period_to_plot = period.get()
+            mid_time_to_plot = mid_time.get()
+            rp_over_rs_to_plot = rp_over_rs.get()
+            sma_over_rs_to_plot = sma_over_rs.get()
+            inclination_to_plot = inclination.get()
+            eccentricity_to_plot = eccentricity.get()
+            periastron_to_plot = periastron.get()
+        else:
+            planet_to_plot = auto_planet.get()
+            target_ra_dec_to_plot = auto_target_ra_dec.get()
+            metallicity_to_plot = auto_metallicity.get()
+            temperature_to_plot = auto_temperature.get()
+            logg_to_plot = auto_logg.get()
+            period_to_plot = auto_period.get()
+            mid_time_to_plot = auto_mid_time.get()
+            rp_over_rs_to_plot = auto_rp_over_rs.get()
+            sma_over_rs_to_plot = auto_sma_over_rs.get()
+            inclination_to_plot = auto_inclination.get()
+            eccentricity_to_plot = auto_eccentricity.get()
+            periastron_to_plot = auto_periastron.get()
 
-            if update_preview.get():
+        light_curve = np.loadtxt(light_curve_file.get(), unpack=True)
 
-                light_curve = np.loadtxt(light_curve_file.get(), unpack=True)
+        date = plc.JD(light_curve[0][0]).utc.isoformat()[:15].replace('T', ' ')
+        obs_duration = round(24 * (light_curve[0][-1] - light_curve[0][0]), 1)
+        exp_time = test_fits_keyword(observation_files.get(), exposure_time_key)[2]
 
-                if binning.get() > 1:
-                    start = len(light_curve[0]) - (len(light_curve[0]) // binning.get()) * binning.get()
-                    light_curve_0 = np.mean(np.reshape(light_curve[0][start:],
-                                                       (light_curve[0].size // binning.get(), binning.get())), 1)
-                    light_curve_1 = np.mean(np.reshape(light_curve[1][start:],
-                                                       (light_curve[1].size // binning.get(), binning.get())), 1)
-                else:
-                    light_curve_0 = light_curve[0]
-                    light_curve_1 = light_curve[1]
+        title1.set_text('{0}{1}{2}'.format('$\mathbf{', planet_to_plot, '}$'))
+        title2.set_text('{0} (UT)\nDur: {1}h / Exp: {2}s\nFilter: {3}'.format(date, obs_duration, exp_time,
+                                                                                  phot_filter.get()))
+        title3.set_text('\n\n{0}\n{1}'.format(
+            observer.get(), '{0} / {1} / {2}'.format(observatory.get(), telescope.get(), camera.get())))
+
+        if refit.get():
+
+            ax1.cla()
+            ax2.cla()
+            try:
+
+                # filter out outliers
+
+                light_curve_0 = light_curve[0]
+                light_curve_1 = light_curve[1]
 
                 light_curve_0 = light_curve_0[np.where(~np.isnan(light_curve_1))]
                 light_curve_1 = light_curve_1[np.where(~np.isnan(light_curve_1))]
 
                 moving_average = []
-                for i in range(-5, 6):
+                for i in range(-10, 11):
                     moving_average.append(np.roll(light_curve_1, i))
 
                 median = np.median(moving_average, 0)
                 med = np.median([np.abs(ff - median) for ff in moving_average], 0)
 
                 flag = np.where((np.abs(light_curve_1 - median) < scatter.get() * med))[0]
+                outliers = np.where((np.abs(light_curve_1 - median) >= scatter.get() * med))[0]
 
-                limb_darkening_coefficients = plc.clablimb('claret', logg.get(), max(4000, temperature.get()),
-                                                           metallicity.get(), filter_map[phot_filter.get()])
+                light_curve_0_outliers = light_curve_0[outliers]
+                light_curve_1_outliers = light_curve_1[outliers]
+                light_curve_0 = light_curve_0[flag]
+                light_curve_1 = light_curve_1[flag]
 
-                data_delta_t = light_curve_0[flag] - light_curve_0[flag][0]
+                # fix timing
 
-                def mcmc_f(inputs, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+                ra_dec_string = target_ra_dec_to_plot.replace(':', ' ').split(' ')
+                target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
+                light_curve_0 = np.array([plc.JD(ff + 0.5 * exp_time / 60.0 / 60.0 / 24.0).bjd_tdb(target) for ff in light_curve_0])
 
-                    if inputs:
-                        detrend = detrend_zero * (1 + detrend_one * data_delta_t +
-                                                  detrend_two * data_delta_t * data_delta_t)
-                        transit_model = plc.transit('claret', limb_darkening_coefficients, model_rp_over_rs,
-                                                    period.get(), sma_over_rs.get(), eccentricity.get(),
-                                                    inclination.get(), periastron.get(),
-                                                    mid_time.get() + model_mid_time,
-                                                    time_array=light_curve_0[flag])
+                # predictions
 
-                        return detrend * transit_model
+                limb_darkening_coefficients = plc.clablimb('claret', logg_to_plot, max(4000, temperature_to_plot),
+                                                           metallicity_to_plot, filter_map[phot_filter.get()])
 
-                def independent_f(detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+                predicted_mid_time = (mid_time_to_plot +
+                                      round((np.mean(light_curve_0) - mid_time_to_plot) / period_to_plot) * period_to_plot)
+
+                predicted_transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, rp_over_rs_to_plot,
+                                                      period_to_plot, sma_over_rs_to_plot, eccentricity_to_plot,
+                                                      inclination_to_plot, periastron_to_plot, predicted_mid_time,
+                                                      light_curve_0, float(exp_time), max(1, int(float(exp_time) / 10)))
+
+                # define models
+
+                def mcmc_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+
+                    data_delta_t = time_array - light_curve_0[0]
 
                     detrend = detrend_zero * (1 + detrend_one * data_delta_t +
                                               detrend_two * data_delta_t * data_delta_t)
-                    transit_model = plc.transit('claret', limb_darkening_coefficients, model_rp_over_rs, period.get(),
-                                                sma_over_rs.get(), eccentricity.get(), inclination.get(),
-                                                periastron.get(), mid_time.get() + model_mid_time,
-                                                time_array=light_curve_0[flag])
+                    transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs,
+                                                period_to_plot, sma_over_rs_to_plot, eccentricity_to_plot,
+                                                inclination_to_plot, periastron_to_plot,
+                                                predicted_mid_time + model_mid_time,
+                                                time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
+
+                    return detrend * transit_model
+
+                def independent_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+
+                    data_delta_t = time_array - light_curve_0[0]
+
+                    detrend = detrend_zero * (1 + detrend_one * data_delta_t +
+                                              detrend_two * data_delta_t * data_delta_t)
+                    transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs, period_to_plot,
+                                                sma_over_rs_to_plot, eccentricity_to_plot, inclination_to_plot,
+                                                periastron_to_plot, predicted_mid_time + model_mid_time,
+                                                time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
 
                     return detrend, transit_model
 
-                popt, pcov = curve_fit(mcmc_f, [1], light_curve_1[flag],
-                                       p0=[np.mean(light_curve_1[flag]), 1, 1, rp_over_rs.get(), 0])
+                # set noise level
 
-                fit_detrend, fit_transit_model = independent_f(*popt)
+                sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
+                sigma = np.std(sigma, 0)
 
-                predicted_transit_model = plc.transit('claret', limb_darkening_coefficients, rp_over_rs.get(),
-                                                      period.get(), sma_over_rs.get(), eccentricity.get(),
-                                                      inclination.get(), periastron.get(), mid_time.get(),
-                                                      time_array=light_curve_0[flag])
+                popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
+                                       p0=[np.mean(light_curve_1), 1, -1, rp_over_rs_to_plot, 0],
+                                       sigma=sigma, maxfev=10000)
 
-                new_mid_time = (mid_time.get()
-                                + round((np.mean(light_curve_0) - mid_time.get()) / period.get()) * period.get()
-                                + popt[-1])
+                fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
 
-                phase = np.array((light_curve_0 - new_mid_time) / period.get())
+                test = []
+                for i in range(-int(len(light_curve_0) / 2), int(len(light_curve_0) / 2)):
+                    test.append([np.sum((light_curve_1 / fit_detrend - np.roll(fit_transit_model, i)) ** 2), i])
+                test.sort()
 
-                ax1.cla()
-                ax2.cla()
+                popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1, p0=[
+                    popt[0], popt[1], popt[2], popt[3],
+                    popt[4] + (test[0][1]) * exp_time / 60.0 / 60.0 / 24.0],
+                                       sigma=sigma, maxfev=10000)
 
-                ax1.plot(phase, light_curve_1, 'ro', ms=3, mec='r')
-                ax1.plot(phase[flag], light_curve_1[flag], 'ko', ms=3)
-                ax1.plot(phase[flag], fit_detrend * fit_transit_model, 'r-')
-                ax1.set_yticks(ax1.get_yticks()[1:])
-                ax1.tick_params(labelbottom=False)
-                ax1.set_ylabel(r'$\mathrm{relative} \ \mathrm{flux}$', fontsize=20)
+                residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
 
-                ax2.plot(phase[flag], light_curve_1[flag] / fit_detrend, 'ko', ms=3)
-                ax2.plot(phase[flag], fit_transit_model, 'r-')
-                ax2.plot(phase[flag], predicted_transit_model, 'c-')
-                ax2.set_title('{0:.1e}'.format(np.std(light_curve_1[flag] - fit_transit_model)))
-                ax2.set_ylabel(r'$\mathrm{normalised} \ \mathrm{flux}$', fontsize=20)
-                ax2.set_xlabel(r'$\mathrm{phase}$', fontsize=20)
+                sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
+                sigma = np.std(sigma, 0)
 
-        except:
-            pass
+                # results
+
+                popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1, p0=popt, sigma=sigma, maxfev=10000)
+                new_mid_time = predicted_mid_time + popt[-1]
+
+                fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
+                phase = np.array((light_curve_0 - new_mid_time) / period_to_plot)
+                detrended_data = light_curve_1 / fit_detrend
+                residuals = detrended_data - fit_transit_model
+                std_res = np.std(residuals)
+                res_autocorr = np.correlate(residuals, residuals, mode='full')
+                res_autocorr = round(np.max(np.abs(
+                    res_autocorr[res_autocorr.size // 2:] / res_autocorr[res_autocorr.size // 2:][0])[1:]), 2)
+
+                fit_detrend_outliers, fit_transit_model_outliers = independent_f(light_curve_0_outliers, *popt)
+                phase_outliers = np.array((light_curve_0_outliers - new_mid_time) / period_to_plot)
+                detrended_data_outliers = light_curve_1_outliers / fit_detrend_outliers
+
+                # plot
+
+                ax1.plot(phase, detrended_data, 'ko', ms=2, label='De-trended data')
+                ax1.plot(phase, fit_transit_model, 'r-', label='Best-fit model (T$_0$ = {0}, R$_p$/R$_s$ = {1})'.format(
+                    round(new_mid_time, 5), round(popt[3], 5)))
+                ax1.plot(phase, predicted_transit_model, 'c-', label='Expected model (T$_0$ = {0}, R$_p$/R$_s$ = {1})'.format(
+                    round(predicted_mid_time, 5), round(rp_over_rs_to_plot, 5)))
+
+                data_ymin = min(detrended_data) - 3 * std_res
+                data_ymax = max(detrended_data) + 2 * std_res
+                ax1.set_yticks(ax1.get_yticks()[np.where(ax1.get_yticks() > data_ymin)])
+                ymin, ymax = data_ymax - 1.15 * (data_ymax - data_ymin), data_ymax
+                ax1.set_ylim(ymin, ymax)
+                x_max = max(np.abs(phase) + 0.05 * (max(phase) - min(phase)))
+
+                ax1.set_xlim(-x_max, x_max)
+                ax1.tick_params(labelbottom=False, labelsize=fsmain)
+
+                ax1.plot(phase_outliers, detrended_data_outliers, 'ro', ms=2, label='Filtered outliers')
+                ax1.legend(loc=3)
+
+                ax2.plot(phase, residuals, 'ko', ms=2)
+                ax2.plot(phase, np.zeros_like(phase), 'r-')
+
+                ax2.set_ylim(- 5 * std_res, 5 * std_res)
+
+                ax2.set_xlabel('phase', fontsize=fsbig)
+
+                ax2.set_xlim(-x_max, x_max)
+                ax2.tick_params(labelsize=fsmain)
+
+                ax2.text(ax2.get_xlim()[0] + 0.02 * (ax2.get_xlim()[-1] - ax2.get_xlim()[0]),
+                         ax2.get_ylim()[1] - 0.15 * (ax2.get_ylim()[-1] - ax2.get_ylim()[0]),
+                         r'STD = %.1f $‰$' % round((std_res * 1000), 1),
+                         fontsize=fsmain)
+                ax2.text(ax2.get_xlim()[0] + 0.02 * (ax2.get_xlim()[-1] - ax2.get_xlim()[0]),
+                         ax2.get_ylim()[0] + 0.07 * (ax2.get_ylim()[-1] - ax2.get_ylim()[0]),
+                         r'AutoCorr = %.1f' %res_autocorr,
+                         fontsize=fsmain)
+
+            except:
+                pass
 
         canvas.draw()
 
@@ -1696,40 +1984,57 @@ def fitting_window(run):
 
     # define actions for the different buttons, including calls to the function that updates the window
 
-    def choose_planet(entry):
-
-        if not entry:
-            return 0
-
-        update_planet.set(True)
-        update_window(None)
-        update_planet.set(False)
-
     def return_to_photometry():
 
+        if manual_planet.get():
+            planet_to_plot = planet.get()
+            target_ra_dec_to_plot = target_ra_dec.get()
+            metallicity_to_plot = metallicity.get()
+            temperature_to_plot = temperature.get()
+            logg_to_plot = logg.get()
+            period_to_plot = period.get()
+            mid_time_to_plot = mid_time.get()
+            rp_over_rs_to_plot = rp_over_rs.get()
+            sma_over_rs_to_plot = sma_over_rs.get()
+            inclination_to_plot = inclination.get()
+            eccentricity_to_plot = eccentricity.get()
+            periastron_to_plot = periastron.get()
+        else:
+            planet_to_plot = auto_planet.get()
+            target_ra_dec_to_plot = auto_target_ra_dec.get()
+            metallicity_to_plot = auto_metallicity.get()
+            temperature_to_plot = auto_temperature.get()
+            logg_to_plot = auto_logg.get()
+            period_to_plot = auto_period.get()
+            mid_time_to_plot = auto_mid_time.get()
+            rp_over_rs_to_plot = auto_rp_over_rs.get()
+            sma_over_rs_to_plot = auto_sma_over_rs.get()
+            inclination_to_plot = auto_inclination.get()
+            eccentricity_to_plot = auto_eccentricity.get()
+            periastron_to_plot = auto_periastron.get()
+
         write_local_log('fitting', light_curve_file.get(), 'light_curve_file')
-        write_local_log('fitting', planet_search.get(), 'planet_search')
-        write_local_log('fitting', planet.get(), 'planet')
-        write_local_log('fitting', binning.get(), 'binning')
         write_local_log('fitting', scatter.get(), 'scatter')
         write_local_log('fitting', iterations.get(), 'iterations')
         write_local_log('fitting', burn.get(), 'burn')
-        write_local_log('fitting', metallicity.get(), 'metallicity')
-        write_local_log('fitting', temperature.get(), 'temperature')
-        write_local_log('fitting', logg.get(), 'logg')
-        write_local_log('fitting', period.get(), 'period')
-        write_local_log('fitting', mid_time.get(), 'mid_time')
-        write_local_log('fitting', rp_over_rs.get(), 'rp_over_rs')
-        write_local_log('fitting', sma_over_rs.get(), 'sma_over_rs')
-        write_local_log('fitting', inclination.get(), 'inclination')
-        write_local_log('fitting', eccentricity.get(), 'eccentricity')
-        write_local_log('fitting', periastron.get(), 'periastron')
-        write_local_log('fitting', target_ra_dec.get(), 'target_ra_dec')
         write_local_log('fitting', observer.get(), 'observer')
         write_local_log('fitting', observatory.get(), 'observatory')
         write_local_log('fitting', telescope.get(), 'telescope')
         write_local_log('fitting', camera.get(), 'camera')
         write_local_log('fitting', phot_filter.get(), 'phot_filter')
+        write_local_log('fitting', manual_planet.get(), 'manual_planet')
+        write_local_log('fitting', planet_to_plot, 'planet')
+        write_local_log('fitting', target_ra_dec_to_plot, 'target_ra_dec')
+        write_local_log('fitting', metallicity_to_plot, 'metallicity')
+        write_local_log('fitting', temperature_to_plot, 'temperature')
+        write_local_log('fitting', logg_to_plot, 'logg')
+        write_local_log('fitting', period_to_plot, 'period')
+        write_local_log('fitting', mid_time_to_plot, 'mid_time')
+        write_local_log('fitting', rp_over_rs_to_plot, 'rp_over_rs')
+        write_local_log('fitting', sma_over_rs_to_plot, 'sma_over_rs')
+        write_local_log('fitting', inclination_to_plot, 'inclination')
+        write_local_log('fitting', eccentricity_to_plot, 'eccentricity')
+        write_local_log('fitting', periastron_to_plot, 'periastron')
 
         run.run_from_reduction = False
         run.run_from_photometry = True
@@ -1741,29 +2046,55 @@ def fitting_window(run):
 
     def return_to_reduction():
 
+        if manual_planet.get():
+            planet_to_plot = planet.get()
+            target_ra_dec_to_plot = target_ra_dec.get()
+            metallicity_to_plot = metallicity.get()
+            temperature_to_plot = temperature.get()
+            logg_to_plot = logg.get()
+            period_to_plot = period.get()
+            mid_time_to_plot = mid_time.get()
+            rp_over_rs_to_plot = rp_over_rs.get()
+            sma_over_rs_to_plot = sma_over_rs.get()
+            inclination_to_plot = inclination.get()
+            eccentricity_to_plot = eccentricity.get()
+            periastron_to_plot = periastron.get()
+        else:
+            planet_to_plot = auto_planet.get()
+            target_ra_dec_to_plot = auto_target_ra_dec.get()
+            metallicity_to_plot = auto_metallicity.get()
+            temperature_to_plot = auto_temperature.get()
+            logg_to_plot = auto_logg.get()
+            period_to_plot = auto_period.get()
+            mid_time_to_plot = auto_mid_time.get()
+            rp_over_rs_to_plot = auto_rp_over_rs.get()
+            sma_over_rs_to_plot = auto_sma_over_rs.get()
+            inclination_to_plot = auto_inclination.get()
+            eccentricity_to_plot = auto_eccentricity.get()
+            periastron_to_plot = auto_periastron.get()
+
         write_local_log('fitting', light_curve_file.get(), 'light_curve_file')
-        write_local_log('fitting', planet_search.get(), 'planet_search')
-        write_local_log('fitting', planet.get(), 'planet')
-        write_local_log('fitting', binning.get(), 'binning')
         write_local_log('fitting', scatter.get(), 'scatter')
         write_local_log('fitting', iterations.get(), 'iterations')
         write_local_log('fitting', burn.get(), 'burn')
-        write_local_log('fitting', metallicity.get(), 'metallicity')
-        write_local_log('fitting', temperature.get(), 'temperature')
-        write_local_log('fitting', logg.get(), 'logg')
-        write_local_log('fitting', period.get(), 'period')
-        write_local_log('fitting', mid_time.get(), 'mid_time')
-        write_local_log('fitting', rp_over_rs.get(), 'rp_over_rs')
-        write_local_log('fitting', sma_over_rs.get(), 'sma_over_rs')
-        write_local_log('fitting', inclination.get(), 'inclination')
-        write_local_log('fitting', eccentricity.get(), 'eccentricity')
-        write_local_log('fitting', periastron.get(), 'periastron')
-        write_local_log('fitting', target_ra_dec.get(), 'target_ra_dec')
         write_local_log('fitting', observer.get(), 'observer')
         write_local_log('fitting', observatory.get(), 'observatory')
         write_local_log('fitting', telescope.get(), 'telescope')
         write_local_log('fitting', camera.get(), 'camera')
         write_local_log('fitting', phot_filter.get(), 'phot_filter')
+        write_local_log('fitting', manual_planet.get(), 'manual_planet')
+        write_local_log('fitting', planet_to_plot, 'planet')
+        write_local_log('fitting', target_ra_dec_to_plot, 'target_ra_dec')
+        write_local_log('fitting', metallicity_to_plot, 'metallicity')
+        write_local_log('fitting', temperature_to_plot, 'temperature')
+        write_local_log('fitting', logg_to_plot, 'logg')
+        write_local_log('fitting', period_to_plot, 'period')
+        write_local_log('fitting', mid_time_to_plot, 'mid_time')
+        write_local_log('fitting', rp_over_rs_to_plot, 'rp_over_rs')
+        write_local_log('fitting', sma_over_rs_to_plot, 'sma_over_rs')
+        write_local_log('fitting', inclination_to_plot, 'inclination')
+        write_local_log('fitting', eccentricity_to_plot, 'eccentricity')
+        write_local_log('fitting', periastron_to_plot, 'periastron')
 
         run.run_from_reduction = True
         run.run_from_photometry = False
@@ -1774,47 +2105,82 @@ def fitting_window(run):
 
     def fitting():
 
+        if manual_planet.get():
+            planet_to_plot = planet.get()
+            target_ra_dec_to_plot = target_ra_dec.get()
+            metallicity_to_plot = metallicity.get()
+            temperature_to_plot = temperature.get()
+            logg_to_plot = logg.get()
+            period_to_plot = period.get()
+            mid_time_to_plot = mid_time.get()
+            rp_over_rs_to_plot = rp_over_rs.get()
+            sma_over_rs_to_plot = sma_over_rs.get()
+            inclination_to_plot = inclination.get()
+            eccentricity_to_plot = eccentricity.get()
+            periastron_to_plot = periastron.get()
+        else:
+            planet_to_plot = auto_planet.get()
+            target_ra_dec_to_plot = auto_target_ra_dec.get()
+            metallicity_to_plot = auto_metallicity.get()
+            temperature_to_plot = auto_temperature.get()
+            logg_to_plot = auto_logg.get()
+            period_to_plot = auto_period.get()
+            mid_time_to_plot = auto_mid_time.get()
+            rp_over_rs_to_plot = auto_rp_over_rs.get()
+            sma_over_rs_to_plot = auto_sma_over_rs.get()
+            inclination_to_plot = auto_inclination.get()
+            eccentricity_to_plot = auto_eccentricity.get()
+            periastron_to_plot = auto_periastron.get()
+
         running.set(True)
         update_window(None)
 
         write_local_log('fitting', light_curve_file.get(), 'light_curve_file')
-        write_local_log('fitting', planet_search.get(), 'planet_search')
-        write_local_log('fitting', planet.get(), 'planet')
-        write_local_log('fitting', binning.get(), 'binning')
         write_local_log('fitting', scatter.get(), 'scatter')
         write_local_log('fitting', iterations.get(), 'iterations')
         write_local_log('fitting', burn.get(), 'burn')
-        write_local_log('fitting', metallicity.get(), 'metallicity')
-        write_local_log('fitting', temperature.get(), 'temperature')
-        write_local_log('fitting', logg.get(), 'logg')
-        write_local_log('fitting', period.get(), 'period')
-        write_local_log('fitting', mid_time.get(), 'mid_time')
-        write_local_log('fitting', rp_over_rs.get(), 'rp_over_rs')
-        write_local_log('fitting', sma_over_rs.get(), 'sma_over_rs')
-        write_local_log('fitting', inclination.get(), 'inclination')
-        write_local_log('fitting', eccentricity.get(), 'eccentricity')
-        write_local_log('fitting', periastron.get(), 'periastron')
-        write_local_log('fitting', target_ra_dec.get(), 'target_ra_dec')
         write_local_log('fitting', observer.get(), 'observer')
         write_local_log('fitting', observatory.get(), 'observatory')
         write_local_log('fitting', telescope.get(), 'telescope')
         write_local_log('fitting', camera.get(), 'camera')
         write_local_log('fitting', phot_filter.get(), 'phot_filter')
+        write_local_log('fitting', manual_planet.get(), 'manual_planet')
+        write_local_log('fitting', planet_to_plot, 'planet')
+        write_local_log('fitting', target_ra_dec_to_plot, 'target_ra_dec')
+        write_local_log('fitting', metallicity_to_plot, 'metallicity')
+        write_local_log('fitting', temperature_to_plot, 'temperature')
+        write_local_log('fitting', logg_to_plot, 'logg')
+        write_local_log('fitting', period_to_plot, 'period')
+        write_local_log('fitting', mid_time_to_plot, 'mid_time')
+        write_local_log('fitting', rp_over_rs_to_plot, 'rp_over_rs')
+        write_local_log('fitting', sma_over_rs_to_plot, 'sma_over_rs')
+        write_local_log('fitting', inclination_to_plot, 'inclination')
+        write_local_log('fitting', eccentricity_to_plot, 'eccentricity')
+        write_local_log('fitting', periastron_to_plot, 'periastron')
 
         ftr_fitting()
 
         running.set(False)
         update_window(None)
 
+    def update_window_no_refit(*entry):
+        refit.set(False)
+        update_window()
+        refit.set(True)
+
     # connect widgets to functions
 
     light_curve_file_entry.bind('<<ComboboxSelected>>', update_window)
-    planet_entry.bind('<<ComboboxSelected>>', choose_planet)
-    planet_search_entry.bind(sequence='<KeyRelease>', func=update_window)
-    binning_entry.bind(sequence='<KeyRelease>', func=update_window)
+    planet_entry.bind(sequence='<KeyRelease>', func=update_window)
+    auto_params_entry['command'] = update_window
+    manual_params_entry['command'] = update_window
+    camera_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
+    telescope_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
+    observatory_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
+    observer_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
     scatter_entry.bind(sequence='<KeyRelease>', func=update_window)
-    iterations_entry.bind(sequence='<KeyRelease>', func=update_window)
-    burn_entry.bind(sequence='<KeyRelease>', func=update_window)
+    iterations_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
+    burn_entry.bind(sequence='<KeyRelease>', func=update_window_no_refit)
     phot_filter_entry.bind('<<ComboboxSelected>>', update_window)
     metallicity_entry.bind(sequence='<KeyRelease>', func=update_window)
     temperature_entry.bind(sequence='<KeyRelease>', func=update_window)
@@ -1835,7 +2201,7 @@ def fitting_window(run):
 
     # setup window
 
-    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL", command=openweb)
+    Btn = Button(root, text="HOPS UPDATES &\nUSER MANUAL{0}".format(new_avail), command=openweb)
 
     photo = PhotoImage(file=holomon_logo)
     logo_label = Label(root, image=photo)
@@ -1843,30 +2209,28 @@ def fitting_window(run):
     created_by_label = Label(root, text=read_log('windows', 'created_by').replace(',', '\n'))
 
     setup_window(root, [
+        [[logo_label, 0, 1, 8]],
         [],
-        [[logo_label, 0, 1, 6], [window_label, 1, 4, 1, 'title']],
+        [[window_label, 1, 5, 1, 'title']],
         [],
         [[light_curve_file_label, 1], [light_curve_file_entry, 2, 3, 1]],
-        [[binning_label, 1], [binning_entry, 2], [scatter_label, 3], [scatter_entry, 4]],
         [],
-        [[phot_filter_label, 1], [phot_filter_entry, 2], [telescope_label, 3], [telescope_entry, 4]],
-        [[created_by_label, 0, 1, 3], [camera_label, 1], [camera_entry, 2], [observatory_label, 3],
-         [observatory_entry, 4]],
-        [[observer_label, 3], [observer_entry, 4]],
+        [[auto_params_entry, 4], [manual_params_entry, 5]],
+        [[planet_label, 3], [auto_planet_entry, 4], [planet_entry, 5]],
+        [[created_by_label, 0, 1, 3], [scatter_label, 1], [scatter_entry, 2], [target_ra_dec_label, 3], [auto_target_ra_dec_entry, 4], [target_ra_dec_entry, 5]],
+        [[target_ra_dec_test, 5]],
+        [[iterations_label, 1], [iterations_entry, 2], [period_label, 3], [auto_period_entry, 4], [period_entry, 5]],
+        [[my_profile_button, 0], [burn_label, 1], [burn_entry, 2], [mid_time_label, 3], [auto_mid_time_entry, 4], [mid_time_entry, 5]],
+        [[rp_over_rs_label, 3], [auto_rp_over_rs_entry, 4], [rp_over_rs_entry, 5]],
+        [[Btn, 0, 1, 2], [phot_filter_label, 1], [phot_filter_entry, 2], [sma_over_rs_label, 3], [auto_sma_over_rs_entry, 4], [sma_over_rs_entry, 5]],
+        [[camera_label, 1], [camera_entry, 2], [inclination_label, 3], [auto_inclination_entry, 4], [inclination_entry, 5]],
+        [[telescope_label, 1], [telescope_entry, 2], [eccentricity_label, 3], [auto_eccentricity_entry, 4], [eccentricity_entry, 5]],
+        [[observatory_label, 1], [observatory_entry, 2], [periastron_label, 3], [auto_periastron_entry, 4], [periastron_entry, 5]],
+        [[observer_label, 1], [observer_entry, 2], [metallicity_label, 3], [auto_metallicity_entry, 4], [metallicity_entry, 5]],
+        [[temperature_label, 3], [auto_temperature_entry, 4], [temperature_entry, 5]],
+        [[logg_label, 3], [auto_logg_entry, 4], [logg_entry, 5]],
         [],
-        [[my_profile_button, 0], [planet_label, 1], [planet_search_entry, 2], [target_ra_dec_label, 3], [target_ra_dec_entry, 4]],
-        [[Btn, 0, 1, 2], [planet_entry, 2], [target_ra_dec_test, 4]],
-        [],
-        [[period_label, 1], [period_entry, 2], [metallicity_label, 3], [metallicity_entry, 4]],
-        [[mid_time_label, 1], [mid_time_entry, 2], [temperature_label, 3], [temperature_entry, 4]],
-        [[rp_over_rs_label, 1], [rp_over_rs_entry, 2], [logg_label, 3], [logg_entry, 4]],
-        [[sma_over_rs_label, 1], [sma_over_rs_entry, 2]],
-        [[inclination_label, 1], [inclination_entry, 2], [iterations_label, 3], [iterations_entry, 4]],
-        [[eccentricity_label, 1], [eccentricity_entry, 2], [burn_label, 3], [burn_entry, 4]],
-        [[periastron_label, 1], [periastron_entry, 2]],
-        [[show_preview_button, 2], [fitting_button, 3, 2]],
-        [[return_to_photometry_button, 3, 2]],
-        [[return_to_reduction_button, 3, 2]],
+        [[show_preview_button, 1], [fitting_button, 2], [return_to_photometry_button, 3, 2], [return_to_reduction_button, 5]],
         []
     ])
 

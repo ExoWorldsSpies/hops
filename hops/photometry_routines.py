@@ -77,6 +77,8 @@ def finalise_window(window, center=True):
 
 def photometry():
 
+    print('Photometry...')
+
     # get variables
 
     reduction_directory = read_local_log('pipeline', 'reduction_directory')
@@ -96,6 +98,7 @@ def photometry():
     observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
     mid_exposure = read_local_log('photometry', 'mid_exposure')
     star_std = read_local_log('alignment', 'star_std')
+    star_psf = read_local_log('alignment', 'star_psf')
     sky_inner_aperture = read_local_log('photometry', 'sky_inner_aperture')
     sky_outer_aperture = read_local_log('photometry', 'sky_outer_aperture')
     max_comparisons = read_local_log('photometry', 'max_comparisons')
@@ -108,6 +111,9 @@ def photometry():
         targets_r_position.append(read_local_log('photometry', 'comparison_{0}_r_position'.format(comparison)))
         targets_u_position.append(read_local_log('photometry', 'comparison_{0}_u_position'.format(comparison)))
         targets_aperture.append(read_local_log('photometry', 'comparison_{0}_aperture'.format(comparison)))
+
+    if star_psf == 0:
+        star_psf = star_std
 
     science = find_fits_files(os.path.join(reduction_directory, '*'))
 
@@ -200,53 +206,66 @@ def photometry():
 
                 if targets_aperture[target] > 0:
 
-                    star = plc.find_single_star(fits[1].data,
-                                                (ref_x_position + targets_r_position[target] *
-                                                             np.cos(ref_u_position + targets_u_position[target])),
-                                                (ref_y_position + targets_r_position[target] *
-                                                             np.sin(ref_u_position + targets_u_position[target])),
-                                                mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                                burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std
-                                                )
+                    expected_x = (ref_x_position + targets_r_position[target] *
+                     np.cos(ref_u_position + targets_u_position[target]))
 
-                    if star:
+                    expected_y = (ref_y_position + targets_r_position[target] *
+                     np.sin(ref_u_position + targets_u_position[target]))
 
-                        x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
+                    if (expected_x > 0 and expected_y > 0 and expected_x < len(fits[1].data[0]) and
+                            expected_y < len(fits[1].data)):
 
-                        gauss_targets_x_position_test.append(x_mean)
-                        gauss_targets_y_position_test.append(y_mean)
-                        gauss_targets_x_std_test.append(x_std)
-                        gauss_targets_y_std_test.append(y_std)
-                        gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
-                        gauss_targets_sky_test.append(floor)
+                        star = plc.find_single_star(fits[1].data,
+                                                    (ref_x_position + targets_r_position[target] *
+                                                                 np.cos(ref_u_position + targets_u_position[target])),
+                                                    (ref_y_position + targets_r_position[target] *
+                                                                 np.sin(ref_u_position + targets_u_position[target])),
+                                                    mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                                    burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std
+                                                    )
 
-                        try:
-                            x_mean, y_mean, = centroid_x, centroid_y
+                        if star:
 
-                            flux_area = fits[1].data[int(y_mean) - targets_aperture[target]:
-                                                     int(y_mean) + targets_aperture[target] + 1,
-                                        int(x_mean) - targets_aperture[target]:
-                                        int(x_mean) + targets_aperture[target] + 1]
-                            flux_pixels = (2 * targets_aperture[target] + 1) ** 2
-                            flux = np.sum(flux_area)
+                            x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
 
-                            sky_area_1 = int(sky_inner_aperture * targets_aperture[target])
-                            sky_area_2 = int(sky_outer_aperture * targets_aperture[target])
-                            fits[1].data[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
-                            int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
-                            sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
-                                       int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
-                            sky_area = sky_area[np.where((sky_area > 0) &
-                                                         (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-                                                             std_key]))]
-                            sky = np.sum(sky_area)
-                            sky_pixels = sky_area.size
+                            gauss_targets_x_position_test.append(x_mean)
+                            gauss_targets_y_position_test.append(y_mean)
+                            gauss_targets_x_std_test.append(x_std)
+                            gauss_targets_y_std_test.append(y_std)
+                            gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
+                            gauss_targets_sky_test.append(floor)
 
-                            apperture_targets_x_position_test.append(x_mean)
-                            apperture_targets_y_position_test.append(y_mean)
-                            apperture_targets_flux_test.append(flux - flux_pixels * sky / sky_pixels)
-                            apperture_targets_sky_test.append(sky / sky_pixels)
-                        except:
+                            try:
+                                x_mean, y_mean, = centroid_x, centroid_y
+
+                                flux_area = fits[1].data[int(y_mean) - targets_aperture[target]:
+                                                         int(y_mean) + targets_aperture[target] + 1,
+                                            int(x_mean) - targets_aperture[target]:
+                                            int(x_mean) + targets_aperture[target] + 1]
+                                flux_pixels = (2 * targets_aperture[target] + 1) ** 2
+                                flux = np.sum(flux_area)
+
+                                sky_area_1 = int(sky_inner_aperture * 3 * star_psf)
+                                sky_area_2 = int(sky_outer_aperture * 3 * star_psf)
+                                fits[1].data[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
+                                int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
+                                sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
+                                           int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
+                                sky_area = sky_area[np.where((sky_area > 0) &
+                                                             (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
+                                                                 std_key]))]
+                                sky = np.sum(sky_area)
+                                sky_pixels = sky_area.size
+
+                                apperture_targets_x_position_test.append(x_mean)
+                                apperture_targets_y_position_test.append(y_mean)
+                                apperture_targets_flux_test.append(flux - flux_pixels * sky / sky_pixels)
+                                apperture_targets_sky_test.append(sky / sky_pixels)
+                            except:
+                                skip_aperture = True
+
+                        else:
+                            skip_gauss = True
                             skip_aperture = True
 
                     else:
@@ -450,17 +469,11 @@ def photometry():
         fits = pf.open(science[np.random.randint(len(science))])
         exp_time = round(fits[1].header[exposure_time_key], 1)
 
-        catalogue = plc.oec_catalogue()
-        catalogue_planets = []
         ra_dec_string = read_local_log('photometry', 'target_ra_dec')
         ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
         target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
-        for catalogue_planet in catalogue.planets:
-            if not np.isnan(catalogue_planet.system.dec):
-                catalogue_planets.append([np.sqrt((catalogue_planet.system.dec.deg - target.dec.deg) ** 2
-                                                  + (catalogue_planet.system.ra.deg - target.ra.deg) ** 2),
-                                          catalogue_planet.name])
-        catalogue_planets.sort()
+
+        ecc_planet = plc.find_nearest(target)
 
         phot_filter = 'None detected'
         for key in read_local_log_profile('filter_key').split(','):
@@ -486,7 +499,7 @@ def photometry():
             'you can also try \nuploading {1})'.format(*files_to_upload),
             '',
             'Planet: {0} \n(this is the closest known exoplanet found \nin the catalogue, if this is not the '
-            'target \nyou observed, please ignore)'.format(str(catalogue_planets[0][1]).replace(' ', '')),
+            'target \nyou observed, please ignore)'.format(ecc_planet.planet.name),
             '',
             'Time format: JD_UTC \n(UTC-based Julian date)',
             '',

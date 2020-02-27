@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import warnings
+import time
 
 from .analysis_functions_and_fit import fit_two_d_gaussian
 from .analysis_distributions import one_d_distribution
@@ -26,12 +28,14 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
         popt, pcov = fit_two_d_gaussian(datax, datay, dataz, point_xy=(centroid_x, centroid_y),
                                         sigma=star_std, positive=True, maxfev=1000)
 
-        if popt[0] > std_limit * std and popt[0] + popt[1] < burn_limit:
-            if np.sqrt(pcov[0][0]) != np.inf:
-                if popt[0] > std_limit * np.sqrt(pcov[0][0]):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            if popt[0] > std_limit * std and popt[0] + popt[1] < burn_limit:
+                if np.sqrt(pcov[0][0]) != np.inf:
+                    if popt[0] > std_limit * np.sqrt(pcov[0][0]):
+                        star = (popt, pcov)
+                else:
                     star = (popt, pcov)
-            else:
-                star = (popt, pcov)
 
     except:
         pass
@@ -72,7 +76,8 @@ def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, 
 
 
 def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_centre=None, y_centre=None,
-                   mean=None, std=None, burn_limit=50000, star_std=2, std_limit=3.0, order_by_flux=False):
+                   mean=None, std=None, burn_limit=50000, star_std=2, std_limit=3.0, order_by_flux=False,
+                   progress_pack=None):
 
     if mean is None or std is None:
         try:
@@ -106,17 +111,55 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
     psf_x_err = []
     psf_y = []
     psf_y_err = []
-    for centroid in centroids:
-        star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
 
-        if star:
-            stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
-                          np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
-                          2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
-            psf_x.append(star[0][4])
-            psf_x_err.append(np.sqrt(star[1][4][4]))
-            psf_y.append(star[0][5])
-            psf_y_err.append(np.sqrt(star[1][5][5]))
+    if progress_pack:
+        count_total = len(centroids)
+
+        progress_bar, percent_label = progress_pack
+
+        lt0 = time.time()
+        percent = 0
+        for counter, centroid in enumerate(centroids):
+
+            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
+
+            if star:
+                stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
+                              np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
+                              2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+                psf_x.append(star[0][4])
+                psf_x_err.append(np.sqrt(star[1][4][4]))
+                psf_y.append(star[0][5])
+                psf_y_err.append(np.sqrt(star[1][5][5]))
+
+            new_percent = round(100 * (counter + 1) / count_total, 0)
+            if new_percent != percent:
+                lt1 = time.time()
+                rm_time = (100 - new_percent) * (lt1 - lt0) / new_percent
+                hours = rm_time / 3600.0
+                minutes = (hours - int(hours)) * 60
+                seconds = (minutes - int(minutes)) * 60
+
+                progress_bar['value'] = new_percent
+                percent_label.configure(text='{0} % ({1}h {2}m {3}s left)'.format(new_percent, int(hours),
+                                                                                  int(minutes), int(seconds)))
+                progress_bar.update()
+                percent_label.update()
+                percent = new_percent
+
+    else:
+        for num, centroid in enumerate(centroids):
+
+            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
+
+            if star:
+                stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
+                              np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
+                              2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+                psf_x.append(star[0][4])
+                psf_x_err.append(np.sqrt(star[1][4][4]))
+                psf_y.append(star[0][5])
+                psf_y_err.append(np.sqrt(star[1][5][5]))
 
     if len(stars) > 0:
 
@@ -154,7 +197,7 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
     max_test = np.max(test, 0)
     del test
     stars = np.where((data_array < burn_limit) & (data_array > mean + std_limit * std) & (max_test == data_array)
-                     & (median_test > mean + std))
+                     & (median_test > mean + 2 * std))
     del data_array
 
     stars = [stars[1] + x_low, stars[0] + y_low]
