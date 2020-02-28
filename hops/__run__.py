@@ -135,17 +135,17 @@ def setup_window(window, objects, title_font=None, main_font=None, button_font=N
             for obj in objects[row]:
 
                 if obj[0].winfo_class() == 'Button':
-                    obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
+                    obj[0].config(borderwidth=buttons_bd, font=button_font, padx=1, pady=1)
                 elif obj[0].winfo_class() == 'Entry':
                     obj[0].configure(bd=entries_bd, font=main_font)
                 elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
                     if len(obj) == 5:
                         if obj[4] == 'title':
-                            obj[0].configure(font=title_font)
+                            obj[0].configure(font=title_font, padx=0, pady=0)
                         else:
-                            obj[0].configure(font=main_font)
+                            obj[0].configure(font=main_font, padx=0, pady=0)
                     else:
-                        obj[0].configure(font=main_font)
+                        obj[0].configure(font=main_font, padx=0, pady=0)
 
                 if len(obj) >= 4:
                     obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
@@ -848,6 +848,8 @@ def photometry_window(run):
 
     box_semi_length_label = Label(root, text='Box semi-length')
 
+    warnings_label = Label(root, text='WARNINGS')
+
     targets_indication_entry = [Radiobutton(root, text='      Target           ', variable=targets_indication, value=0)]
     for comparison in range(max_comparisons):
         targets_indication_entry.append(Radiobutton(root, text='Comparison {0}     '.format(comparison + 1),
@@ -1088,7 +1090,7 @@ def photometry_window(run):
                             if star_psf == 0:
                                 targets_note1[i_target].set('')
                             elif app < 2 * star_psf:
-                                targets_note1[i_target].set('WARNING\nAperture too small')
+                                targets_note1[i_target].set('Aperture too small')
                             else:
                                 targets_note1[i_target].set('')
                         except TclError:
@@ -1099,9 +1101,9 @@ def photometry_window(run):
                         if i_target > 0:
                             if 0 not in [targets_x_position[0].get(), targets_y_position[0].get()]:
                                 if targets_flux[i_target].get() > 2 * targets_flux[0].get():
-                                    targets_note2[i_target].set('WARNING\nComparison too bright')
+                                    targets_note2[i_target].set('Comparison too bright')
                                 elif targets_flux[i_target].get() < 0.5 * targets_flux[0].get():
-                                    targets_note2[i_target].set('WARNING\nComparison too faint')
+                                    targets_note2[i_target].set('Comparison too faint')
                                 else:
                                     targets_note2[i_target].set('')
                             else:
@@ -1266,20 +1268,19 @@ def photometry_window(run):
         [[window_label, 1, 8, 1, 'title']],
         [[help_label, 1, 8]],
         [[Btn2, 1, 8]],
-        [],
-        [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5, 2]],
+        [[position_x_label, 2], [position_y_label, 3], [peak_counts_label, 4], [box_semi_length_label, 5, 2], [warnings_label, 7, 2]],
     ]
 
     for target in range(max_targets):
 
-        if target == 0:
+        if target == 1:
             setup_list.append([[created_by_label, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
                                [targets_aperture_entry[target], 5, 2],
                                [targets_note1_label[target], 7],
                                [targets_note2_label[target], 8]])
-        elif target == 3:
+        elif target == 4:
             setup_list.append([[Btn, 0, 1, 3],
                                [targets_indication_entry[target], 1], [targets_x_position_label[target], 2],
                                [targets_y_position_label[target], 3], [targets_peak_counts_label[target], 4],
@@ -1296,8 +1297,7 @@ def photometry_window(run):
     setup_list.append([[show_fov_button, 5, 2]])
     setup_list.append([[flip_fov_button, 5], [mirror_fov_button, 6]])
     setup_list.append([])
-    setup_list.append([[photometry_button, 1, 6]])
-    setup_list.append([[proceed_to_fitting_button, 1, 3], [return_to_reduction_button, 4, 3]])
+    setup_list.append([[photometry_button, 1], [proceed_to_fitting_button, 2, 3], [return_to_reduction_button, 6, 2]])
     setup_list.append([])
 
     setup_window(root, setup_list)
