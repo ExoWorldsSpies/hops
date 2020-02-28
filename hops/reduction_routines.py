@@ -412,9 +412,7 @@ def reduction():
 
         for counter, science_file in enumerate(observation_files):
 
-            print('\n', os.path.split(science_file)[1])
-
-            label_4.configure(text='Redusing data and calculating statistics: {0}'.format(os.path.split(science_file)[1]))
+            label_4.configure(text='Reducing data and calculating statistics: {0}'.format(os.path.split(science_file)[1]))
             label_4.update()
             # correct it with master bias_files, master dark_files and master flat_files
 
@@ -447,9 +445,6 @@ def reduction():
             except:
                 mean = np.median(data_frame)
                 std = plc.mad(data_frame) * 1.5
-
-            print('Sky / pixel / s: {0} +/- {1}'.format(round(mean / fits[0].header[exposure_time_key], 2),
-                                                        round(std / fits[0].header[exposure_time_key], 2)))
 
             if observation_date_key == observation_time_key:
                 observation_time = ' '.join(fits[0].header[observation_date_key].split('T'))

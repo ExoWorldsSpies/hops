@@ -179,6 +179,11 @@ def setup_window(window, objects, title_font=None, main_font=None, button_font=N
                     obj[0].grid(row=row, column=obj[1])
 
 
+def alignment_log(*message):
+    # print(*message)
+    pass
+
+
 def alignment():
 
     print('Alignment...')
@@ -264,11 +269,10 @@ def alignment():
         bright_stars = []
         std_limit = 20
         while len(bright_stars) < 100 and std_limit >= 5.0:
-            print(std_limit)
             bright_stars = []
             for star in stars:
                 if star[-1] > (2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1]):
-                    print(star[-1], 2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1])
+                    alignment_log(star[-1], 2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1])
                     bright_stars.append(star)
             std_limit -= 5
 
@@ -319,7 +323,7 @@ def alignment():
         skip_time = 0
         lt0 = time.time()
         for counter, science_file in enumerate(science):
-            print('\n', science_file)
+            alignment_log('\n', science_file)
             label_2.configure(text='Running Alignment: {0}'.format(science_file.split(os.sep)[-1]))
             label_2.update()
 
@@ -336,7 +340,7 @@ def alignment():
             rotation_detected = False
 
             # super fast detection test
-            print('Test no shift', x0, y0, u0)
+            alignment_log('Test no shift', x0, y0, u0)
             star = plc.find_single_star(fits[1].data, x0, y0, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
                                         burn_limit=burn_limit, star_std=star_std)
 
@@ -346,8 +350,8 @@ def alignment():
 
                 max_x = star[0]
                 max_y = star[1]
-                print(science_file)
-                print('Testing star at: ', max_x, max_y, ', with rotation:', u0)
+                alignment_log(science_file)
+                alignment_log('Testing star at: ', max_x, max_y, ', with rotation:', u0)
 
                 test = 0
 
@@ -363,13 +367,13 @@ def alignment():
                             test += 1
                         else:
                             test -= 1
-                    print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                    alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                     if abs(test) > check_num:
                         break
 
                 tests.append([test, max_x, max_y])
-                print([test, max_x, max_y])
+                alignment_log([test, max_x, max_y])
 
                 tests.sort()
                 test, max_x, max_y = tests[-1]
@@ -387,14 +391,14 @@ def alignment():
             else:
                 stars_detected = False
 
-            print(stars_detected, x0, y0, u0)
+            alignment_log(stars_detected, x0, y0, u0)
             # super fast detection test
 
             delta_skip_time = time.time()
             # look for reasonable field shift
             if not stars_detected:
 
-                print('Testing small shift')
+                alignment_log('Testing small shift')
                 label_3.configure(text='Testing small shift and rotation')
                 label_3.update()
 
@@ -415,8 +419,8 @@ def alignment():
                         canvas.draw()
                         show_progress.root.update()
 
-                        print(science_file)
-                        print('Testing star at: ', max_x, max_y, ',with rotation:', u0)
+                        alignment_log(science_file)
+                        alignment_log('Testing star at: ', max_x, max_y, ',with rotation:', u0)
 
                         test = 0
 
@@ -433,13 +437,13 @@ def alignment():
                                     test += 1
                                 else:
                                     test -= 1
-                            print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                            alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                             if abs(test) > check_num:
                                 break
 
                         tests.append([test, max_x, max_y])
-                        print([test, max_x, max_y])
+                        alignment_log([test, max_x, max_y])
 
                         if test > check_num:
                             break
@@ -458,8 +462,8 @@ def alignment():
                             circle.set_center((max_x, max_y))
                             canvas.draw()
                             show_progress.root.update()
-                            print(science_file)
-                            print('LOW-SNR Testing star at: ', max_x, max_y, ', with rotation:', u0)
+                            alignment_log(science_file)
+                            alignment_log('LOW-SNR Testing star at: ', max_x, max_y, ', with rotation:', u0)
 
                             test = 0
 
@@ -476,13 +480,13 @@ def alignment():
                                         test += 1
                                     else:
                                         test -= 1
-                                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                                alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                                 if abs(test) > check_num_snr:
                                     break
 
                             tests.append([test, max_x, max_y])
-                            print([test, max_x, max_y])
+                            alignment_log([test, max_x, max_y])
 
                             if test > check_num_snr:
                                 break
@@ -510,13 +514,13 @@ def alignment():
                 else:
                     stars_detected = False
 
-                print(stars_detected, x0, y0, u0)
+                alignment_log(stars_detected, x0, y0, u0)
             # look for reasonable field shift
 
             # look for reasonable field rotation
             if not stars_detected:
 
-                print('Testing small rotation')
+                alignment_log('Testing small rotation')
 
                 ustep = np.arcsin(float(star_std) / comparisons[int(len(comparisons) / 2)][0])
                 angles = np.append(np.arange(-rotation_tolerance, rotation_tolerance, ustep),
@@ -538,8 +542,8 @@ def alignment():
 
                         for rotation in angles:
 
-                            print(science_file)
-                            print('Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
+                            alignment_log(science_file)
+                            alignment_log('Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
                             test = 0
 
@@ -556,13 +560,13 @@ def alignment():
                                         test += 1
                                     else:
                                         test -= 1
-                                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                                alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                                 if abs(test) > check_num:
                                     break
 
                             tests.append([test, max_x, max_y, rotation])
-                            print([test, max_x, max_y, rotation])
+                            alignment_log([test, max_x, max_y, rotation])
 
                             if test > check_num:
                                 break
@@ -586,8 +590,8 @@ def alignment():
 
                             for rotation in angles:
 
-                                print(science_file)
-                                print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
+                                alignment_log(science_file)
+                                alignment_log('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
                                 test = 0
 
@@ -604,13 +608,13 @@ def alignment():
                                             test += 1
                                         else:
                                             test -= 1
-                                    print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                                    alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                                     if abs(test) > check_num_snr:
                                         break
 
                                 tests.append([test, max_x, max_y, rotation])
-                                print([test, max_x, max_y, rotation])
+                                alignment_log([test, max_x, max_y, rotation])
 
                                 if test > check_num_snr:
                                     break
@@ -640,7 +644,7 @@ def alignment():
                 else:
                     stars_detected = False
 
-                print(stars_detected, x0, y0, u0)
+                alignment_log(stars_detected, x0, y0, u0)
             # look for reasonable field rotation
 
             if not stars_detected:
@@ -659,7 +663,7 @@ def alignment():
             # look for large field shift
             if not stars_detected and not skip_frame:
 
-                print('Testing large shift and rotation')
+                alignment_log('Testing large shift and rotation')
                 label_3.configure(text='Testing large shift and rotation')
                 label_3.update()
                 canvas.draw()
@@ -679,8 +683,8 @@ def alignment():
                         circle.set_center((max_x, max_y))
                         canvas.draw()
                         show_progress.root.update()
-                        print(science_file)
-                        print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', u0)
+                        alignment_log(science_file)
+                        alignment_log('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', u0)
 
                         test = 0
 
@@ -697,13 +701,13 @@ def alignment():
                                     test += 1
                                 else:
                                     test -= 1
-                                print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                                alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                             if abs(test) > check_num_snr:
                                 break
 
                         tests.append([test, max_x, max_y])
-                        print([test, max_x, max_y])
+                        alignment_log([test, max_x, max_y])
 
                         if test > check_num_snr:
                             break
@@ -723,13 +727,13 @@ def alignment():
                 else:
                     stars_detected = False
 
-                print(stars_detected, x0, y0, u0)
+                alignment_log(stars_detected, x0, y0, u0)
             # look for large field shift
 
             # look for large field rotation
             if not stars_detected and not skip_frame:
 
-                print('Test large rotation')
+                alignment_log('Test large rotation')
 
                 ustep = np.arcsin(float(star_std) / comparisons[int(len(comparisons) / 2)][0])
 
@@ -755,8 +759,8 @@ def alignment():
                             circle.set_center((max_x, max_y))
                             canvas.draw()
                             show_progress.root.update()
-                            print(science_file)
-                            print('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
+                            alignment_log(science_file)
+                            alignment_log('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
                             test = 0
 
@@ -773,13 +777,13 @@ def alignment():
                                         test += 1
                                     else:
                                         test -= 1
-                                    print('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+                                    alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
 
                                 if abs(test) > check_num_snr:
                                     break
 
                             tests.append([test, max_x, max_y, rotation])
-                            print([test, max_x, max_y, rotation])
+                            alignment_log([test, max_x, max_y, rotation])
 
                             if test > check_num_snr:
                                 break
@@ -802,7 +806,7 @@ def alignment():
                 else:
                     stars_detected = False
 
-                print(stars_detected, x0, y0, u0)
+                alignment_log(stars_detected, x0, y0, u0)
             # look for large field rotation
 
             skip_time += time.time() - delta_skip_time

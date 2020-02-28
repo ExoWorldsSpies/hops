@@ -182,6 +182,8 @@ def write_local_log(keyword, value, keyword2=None):
     else:
         x[keyword] = value
 
+    x['last_changed'] = datetime.datetime.now().isoformat()
+
     yaml.dump(x, open(local_log_file, 'w'), default_flow_style=False)
 
 
