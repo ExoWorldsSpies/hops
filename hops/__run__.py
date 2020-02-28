@@ -943,7 +943,7 @@ def photometry_window(run):
                                       label='Stars of similar flux to the target (+/- 40%)')
         else:
             circle1 = mpatches.Circle((-1000, -1000), circles_diameter, ec='y', fill=False,)
-        circle2 = mpatches.Circle((-1000, -1000), circles_diameter, ec='y', fill=False)
+        circle2 = mpatches.Circle((-1000, -1000), 0.75 * circles_diameter, ec='y', fill=False)
 
         targets_box.append(box)
         good_comps_boxes1.append(circle1)
