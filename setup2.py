@@ -1,7 +1,13 @@
 from __future__ import absolute_import
 import platform
 import os
+
+from hops.pylightcurve3._1databases import Databases
+
+databases = Databases(force_update=True)
+
 from hops import __get_abspath__
+
 
 name = 'hops'
 

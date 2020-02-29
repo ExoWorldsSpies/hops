@@ -10,12 +10,14 @@ from scipy.interpolate import interp1d
 
 class Databases:
 
-    def __init__(self):
+    def __init__(self, force_update=False):
 
-        self.clablimb = Database('clablimb', 'pylightcurve', __file__, date_to_update='200228').path
+        self.clablimb = Database('clablimb', 'pylightcurve', __file__, date_to_update='200228',
+                                 force_update=force_update).path
         self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='200228',
-                                  expire_date='200628', frequencey=30).path
-        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200228', frequencey=1).path
+                                  expire_date='200628', frequencey=30, force_update=force_update).path
+        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200228', frequencey=1,
+                            force_update=force_update).path
 
     def phoenix(self):
         return Database('phoenixplc3', 'pylightcurve', __file__, date_to_update='181213', ask_size='3.5GB').path
