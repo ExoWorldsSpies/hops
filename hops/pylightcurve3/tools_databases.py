@@ -23,7 +23,7 @@ ctx.verify_mode = ssl.CERT_NONE
 class Database:
 
     def __init__(self, database_name, package_name, file=__file__, vital=False, date_to_update='daily', expire_date=None,
-                 frequencey=None, force_update=False, ask_size=None, database_file_name='_0database.pickle',
+                 frequencey=None, force_update=False, update=False, ask_size=None, database_file_name='_0database.pickle',
                  package_path=os.path.expanduser('~'), directory_name='database',
                  last_update_file_name='database_last_update.txt'):
 
@@ -39,7 +39,7 @@ class Database:
                 shutil.rmtree(directory_path)
                 os.mkdir(directory_path)
                 update = True
-            else:
+            elif not update:
                 if not os.path.isfile(last_update_file_path):
                     update = True
 
@@ -81,7 +81,10 @@ class Database:
 
         # noinspection PyBroadException
         try:
-            print('\nChecking {0} database...'.format(database_name))
+            if update:
+                print('Updating {0} database...'.format(database_name))
+            else:
+                print('Checking {0} database...'.format(database_name))
 
             dbx_files = pickle.load(open(info_file_path, 'rb'))
             dbx_files = dbx_files['{0}_{1}'.format(database_name, directory_name)]
@@ -111,7 +114,7 @@ class Database:
                 if download:
 
                     if not os.path.isfile(os.path.join(package_path, dbx_files[dbx_file]['local_path'])):
-                        print(dbx_file)
+                        print('\tDowloading: ', dbx_file)
                         try:
                             urlretrieve(dbx_files[dbx_file]['link'], os.path.join(package_path,
                                                                                   dbx_files[dbx_file]['local_path']))

@@ -4,7 +4,7 @@ import os
 
 from hops.pylightcurve3._1databases import Databases
 
-databases = Databases(force_update=True)
+databases = Databases(update=True)
 
 from hops import __get_abspath__
 
