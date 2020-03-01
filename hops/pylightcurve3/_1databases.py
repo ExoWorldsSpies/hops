@@ -16,7 +16,7 @@ class Databases:
                                  force_update=force_update).path
         self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='200228',
                                   expire_date='200628', frequencey=30, force_update=force_update).path
-        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200228', frequencey=1,
+        self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200228', frequencey=30,
                             force_update=force_update).path
 
     def phoenix(self):

@@ -81,7 +81,7 @@ class Database:
 
         if update:
             # noinspection PyBroadException
-            # try:
+            try:
                 print('\nDownloading {0} database...'.format(database_name))
 
                 dbx_files = pickle.load(open(info_file_path, 'rb'))
@@ -125,12 +125,12 @@ class Database:
                 w.write(time.strftime('%y%m%d'))
                 w.close()
 
-            # except Exception as inst:
-            #     print('\nDownloading {0} database failed. A download will be attempted next time.'.format(
-            #         database_name))
-            #     print('Error:', sys.exc_info()[0])
-            #     print(inst.args)
-            #     pass
+            except Exception as inst:
+                print('\nDownloading {0} database failed. A download will be attempted next time.'.format(
+                    database_name))
+                print('Error:', sys.exc_info()[0])
+                print(inst.args)
+                pass
 
         if (not os.path.isdir(directory_path) or
                 len(glob.glob(os.path.join(directory_path, '*'))) == 0):
