@@ -79,28 +79,37 @@ class Database:
             else:
                 update = False
 
-        if update:
-            # noinspection PyBroadException
-            try:
-                print('\nDownloading {0} database...'.format(database_name))
+        # noinspection PyBroadException
+        try:
+            print('\nChecking {0} database...'.format(database_name))
 
-                dbx_files = pickle.load(open(info_file_path, 'rb'))
-                dbx_files = dbx_files['{0}_{1}'.format(database_name, directory_name)]
+            dbx_files = pickle.load(open(info_file_path, 'rb'))
+            dbx_files = dbx_files['{0}_{1}'.format(database_name, directory_name)]
 
-                if database_name == 'clablimb':
-                    if len(glob.glob(os.path.join(directory_path, '*.pickle'))) > 0:
-                        if os.path.isfile(glob.glob(os.path.join(directory_path, '*.pickle'))[0]):
-                            try:
-                                xx = pickle.load(open(glob.glob(os.path.join(directory_path, '*.pickle'))[0], 'rb'))
-                                del xx
-                            except:
-                                os.remove(glob.glob(os.path.join(directory_path, '*.pickle'))[0])
+            if database_name == 'clablimb':
+                if len(glob.glob(os.path.join(directory_path, '*.pickle'))) > 0:
+                    if os.path.isfile(glob.glob(os.path.join(directory_path, '*.pickle'))[0]):
+                        try:
+                            xx = pickle.load(open(glob.glob(os.path.join(directory_path, '*.pickle'))[0], 'rb'))
+                            del xx
+                        except:
+                            os.remove(glob.glob(os.path.join(directory_path, '*.pickle'))[0])
 
-                for current_file in glob.glob(os.path.join(directory_path, '*')):
-                    if os.path.split(current_file)[1] not in dbx_files:
-                        os.remove(current_file)
+            for current_file in glob.glob(os.path.join(directory_path, '*')):
+                if os.path.split(current_file)[1] not in dbx_files:
+                    os.remove(current_file)
 
-                for dbx_file in dbx_files:
+            for dbx_file in dbx_files:
+                if 'update' in dbx_file:
+                    if update:
+                        download = True
+                    else:
+                        download = False
+                else:
+                    download = True
+
+                if download:
+
                     if not os.path.isfile(os.path.join(package_path, dbx_files[dbx_file]['local_path'])):
                         print(dbx_file)
                         try:
@@ -111,26 +120,27 @@ class Database:
                                         open(os.path.join(package_path, dbx_files[dbx_file]['local_path']), 'wb') as f:
                                 f.write(u.read())
 
-                for update_file in glob.glob(os.path.join(directory_path, 'update_*')):
-                    shutil.move(update_file, update_file.replace('update_', ''))
+            for update_file in glob.glob(os.path.join(directory_path, 'update_*')):
+                shutil.move(update_file, update_file.replace('update_', ''))
 
-                if database_name == 'clablimb':
-                    xx = pickle.load(open(glob.glob(os.path.join(directory_path, '*.pickle'))[0], 'rb'))
-                    for i in xx:
-                        w = open(os.path.join(directory_path, i), 'w')
-                        w.write(xx[i])
-                        w.close()
+            if database_name == 'clablimb':
+                xx = pickle.load(open(glob.glob(os.path.join(directory_path, '*.pickle'))[0], 'rb'))
+                for i in xx:
+                    w = open(os.path.join(directory_path, i), 'w')
+                    w.write(xx[i])
+                    w.close()
 
+            if update:
                 w = open(last_update_file_path, 'w')
                 w.write(time.strftime('%y%m%d'))
                 w.close()
 
-            except Exception as inst:
-                print('\nDownloading {0} database failed. A download will be attempted next time.'.format(
-                    database_name))
-                print('Error:', sys.exc_info()[0])
-                print(inst.args)
-                pass
+        except Exception as inst:
+            print('\nDownloading {0} database failed. A download will be attempted next time.'.format(
+                database_name))
+            print('Error:', sys.exc_info()[0])
+            print(inst.args)
+            pass
 
         if (not os.path.isdir(directory_path) or
                 len(glob.glob(os.path.join(directory_path, '*'))) == 0):
