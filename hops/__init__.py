@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 __version__ = '2.5.7'
-__message__ = 'Important - Loading OEC issue solved\nAlignment update - handling very faint stars'
+__message__ = 'Important - ExoClock database connected\nPhotometry update - suggesting comparison stars'
 
 from .__run__ import run_app
 
