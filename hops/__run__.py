@@ -917,9 +917,9 @@ def photometry_window(run):
     y_length = len(fits[1].data)
     circles_diameter = 0.02 * max(y_length, x_length)
 
-    ax.add_patch(mpatches.Rectangle((visible_fov_x_min + 5, visible_fov_y_min + 5),
-                                   visible_fov_x_max - visible_fov_x_min - 10,
-                                   visible_fov_y_max - visible_fov_y_min - 10,
+    ax.add_patch(mpatches.Rectangle((visible_fov_x_min + 1, visible_fov_y_min + 1),
+                                   visible_fov_x_max - visible_fov_x_min - 2,
+                                   visible_fov_y_max - visible_fov_y_min - 2,
                                    ec='r', fill=False, label='Available FOV'))
 
     good_comps_boxes1 = []

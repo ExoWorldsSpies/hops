@@ -237,7 +237,7 @@ def alignment():
 
         stars, psf = plc.find_all_stars(fits[1].data,
                                         mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                        std_limit=3, burn_limit=2.0 * burn_limit / 3, star_std=star_std,
+                                        std_limit=3, burn_limit=burn_limit, star_std=star_std,
                                         order_by_flux=False,
                                         progress_pack=(progress_bar, percent_label))
 
@@ -267,13 +267,14 @@ def alignment():
         circles_diameter = 0.02 * max(y_length, x_length)
 
         bright_stars = []
-        std_limit = 20
+        std_limit = 30
         while len(bright_stars) < 100 and std_limit >= 5.0:
             bright_stars = []
             for star in stars:
-                if star[-1] > (2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1]):
-                    alignment_log(star[-1], 2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1])
-                    bright_stars.append(star)
+                if star[2] + star[3] < 2.0 * burn_limit / 3.0:
+                    if star[-1] > (2 * np.pi * (std_limit * frame_std) * psf[0] * psf[1]):
+                        alignment_log(star[-1], 2 * np.pi * (frame_mean + std_limit * frame_std) * psf[0] * psf[1])
+                        bright_stars.append(star)
             std_limit -= 5
 
         stars = sorted(bright_stars, key=lambda x: -x[-1] / (x[-2]**3))
@@ -951,10 +952,10 @@ def alignment():
 
         all_stars_dict['in_fov'] = np.array(in_fov)
 
-        visible_fov_x_min = np.min(stars[np.where(in_fov), 0])
-        visible_fov_x_max = np.max(stars[np.where(in_fov), 0])
-        visible_fov_y_min = np.min(stars[np.where(in_fov), 1])
-        visible_fov_y_max = np.max(stars[np.where(in_fov), 1])
+        visible_fov_x_min = np.min(stars[np.where(in_fov), 0]) - 3 * star_std
+        visible_fov_x_max = np.max(stars[np.where(in_fov), 0]) + 3 * star_std
+        visible_fov_y_min = np.min(stars[np.where(in_fov), 1]) - 3 * star_std
+        visible_fov_y_max = np.max(stars[np.where(in_fov), 1]) + 3 * star_std
 
         write_local_log('alignment', float(visible_fov_x_min), 'min_x')
         write_local_log('alignment', float(visible_fov_y_min), 'min_y')
