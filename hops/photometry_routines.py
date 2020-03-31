@@ -224,6 +224,9 @@ def photometry():
                 skip_gauss = False
                 skip_aperture = False
 
+                plotx = ref_x_position + targets_r_position[0] * np.cos(ref_u_position + targets_u_position[0])
+                ploty = ref_y_position + targets_r_position[0] * np.sin(ref_u_position + targets_u_position[0])
+
                 for target in range(max_comparisons + 1):
 
                     if targets_aperture[target] > 0:
@@ -250,6 +253,10 @@ def photometry():
                             if star:
 
                                 x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
+
+                                if target:
+                                    plotx = x_mean
+                                    ploty = y_mean
 
                                 gauss_targets_x_position_test.append(x_mean)
                                 gauss_targets_y_position_test.append(y_mean)
@@ -337,8 +344,6 @@ def photometry():
                     print('Skipping aperture for:', science_file)
 
             # counter
-                plotx = ref_x_position + targets_r_position[0] * np.cos(ref_u_position + targets_u_position[0])
-                ploty = ref_y_position + targets_r_position[0] * np.sin(ref_u_position + targets_u_position[0])
 
                 ax.cla()
                 ax.imshow(fits[1].data[int(ploty - 3 * targets_aperture[0]): int(ploty + 3 * targets_aperture[0]),
