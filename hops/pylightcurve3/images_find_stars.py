@@ -9,13 +9,14 @@ import time
 from .analysis_functions_and_fit import fit_two_d_gaussian
 from .analysis_distributions import one_d_distribution
 from .tools_maths import waverage
+from .exoplanet_lc import transit_flux_drop
 
 
 def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limit, star_std, std_limit):
 
     star = None
     try:
-        search_window = int(round(5 * star_std))
+        search_window = int(round(10 * star_std))
         y_min = int(max(int(centroid_y) - search_window, 0))
         y_max = int(min(int(centroid_y) + search_window, len(data_array) - 1))
         x_min = int(max(int(centroid_x) - search_window, 0))
@@ -204,3 +205,153 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
     stars = np.swapaxes(stars, 0, 1)
 
     return stars
+
+
+def pixel_to_aperture_overlap(x_pix, y_pix, x_ap, y_ap, ap):
+    d = np.sqrt((x_pix - x_ap) ** 2 + (y_pix - y_ap) ** 2)
+
+    if ap >= d + np.sqrt(0.5):
+        return 1
+
+    if ap <= d - np.sqrt(0.5):
+        return 0
+
+    x_shift = x_pix - 0.5
+    y_shift = y_pix - 0.5
+
+    x_pix -= x_shift
+    y_pix -= y_shift
+    x_ap -= x_shift
+    y_ap -= y_shift
+
+    xx = 1.5 - np.sqrt(2)
+    aa = 0.207107
+    bb = 0.0428932
+
+    area = 0
+
+    # main circle:
+
+    area += circles_overlap(x_ap, y_ap, ap, 0.5, 0.5, 0.5) * np.pi * 0.5 * 0.5
+
+    # out of main circle
+
+    out_of_c1 = (1 - np.pi * 0.5 * 0.5) / 4
+
+    # low left
+
+    circles = [[xx, xx, xx], [aa, bb, bb], [bb, aa, bb]]
+
+    circles_in = []
+    circles_in_area = []
+
+    for circle in circles:
+        x, y, r = circle
+
+        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
+
+        if ap >= d + r:
+            circles_in.append(1)
+            circles_in_area.append(np.pi * r * r)
+        elif ap <= d - r:
+            circles_in.append(0)
+            circles_in_area.append(0)
+        else:
+            circles_in.append(0)
+            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
+
+    if sum(circles_in) == 3:
+        area += out_of_c1
+    else:
+        area += sum(circles_in_area)
+
+    # low right
+
+    circles = [[1 - xx, xx, xx], [1 - aa, bb, bb], [1 - bb, aa, bb]]
+
+    circles_in = []
+    circles_in_area = []
+
+    for circle in circles:
+        x, y, r = circle
+
+        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
+
+        if ap >= d + r:
+            circles_in.append(1)
+            circles_in_area.append(np.pi * r * r)
+        elif ap <= d - r:
+            circles_in.append(0)
+            circles_in_area.append(0)
+        else:
+            circles_in.append(0)
+            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
+
+    if sum(circles_in) == 3:
+        area += out_of_c1
+    else:
+        area += sum(circles_in_area)
+
+    # upper left
+
+    circles = [[xx, 1 - xx, xx], [aa, 1 - bb, bb], [bb, 1 - aa, bb]]
+
+    circles_in = []
+    circles_in_area = []
+
+    for circle in circles:
+        x, y, r = circle
+
+        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
+
+        if ap >= d + r:
+            circles_in.append(1)
+            circles_in_area.append(np.pi * r * r)
+        elif ap <= d - r:
+            circles_in.append(0)
+            circles_in_area.append(0)
+        else:
+            circles_in.append(0)
+            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
+
+    if sum(circles_in) == 3:
+        area += out_of_c1
+    else:
+        area += sum(circles_in_area)
+
+    # upper right
+
+    circles = [[1 - xx, 1 - xx, xx], [1 - aa, 1 - bb, bb], [1 - bb, 1 - aa, bb]]
+
+    circles_in = []
+    circles_in_area = []
+
+    for circle in circles:
+        x, y, r = circle
+
+        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
+
+        if ap >= d + r:
+            circles_in.append(1)
+            circles_in_area.append(np.pi * r * r)
+        elif ap <= d - r:
+            circles_in.append(0)
+            circles_in_area.append(0)
+        else:
+            circles_in.append(0)
+            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
+
+    if sum(circles_in) == 3:
+        area += out_of_c1
+    else:
+        area += sum(circles_in_area)
+
+    # return final
+
+    return area
+
+
+def circles_overlap(x1, y1, r1, x2, y2, r2):
+    d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    return 1 - transit_flux_drop('zero', [], r1 / r2, np.array([d / r2]), precision=3)[0]

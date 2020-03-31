@@ -23,6 +23,9 @@ class Counter:
         self.start_time = time.time()
         self.show = 0
         self.show_every = int(show_every)
+        self.time_left = 0
+        self.percent = 0
+        self.update_now=False
 
     def update(self, message=''):
 
@@ -47,6 +50,12 @@ class Counter:
             sys.stdout.flush()
 
             self.show = 0
+
+            self.percent = round(100*self.current_iteration/self.total_iterations, 1)
+            self.time_left = time_left
+            self.update_now = True
+        else:
+            self.update_now = False
 
         if self.current_iteration == self.total_iterations and self.total_iterations > 1:
 

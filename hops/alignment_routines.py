@@ -1,182 +1,49 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from .hops_basics import *
+
+from tkinter import Tk, TclError
+from tkinter import Label, Button, Entry, Checkbutton, Scrollbar, Listbox, PhotoImage, Radiobutton, Scale, Frame
+from tkinter import StringVar, BooleanVar, DoubleVar, IntVar
+from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, BOTH, Y, HORIZONTAL
+
+import tkinter.ttk as ttk
+from tkinter.messagebox import *
+
+import warnings
+warnings.filterwarnings(
+    'ignore', message='Matplotlib is building the font cache using fc-list. This may take a moment.')
+warnings.filterwarnings(
+    'ignore', message='The installed version of numexpr 2.4.4 is not supported in pandas and will be not be used')
+
+import matplotlib
+matplotlib.use('TkAgg')
+
+import time
+import numpy as np
+import shutil
+import hops.pylightcurve3 as plc
+import matplotlib.cm as cm
+import matplotlib.patches as mpatches
+
+from astropy.io import fits as pf
+from matplotlib.figure import Figure
+try:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+    NavigationToolbar2TkAgg = NavigationToolbar2Tk
+except ImportError:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 
 
-class AddOnWindow:
+from hops.hops_tools.windows import *
+from hops.hops_tools.logs import log
 
-    def __init__(self, name, sizex, sizey, position=5, exit_command=None):
+import glob
 
-        self.root = Tk()
-        self.root.wm_title(name)
+def find_fits_files(fits_file):
 
-        if not exit_command:
-            self.root.protocol('WM_DELETE_WINDOW', self.root.withdraw)
-        else:
-            self.root.protocol('WM_DELETE_WINDOW', exit_command)
+    fits_list = glob.glob('*{0}*.f*t*'.format(fits_file)) + glob.glob('*{0}*.F*T*'.format(fits_file))
+    fits_list = list(np.unique(fits_list))
+    fits_list.sort()
+    return fits_list
 
-        if sizex and sizey:
-            self.root.geometry('{0}x{1}'.format(int(self.root.winfo_screenwidth() / sizex),
-                                                int(self.root.winfo_screenheight() / sizey)))
-
-        self.root.withdraw()
-        self.finalised = False
-        self.position = position
-
-    def mainloop(self):
-
-        self.root.mainloop()
-
-    def setup(self, objects, title_font=None, main_font=None, button_font=None, entries_bd=3, buttons_bd=5):
-
-        screenheigth = self.root.winfo_screenheight()
-
-        if button_font is None:
-            button_font = ['times', int(screenheigth/55), 'bold']
-
-        if main_font is None:
-            main_font = ['times', int(screenheigth/60)]
-
-        if title_font is None:
-            title_font = ['times', int(screenheigth/40), 'bold']
-
-        for row in range(len(objects)):
-            if len(objects[row]) == 0:
-                label_empty = Label(self.root, text='')
-                label_empty.grid(row=row, column=100)
-            else:
-                for obj in objects[row]:
-
-                    if obj[0].winfo_class() == 'Button':
-                        obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
-                    elif obj[0].winfo_class() == 'Entry':
-                        obj[0].configure(bd=entries_bd, font=main_font)
-                    elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                        if len(obj) == 5:
-                            if obj[4] == 'title':
-                                obj[0].configure(font=title_font)
-                            else:
-                                obj[0].configure(font=main_font)
-                        else:
-                            obj[0].configure(font=main_font)
-
-                    if len(obj) == 5:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3], padx=obj[4][0], pady=obj[4][0])
-                    elif len(obj) == 5:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                    elif len(obj) == 3:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                    else:
-                        obj[0].grid(row=row, column=obj[1])
-
-    def show(self):
-
-        if not self.finalised:
-
-            self.root.update()
-            self.root.update_idletasks()
-
-            if self.position == 1:
-                x = 0
-                y = 0
-
-            elif self.position == 2:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = 0
-
-            elif self.position == 3:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = 0
-
-            elif self.position == 4:
-                x = 0
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 5:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 6:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 7:
-                x = 0
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            elif self.position == 8:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            elif self.position == 9:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            else:
-                x = 0
-                y = 0
-
-            self.root.geometry('+%d+%d' % (int(x), int(y)))
-
-            self.root.update_idletasks()
-
-            self.root.lift()
-            self.root.wm_attributes("-topmost", 1)
-            self.root.after_idle(self.root.attributes, '-topmost', 0)
-
-            self.finalised = True
-
-        self.root.deiconify()
-
-    def hide(self):
-
-        self.root.withdraw()
-
-    def close(self):
-
-        self.root.quit()
-        self.root.destroy()
-
-
-def setup_window(window, objects, title_font=None, main_font=None, button_font=None, entries_bd=3, buttons_bd=5):
-    screenheigth = window.winfo_screenheight()
-
-    if button_font is None:
-        button_font = ['times', int(screenheigth/55), 'bold']
-
-    if main_font is None:
-        main_font = ['times', int(screenheigth/60)]
-
-    if title_font is None:
-        title_font = ['times', int(screenheigth/40), 'bold']
-
-    for row in range(len(objects)):
-        if len(objects[row]) == 0:
-            label_empty = Label(window, text='')
-            label_empty.grid(row=row, column=100)
-        else:
-            for obj in objects[row]:
-
-                if obj[0].winfo_class() == 'Button':
-                    obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
-                elif obj[0].winfo_class() == 'Entry':
-                    obj[0].configure(bd=entries_bd, font=main_font)
-                elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                    if len(obj) == 5:
-                        if obj[4] == 'title':
-                            obj[0].configure(font=title_font)
-                        else:
-                            obj[0].configure(font=main_font)
-                    else:
-                        obj[0].configure(font=main_font)
-
-                if len(obj) >= 4:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                elif len(obj) == 3:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                else:
-                    obj[0].grid(row=row, column=obj[1])
 
 
 def alignment_log(*message):
@@ -188,9 +55,9 @@ def alignment():
 
     print('Alignment...')
 
-    if read_local_log('pipeline', 'alignment_complete'):
+    if log.read_local_log('pipeline', 'alignment_complete'):
         if askyesno('Overwrite alignment', 'Alignment has been completed, do you want to run again?'):
-            write_local_log('pipeline', False, 'alignment_complete')
+            log.write_local_log('pipeline', False, 'alignment_complete')
 
     test_all_stars = True
     try:
@@ -200,36 +67,36 @@ def alignment():
     except:
         test_all_stars = False
 
-    if read_local_log('alignment', 'star_psf_x') == 0 or not read_local_log('pipeline', 'alignment_complete'):
+    if log.read_local_log('alignment', 'star_psf_x') == 0 or not log.read_local_log('pipeline', 'alignment_complete'):
         test_all_stars = False
 
     # if all_stars exist and repeat not requested: exit
 
-    if test_all_stars and read_local_log('pipeline', 'alignment_complete'):
+    if test_all_stars and log.read_local_log('pipeline', 'alignment_complete'):
         return 0
 
     # continue to alignment
 
     # load parameters
 
-    reduction_directory = read_local_log('pipeline', 'reduction_directory')
+    reduction_directory = log.read_local_log('pipeline', 'reduction_directory')
 
-    mean_key = read_local_log('pipeline_keywords', 'mean_key')
-    std_key = read_local_log('pipeline_keywords', 'std_key')
-    align_x0_key = read_local_log('pipeline_keywords', 'align_x0_key')
-    align_y0_key = read_local_log('pipeline_keywords', 'align_y0_key')
-    align_u0_key = read_local_log('pipeline_keywords', 'align_u0_key')
+    mean_key = log.read_local_log('pipeline_keywords', 'mean_key')
+    std_key = log.read_local_log('pipeline_keywords', 'std_key')
+    align_x0_key = log.read_local_log('pipeline_keywords', 'align_x0_key')
+    align_y0_key = log.read_local_log('pipeline_keywords', 'align_y0_key')
+    align_u0_key = log.read_local_log('pipeline_keywords', 'align_u0_key')
 
-    frame_low_std = read_local_log('windows', 'frame_low_std')
-    frame_upper_std = read_local_log('windows', 'frame_upper_std')
+    frame_low_std = log.read_local_log('windows', 'frame_low_std')
+    frame_upper_std = log.read_local_log('windows', 'frame_upper_std')
 
-    bin_fits = int(read_local_log('reduction', 'bin_fits'))
+    bin_fits = int(log.read_local_log('reduction', 'bin_fits'))
 
-    burn_limit = int(read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
-    shift_tolerance_p = read_local_log('alignment', 'shift_tolerance_p')
-    rotation_tolerance = read_local_log('alignment', 'rotation_tolerance')
-    min_calibration_stars_number = int(read_local_log('alignment', 'min_calibration_stars_number'))
-    star_std = read_local_log('alignment', 'star_std')
+    burn_limit = int(log.read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
+    shift_tolerance_p = log.read_local_log('alignment', 'shift_tolerance_p')
+    rotation_tolerance = log.read_local_log('alignment', 'rotation_tolerance')
+    min_calibration_stars_number = int(log.read_local_log('alignment', 'min_calibration_stars_number'))
+    star_std = log.read_local_log('alignment', 'star_std')
 
     science = find_fits_files(os.path.join(reduction_directory, '*'))
 
@@ -243,18 +110,18 @@ def alignment():
 
         stars = np.array(stars)
 
-        write_local_log('alignment', int(max(1, round(max(psf[0], psf[1])))), 'star_std')
-        write_local_log('alignment', float(max(psf[0], psf[1])), 'star_psf')
-        write_local_log('alignment', float(psf[0]), 'star_psf_x')
-        write_local_log('alignment', float(psf[1]), 'star_psf_y')
+        log.write_local_log('alignment', int(max(1, round(max(psf[0], psf[1])))), 'star_std')
+        log.write_local_log('alignment', float(max(psf[0], psf[1])), 'star_psf')
+        log.write_local_log('alignment', float(psf[0]), 'star_psf_x')
+        log.write_local_log('alignment', float(psf[1]), 'star_psf_y')
 
         all_stars_dict = {'all_stars': stars}
         plc.save_dict(all_stars_dict, 'all_stars.pickle')
 
     def align():
 
-        star_std = read_local_log('alignment', 'star_std')
-        psf = (read_local_log('alignment', 'star_psf_x'), read_local_log('alignment', 'star_psf_y'))
+        star_std = log.read_local_log('alignment', 'star_std')
+        psf = (log.read_local_log('alignment', 'star_psf_x'), log.read_local_log('alignment', 'star_psf_y'))
 
         all_stars_dict = plc.open_dict('all_stars.pickle')
         stars = np.array(all_stars_dict['all_stars'])
@@ -324,9 +191,15 @@ def alignment():
         skip_time = 0
         lt0 = time.time()
         for counter, science_file in enumerate(science):
+
+            if show_progress.exit:
+                return None
+
             alignment_log('\n', science_file)
             label_2.configure(text='Running Alignment: {0}'.format(science_file.split(os.sep)[-1]))
             label_2.update()
+            label_3.configure(text='')
+            label_3.update()
 
             fits = pf.open(science_file, mode='update')
 
@@ -395,6 +268,9 @@ def alignment():
             alignment_log(stars_detected, x0, y0, u0)
             # super fast detection test
 
+            if show_progress.exit:
+                return None
+
             delta_skip_time = time.time()
             # look for reasonable field shift
             if not stars_detected:
@@ -408,17 +284,23 @@ def alignment():
                                            y_centre=y0, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
                                            burn_limit=burn_limit, star_std=star_std)[0]
 
+                if show_progress.exit:
+                    return None
+
                 if stars:
 
                     tests = []
 
                     for star in stars:
 
+                        if show_progress.exit:
+                            return None
+
                         max_x = star[0]
                         max_y = star[1]
                         circle.set_center((max_x, max_y))
                         canvas.draw()
-                        show_progress.root.update()
+                        show_progress.update()
 
                         alignment_log(science_file)
                         alignment_log('Testing star at: ', max_x, max_y, ',with rotation:', u0)
@@ -458,11 +340,14 @@ def alignment():
 
                         for star in stars:
 
+                            if show_progress.exit:
+                                return None
+
                             max_x = star[0]
                             max_y = star[1]
                             circle.set_center((max_x, max_y))
                             canvas.draw()
-                            show_progress.root.update()
+                            show_progress.update()
                             alignment_log(science_file)
                             alignment_log('LOW-SNR Testing star at: ', max_x, max_y, ', with rotation:', u0)
 
@@ -518,6 +403,9 @@ def alignment():
                 alignment_log(stars_detected, x0, y0, u0)
             # look for reasonable field shift
 
+            if show_progress.exit:
+                return None
+
             # look for reasonable field rotation
             if not stars_detected:
 
@@ -533,13 +421,16 @@ def alignment():
 
                     for star in stars:
 
+                        if show_progress.exit:
+                            return None
+
                         test = 0
 
                         max_x = star[0]
                         max_y = star[1]
                         circle.set_center((max_x, max_y))
                         canvas.draw()
-                        show_progress.root.update()
+                        show_progress.update()
 
                         for rotation in angles:
 
@@ -581,13 +472,16 @@ def alignment():
 
                         for star in stars:
 
+                            if show_progress.exit:
+                                return None
+
                             test = 0
 
                             max_x = star[0]
                             max_y = star[1]
                             circle.set_center((max_x, max_y))
                             canvas.draw()
-                            show_progress.root.update()
+                            show_progress.update()
 
                             for rotation in angles:
 
@@ -651,15 +545,16 @@ def alignment():
             if not stars_detected:
                 circle.set_center((-100, -100))
                 canvas.draw()
-                show_progress.root.update()
-                canvas.draw()
-                show_progress.root.update()
+                show_progress.update()
                 skip_frame = askyesno('Alignment',
                                       'Stars not found close to their previous positions.\n'
                                       'Do you want to skip this frame?',
                                       parent=show_progress.root)
             else:
                 skip_frame = False
+
+            if show_progress.exit:
+                return None
 
             # look for large field shift
             if not stars_detected and not skip_frame:
@@ -668,10 +563,13 @@ def alignment():
                 label_3.configure(text='Testing large shift and rotation')
                 label_3.update()
                 canvas.draw()
-                show_progress.root.update()
+                show_progress.update()
 
                 stars = plc.find_all_stars(fits[1].data, mean=fits[1].header[mean_key], std=fits[1].header[std_key],
                                            burn_limit=burn_limit, star_std=star_std, order_by_flux=True)[0]
+
+                if show_progress.exit:
+                    return None
 
                 if stars:
 
@@ -679,11 +577,14 @@ def alignment():
 
                     for star in stars:
 
+                        if show_progress.exit:
+                            return None
+
                         max_x = star[0]
                         max_y = star[1]
                         circle.set_center((max_x, max_y))
                         canvas.draw()
-                        show_progress.root.update()
+                        show_progress.update()
                         alignment_log(science_file)
                         alignment_log('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', u0)
 
@@ -747,6 +648,9 @@ def alignment():
 
                 if stars:
 
+                    if show_progress.exit:
+                        return None
+
                     tests = []
 
                     for rotation in angles:
@@ -759,7 +663,7 @@ def alignment():
                             max_y = star[1]
                             circle.set_center((max_x, max_y))
                             canvas.draw()
-                            show_progress.root.update()
+                            show_progress.update()
                             alignment_log(science_file)
                             alignment_log('LOW SNR Testing star at: ', max_x, max_y, ', with rotation: ', rotation)
 
@@ -812,6 +716,9 @@ def alignment():
 
             skip_time += time.time() - delta_skip_time
 
+            if show_progress.exit:
+                return None
+
             if stars_detected:
 
                 if rotation_detected:
@@ -856,7 +763,7 @@ def alignment():
                     ax.add_patch(circle)
 
                 canvas.draw()
-                show_progress.root.update()
+                show_progress.update()
 
             else:
 
@@ -882,16 +789,14 @@ def alignment():
 
                 percent = new_percent
 
-            show_progress.root.update()
+                show_progress.update()
 
-            if exit_var.get():
-                break
-
-            if counter == 0:
-                show_progress.show()
+            if show_progress.exit:
+                return None
 
     def check_visibility():
 
+        star_std = log.read_local_log('alignment', 'star_std')
         all_stars_dict = plc.open_dict('all_stars.pickle')
         stars = np.array(all_stars_dict['all_stars'])
 
@@ -907,6 +812,10 @@ def alignment():
         percent = 0
         lt0 = time.time()
         for counter, science_file in enumerate(science):
+
+            if show_progress.exit:
+                return None
+
             in_fov_single = []
             fits = pf.open(science_file)
             if fits[1].header[align_x0_key]:
@@ -919,8 +828,8 @@ def alignment():
                     cartesian_x = ref_x_position + star[0] * np.cos(ref_u_position + star[1])
                     cartesian_y = ref_y_position + star[0] * np.sin(ref_u_position + star[1])
 
-                    if (cartesian_x > 0 and cartesian_x < len(fits[1].data[0]) and cartesian_y > 0
-                            and cartesian_y < len(fits[1].data)):
+                    if (cartesian_x > 3 * star_std and cartesian_x < len(fits[1].data[0]) - 3 * star_std and cartesian_y > 3 * star_std
+                            and cartesian_y < len(fits[1].data) - 3 * star_std):
 
                         in_fov_single.append(1)
                     else:
@@ -945,10 +854,7 @@ def alignment():
 
                 percent = new_percent
 
-            show_progress.root.update()
-
-            if exit_var.get():
-                break
+                show_progress.update()
 
         all_stars_dict['in_fov'] = np.array(in_fov)
 
@@ -957,44 +863,45 @@ def alignment():
         visible_fov_y_min = np.min(stars[np.where(in_fov), 1]) - 3 * star_std
         visible_fov_y_max = np.max(stars[np.where(in_fov), 1]) + 3 * star_std
 
-        write_local_log('alignment', float(visible_fov_x_min), 'min_x')
-        write_local_log('alignment', float(visible_fov_y_min), 'min_y')
-        write_local_log('alignment', float(visible_fov_x_max), 'max_x')
-        write_local_log('alignment', float(visible_fov_y_max), 'max_y')
+        log.write_local_log('alignment', float(visible_fov_x_min), 'min_x')
+        log.write_local_log('alignment', float(visible_fov_y_min), 'min_y')
+        log.write_local_log('alignment', float(visible_fov_x_max), 'max_x')
+        log.write_local_log('alignment', float(visible_fov_y_max), 'max_y')
 
         plc.save_dict(all_stars_dict, 'all_stars.pickle')
 
     def run():
 
-        find_all_stars()
+        if not show_progress.exit:
+            find_all_stars()
 
-        if read_local_log('pipeline', 'alignment_complete'):
-            check_visibility()
+        if log.read_local_log('pipeline', 'alignment_complete'):
+
+            if not show_progress.exit:
+                check_visibility()
 
         else:
-            align()
-            check_visibility()
+            if not show_progress.exit:
+                align()
 
-        if not exit_var.get():
-            write_local_log('pipeline', True, 'alignment_complete')
+            if not show_progress.exit:
+                check_visibility()
+
+        if not show_progress.exit:
+            log.write_local_log('pipeline', True, 'alignment_complete')
 
         show_progress.close()
 
     # progress window
 
-    exit_var = BooleanVar(value=False)
-
-    def break_and_exit():
-        exit_var.set(True)
-
-    show_progress = AddOnWindow('HOPS - Alignment', 0, 0, 5, exit_command=break_and_exit)
+    show_progress = ProgressWindow('HOPS - Alignment', 0, 0, 5)
 
     f = Figure()
     f.patch.set_facecolor('white')
     ax = f.add_subplot(111)
     f.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
     ax.axis('off')
-    canvas = FigureCanvasTkAgg(f, show_progress.root)
+    canvas = show_progress.FigureCanvasTkAgg(f)
     canvas.get_tk_widget().pack()
 
     fits = pf.open(science[0], memmap=False)
@@ -1003,7 +910,7 @@ def alignment():
               vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
     fits.close()
 
-    frame1 = Frame(show_progress.root)
+    frame1 = show_progress.Frame()
     frame1.pack()
 
     label_1 = Label(frame1, text="Locating all stars in the FOV")
@@ -1011,7 +918,7 @@ def alignment():
                                    length=300, maximum=100, mode='determinate', value=0)
     percent_label = Label(frame1, text='0.0 %')
 
-    if read_local_log('pipeline', 'alignment_complete'):
+    if log.read_local_log('pipeline', 'alignment_complete'):
         label_2 = Label(frame1, text='Running Alignment: --- Skipping ---')
     else:
         label_2 = Label(frame1, text='Running Alignment: ')
@@ -1035,11 +942,8 @@ def alignment():
         [[label_4, 0, 2]],
         [[progress_bar_3, 0, 1, 1, (20, 0)], [percent_label_3, 1]],
         []
-    ])
+    ], main_font='Courier')
 
     canvas.draw()
-    show_progress.show()
-    show_progress.root.after(200, run)
-    show_progress.mainloop()
-
-    # progress window
+    show_progress.after(200, run)
+    show_progress.loop()

@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-__version__ = '2.5.7'
-__message__ = 'Important - ExoClock database connected\nPhotometry update - suggesting comparison stars'
+__version__ = '2.6.0'
+__message__ = 'Important - Circular aperture photometry applied\nPhotometry update - suggesting comparison stars'
 
 from .__run__ import run_app
 

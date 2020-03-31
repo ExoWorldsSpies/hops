@@ -17,7 +17,7 @@ from .analysis_distributions import one_d_distribution
 class EmceeFitting:
 
     def __init__(self, input_data, model, initials, limits1, limits2, walkers, iterations, burn_in,
-                 names, print_names, counter='auto', strech_prior=1000.0):
+                 names, print_names, counter='auto', strech_prior=1000.0, function_to_call=None):
 
         self.input_data = (np.array(input_data[0]), np.array(input_data[1]))
 
@@ -53,6 +53,8 @@ class EmceeFitting:
                         'statistics': {}}
 
         self.fitted_parameters = []
+
+        self.function_to_call = function_to_call
 
         self.mcmc_run_complete = False
 
@@ -91,11 +93,14 @@ class EmceeFitting:
             return -np.inf
 
         if self.counter:
-            self.counter.total_iterations = self.iterations + self.walkers
+            self.counter.total_iterations = self.iterations
             self.counter.show_every = 100
 
             def probability(theta, data_y, data_y_error):
                 self.counter.update()
+                xx = self.function_to_call(self.counter)
+                if not xx:
+                    return 'a'
                 return prior(theta) + likelihood(theta, data_y, data_y_error)
         else:
             def probability(theta, data_y, data_y_error):

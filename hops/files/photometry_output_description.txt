@@ -1,0 +1,82 @@
+
+--- FOV.pdf ---
+Shows the field of view and the selected targets and comparison stars
+
+--- RESULTS.pdf ---
+Shows the relative light curves for the target and the comparison stars.
+
+--- ExoClock_info.txt ---
+Contains the information that you will need to uplod to ExoClock, if you are observing an exoplanet and you wish to
+contribute to the ExoClock project (https://www.exoclock.space). See inside the file for more information.
+
+--- PHOTOMETRY_APERTURE.txt ---
+Contains the relative light curve of the target as calculated by the aperture photometry method. The columns contain
+the following information (in order):
+1. exposure start time in JD_UTC
+2. relative flux (flux of the target divided by the sum of all the comparison stars)
+
+--- PHOTOMETRY_GAUSS.txt ---
+Contains the relative light curve of the target as calculated by the PSF fitting photometry method. The columns contain
+the following information (in order):
+1. exposure start time in JD_UTC
+2. relative flux (flux of the target divided by the sum of all the comparison stars)
+
+--- PHOTOMETRY_a.txt ---
+Contains all the data related to the aperture photometry method. The columns contain
+the following information (in order):
+1. exposure start time in JD_UTC
+2. target x position in pixels
+3. comparison 1 x position in pixels
+. comparison 2 x position in pixels
+. comparison 3 x position in pixels
+...
+. target y position in pixels
+. comparison 1 y position in pixels
+. comparison 2 y position in pixels
+. comparison 3 y position in pixels
+...
+. target total flux in counts
+. comparison 1 total flux in counts
+. comparison 2 total flux in counts
+. comparison 3 total flux in counts
+...
+. target sky/pixel flux in counts
+. comparison 1 sky flux/pixel in counts
+. comparison 2 sky flux/pixel in counts
+. comparison 3 sky flux/pixel in counts
+...
+
+--- PHOTOMETRY_g.txt ---
+Contains all the data related to the PSF fitting photometry method. The columns contain
+the following information (in order):
+1. exposure start time in JD_UTC
+2. target x position in pixels
+3. comparison 1 x position in pixels
+. comparison 2 x position in pixels
+. comparison 3 x position in pixels
+...
+. target y position in pixels
+. comparison 1 y position in pixels
+. comparison 2 y position in pixels
+. comparison 3 y position in pixels
+...
+. target PSF STD across axis 1
+. comparison 1 PSF STD across axis 1 in pixels
+. comparison 2 PSF STD across axis 1 in pixels
+. comparison 3 PSF STD across axis 1 in pixels
+...
+. target PSF STD across axis 2
+. comparison 1 PSF STD across axis 2 in pixels
+. comparison 2 PSF STD across axis 2 in pixels
+. comparison 3 PSF STD across axis 2 in pixels
+...
+. target PSF volume in counts
+. comparison 1 PSF volume in counts
+. comparison 2 PSF volume in counts
+. comparison 3 PSF volume in counts
+...
+. target PSF baseline in counts
+. comparison 1 PSF baseline in counts
+. comparison 2 PSF baseline in counts
+. comparison 3 PSF baseline in counts
+...

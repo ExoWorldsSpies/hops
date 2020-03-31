@@ -33,7 +33,7 @@ class TransitAndPolyFitting:
                  exp_time=0, time_factor=1, fit_first_order=False, fit_second_order=False,
                  fit_rp_over_rs=False, fit_period=False, fit_sma_over_rs=False,
                  fit_eccentricity=False, fit_inclination=False, fit_periastron=False, fit_mid_time=False,
-                 counter='auto'):
+                 counter='auto', function_to_call=None):
 
         # TODO check input parameters
 
@@ -243,7 +243,7 @@ class TransitAndPolyFitting:
                                     self.full_model, self.initial, self.limits1, self.limits2,
                                     self.walkers, self.iterations, self.burn,
                                     names=self.names, print_names=self.print_names,
-                                    counter=self.counter)
+                                    counter=self.counter, function_to_call=function_to_call)
 
         self.results = 0
         self.mcmc_run_complete = False

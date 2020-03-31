@@ -272,13 +272,13 @@ class Target:
 
         self.coord = '{0}:{1}:{2}.{3} {4}{5}:{6}:{7}.{8}'.format(str(self.ra.hms.h).zfill(2),
                                                                  str(self.ra.hms.m).zfill(2),
-                                                                 str(int(self.ra.hms.s)).zfill(2),
-                                                                 str(round(self.ra.hms.s - int(self.ra.hms.s), 4))[2:],
+                                                                 str(int(round(self.ra.hms.s, 4))).zfill(2),
+                                                                 str(round(self.ra.hms.s, 4) - int(round(self.ra.hms.s, 4)))[2:],
                                                                  sign,
                                                                  str(dec_print.dms.d).zfill(2),
                                                                  str(dec_print.dms.m).zfill(2),
-                                                                 str(int(dec_print.dms.s)).zfill(2),
-                                                                 str(round(dec_print.dms.s - int(dec_print.dms.s), 4))[2:])
+                                                                 str(int(round(dec_print.dms.s, 4))).zfill(2),
+                                                                 str(round(dec_print.dms.s, 4) - int(round(dec_print.dms.s, 4)))[2:])
 
     def distance_from_target(self, target):
 

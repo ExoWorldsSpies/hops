@@ -1,216 +1,81 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from .hops_basics import *
+from tkinter import Tk, TclError
+from tkinter import Label, Button, Entry, Checkbutton, Scrollbar, Listbox, PhotoImage, Radiobutton, Scale, Frame
+from tkinter import StringVar, BooleanVar, DoubleVar, IntVar
+from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, BOTH, Y, HORIZONTAL
 
+import tkinter.ttk as ttk
+from tkinter.messagebox import *
 
-class AddOnWindow:
+import warnings
+warnings.filterwarnings(
+    'ignore', message='Matplotlib is building the font cache using fc-list. This may take a moment.')
+warnings.filterwarnings(
+    'ignore', message='The installed version of numexpr 2.4.4 is not supported in pandas and will be not be used')
 
-    def __init__(self, name, sizex, sizey, position=5, exit_command=None):
+import matplotlib
+matplotlib.use('TkAgg')
 
-        self.root = Tk()
-        self.root.wm_title(name)
+import time
+import numpy as np
+import shutil
+import hops.pylightcurve3 as plc
+import matplotlib.cm as cm
+import matplotlib.patches as mpatches
 
-        if not exit_command:
-            self.root.protocol('WM_DELETE_WINDOW', self.root.withdraw)
-        else:
-            self.root.protocol('WM_DELETE_WINDOW', exit_command)
-
-        if sizex and sizey:
-            self.root.geometry('{0}x{1}'.format(int(self.root.winfo_screenwidth() / sizex),
-                                                int(self.root.winfo_screenheight() / sizey)))
-
-        self.root.withdraw()
-        self.finalised = False
-        self.position = position
-
-    def mainloop(self):
-
-        self.root.mainloop()
-
-    def setup(self, objects, title_font=None, main_font=None, button_font=None, entries_bd=3, buttons_bd=5):
-
-        screenheigth = self.root.winfo_screenheight()
-
-        if button_font is None:
-            button_font = ['times', int(screenheigth/55), 'bold']
-
-        if main_font is None:
-            main_font = ['times', int(screenheigth/60)]
-
-        if title_font is None:
-            title_font = ['times', int(screenheigth/40), 'bold']
-
-        for row in range(len(objects)):
-            if len(objects[row]) == 0:
-                label_empty = Label(self.root, text='')
-                label_empty.grid(row=row, column=100)
-            else:
-                for obj in objects[row]:
-
-                    if obj[0].winfo_class() == 'Button':
-                        obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
-                    elif obj[0].winfo_class() == 'Entry':
-                        obj[0].configure(bd=entries_bd, font=main_font)
-                    elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                        if len(obj) == 5:
-                            if obj[4] == 'title':
-                                obj[0].configure(font=title_font)
-                            else:
-                                obj[0].configure(font=main_font)
-                        else:
-                            obj[0].configure(font=main_font)
-
-                    if len(obj) == 5:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3], padx=obj[4][0], pady=obj[4][0])
-                    elif len(obj) == 5:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                    elif len(obj) == 3:
-                        obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                    else:
-                        obj[0].grid(row=row, column=obj[1])
-
-    def show(self):
-
-        if not self.finalised:
-
-            self.root.update()
-            self.root.update_idletasks()
-
-            if self.position == 1:
-                x = 0
-                y = 0
-
-            elif self.position == 2:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = 0
-
-            elif self.position == 3:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = 0
-
-            elif self.position == 4:
-                x = 0
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 5:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 6:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-
-            elif self.position == 7:
-                x = 0
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            elif self.position == 8:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            elif self.position == 9:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
-
-            else:
-                x = 0
-                y = 0
-
-            self.root.geometry('+%d+%d' % (int(x), int(y)))
-
-            self.root.update_idletasks()
-
-            self.root.lift()
-            self.root.wm_attributes("-topmost", 1)
-            self.root.after_idle(self.root.attributes, '-topmost', 0)
-
-            self.finalised = True
-
-        self.root.deiconify()
-
-    def hide(self):
-
-        self.root.withdraw()
-
-    def close(self):
-
-        self.root.quit()
-        self.root.destroy()
+from astropy.io import fits as pf
+from matplotlib.figure import Figure
+try:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+    NavigationToolbar2TkAgg = NavigationToolbar2Tk
+except ImportError:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 
 
-def setup_window(window, objects, title_font=None, main_font=None, button_font=None, entries_bd=3, buttons_bd=5):
-    screenheigth = window.winfo_screenheight()
+from hops.hops_tools.windows import *
+from hops.hops_tools.logs import log
 
-    if button_font is None:
-        button_font = ['times', int(screenheigth/55), 'bold']
+import glob
 
-    if main_font is None:
-        main_font = ['times', int(screenheigth/60)]
+def find_fits_files(fits_file):
 
-    if title_font is None:
-        title_font = ['times', int(screenheigth/40), 'bold']
-
-    for row in range(len(objects)):
-        if len(objects[row]) == 0:
-            label_empty = Label(window, text='')
-            label_empty.grid(row=row, column=100)
-        else:
-            for obj in objects[row]:
-
-                if obj[0].winfo_class() == 'Button':
-                    obj[0].config(borderwidth=buttons_bd, font=button_font, padx=3, pady=3)
-                elif obj[0].winfo_class() == 'Entry':
-                    obj[0].configure(bd=entries_bd, font=main_font)
-                elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                    if len(obj) == 5:
-                        if obj[4] == 'title':
-                            obj[0].configure(font=title_font)
-                        else:
-                            obj[0].configure(font=main_font)
-                    else:
-                        obj[0].configure(font=main_font)
-
-                if len(obj) >= 4:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                elif len(obj) == 3:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                else:
-                    obj[0].grid(row=row, column=obj[1])
+    fits_list = glob.glob('*{0}*.f*t*'.format(fits_file)) + glob.glob('*{0}*.F*T*'.format(fits_file))
+    fits_list = list(np.unique(fits_list))
+    fits_list.sort()
+    return fits_list
 
 
 def reduction():
 
     print('Reduction...')
 
-    if read_local_log('pipeline', 'reduction_complete'):
+    if log.read_local_log('pipeline', 'reduction_complete'):
         if not askyesno('Overwrite files', 'Reduction has been completed, do you want to run again?'):
             return 0
 
-    write_local_log('pipeline', False, 'reduction_complete')
-    write_local_log('pipeline', False, 'alignment_complete')
+    log.write_local_log('pipeline', False, 'reduction_complete')
+    log.write_local_log('pipeline', False, 'alignment_complete')
 
     # get variables
 
-    observation_files = read_local_log('pipeline', 'observation_files')
-    reduction_directory = read_local_log('pipeline', 'reduction_directory')
-    reduction_prefix = read_local_log('pipeline', 'reduction_prefix')
-    exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
-    mean_key = read_local_log('pipeline_keywords', 'mean_key')
-    std_key = read_local_log('pipeline_keywords', 'std_key')
-    observation_date_key = read_local_log('pipeline_keywords', 'observation_date_key')
-    observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
-    frame_low_std = read_local_log('windows', 'frame_low_std')
-    frame_upper_std = read_local_log('windows', 'frame_upper_std')
-    bias_files = read_local_log('reduction', 'bias_files')
-    dark_files = read_local_log('reduction', 'dark_files')
-    flat_files = read_local_log('reduction', 'flat_files')
-    bin_fits = int(read_local_log('reduction', 'bin_fits'))
-    bin_to = int(read_local_log('reduction', 'bin_to'))
-    master_bias_method = read_local_log('reduction', 'master_bias_method')
-    master_dark_method = read_local_log('reduction', 'master_dark_method')
-    master_flat_method = read_local_log('reduction', 'master_flat_method')
+    observation_files = log.read_local_log('pipeline', 'observation_files')
+    reduction_directory = log.read_local_log('pipeline', 'reduction_directory')
+    reduction_prefix = log.read_local_log('pipeline', 'reduction_prefix')
+    exposure_time_key = log.read_local_log('pipeline_keywords', 'exposure_time_key')
+    mean_key = log.read_local_log('pipeline_keywords', 'mean_key')
+    std_key = log.read_local_log('pipeline_keywords', 'std_key')
+    observation_date_key = log.read_local_log('pipeline_keywords', 'observation_date_key')
+    observation_time_key = log.read_local_log('pipeline_keywords', 'observation_time_key')
+    frame_low_std = log.read_local_log('windows', 'frame_low_std')
+    frame_upper_std = log.read_local_log('windows', 'frame_upper_std')
+    bias_files = log.read_local_log('reduction', 'bias_files')
+    dark_files = log.read_local_log('reduction', 'dark_files')
+    flat_files = log.read_local_log('reduction', 'flat_files')
+    bin_fits = int(log.read_local_log('reduction', 'bin_fits'))
+    bin_to = int(log.read_local_log('reduction', 'bin_to'))
+    master_bias_method = log.read_local_log('reduction', 'master_bias_method')
+    master_dark_method = log.read_local_log('reduction', 'master_dark_method')
+    master_flat_method = log.read_local_log('reduction', 'master_flat_method')
 
     # check if reduction directory exists
 
@@ -229,6 +94,10 @@ def reduction():
         if len(bias_files) > 0:
             bb = find_fits_files(bias_files)
             for counter, bias_file in enumerate(bb):
+
+                if show_progress.exit:
+                    return None
+
                 fits = pf.open(bias_file, memmap=False)
                 try:
                     fits = [fits['SCI']]
@@ -287,6 +156,10 @@ def reduction():
         if len(str(dark_files)) > 0:
             dd = find_fits_files(dark_files)
             for counter, dark_file in enumerate(dd):
+
+                if show_progress.exit:
+                    return None
+
                 fits = pf.open(dark_file, memmap=False)
                 try:
                     fits = [fits['SCI']]
@@ -346,6 +219,10 @@ def reduction():
         if len(str(flat_files)) > 0:
             ff = find_fits_files(flat_files)
             for counter, flat_file in enumerate(ff):
+
+                if show_progress.exit:
+                    return None
+
                 fits = pf.open(flat_file, memmap=False)
                 try:
                     fits = [fits['SCI']]
@@ -411,6 +288,9 @@ def reduction():
         testz = []
 
         for counter, science_file in enumerate(observation_files):
+
+            if show_progress.exit:
+                return None, None, None
 
             label_4.configure(text='Reducing data and calculating statistics: {0}'.format(os.path.split(science_file)[1]))
             label_4.update()
@@ -497,26 +377,18 @@ def reduction():
 
                 percent = new_percent
 
-            if exit_var.get():
-                break
-
-            show_progress.root.update()
+            show_progress.update()
 
         return testx, testy, testz
 
     def show_sky(testx, testy, testz):
 
-        exit_var_2 = BooleanVar(value=False)
-
-        def break_and_exit_2():
-            exit_var_2.set(True)
-
-        root = AddOnWindow('HOPS - Reduction', 0, 0, 5, exit_command=break_and_exit_2)
+        root = ProgressWindow('HOPS - Alignment', 0, 0, 5)
 
         testx = np.array(np.array(testx) - testx[0]) * 24.0 * 60.0
 
-        reduction_trash_directory = read_local_log('pipeline', 'reduction_trash_directory')
-        trash = read_local_log('pipeline', 'trash')
+        reduction_trash_directory = log.read_local_log('pipeline', 'reduction_trash_directory')
+        trash = log.read_local_log('pipeline', 'trash')
         if not trash:
             list_to_remove = []
         else:
@@ -528,9 +400,9 @@ def reduction():
         ax3 = f.add_subplot(2, 2, 4)
 
         f.patch.set_facecolor('white')
-        canvas = FigureCanvasTkAgg(f, root.root)
+        canvas = root.FigureCanvasTkAgg(f)
         canvas.get_tk_widget().pack()
-        NavigationToolbar2TkAgg(canvas, root.root)
+        root.NavigationToolbar2Tk(canvas)
 
         ax.plot(testx, testy, 'ko', ms=3)
         for ii in list_to_remove:
@@ -607,76 +479,71 @@ def reduction():
 
                     canvas.draw()
 
-        def run_alignment(event):
-            if -100110 < event.ydata < -100108:
-                if -100108 < event.xdata < -100102:
-                    ax3.cla()
-                    ax3.text(-100105, -100100, 'Select faulty frames', va='center', ha='center')
-                    ax3.text(-100111, -100101, '>On the time-sky graph above\n'
-                                               'double-click on a point to see\n'
-                                               'the frame on the left panel.\n'
-                                               '>To mark this point as faulty,\n'
-                                               'use the right double-click.\n'
-                                               '>To undo, use the right\n'
-                                               'double-click again.', va='top')
-                    ax3.text(-100105, -100109, 'RUN ALIGNMENT', color='w',
-                             bbox={'facecolor': 'blue', 'alpha': 0.5, 'pad': 5},
-                             va='center', ha='center')
-                    ax3.set_xlim(-100110, -100100)
-                    ax3.set_ylim(-100110, -100100)
-                    ax3.axis('off')
-                    canvas.draw()
-                    time.sleep(0.5)
-                    exit_var_2.set(True)
+                else:
+                    if -100110 < event.ydata < -100108:
+                        if -100108 < event.xdata < -100102:
+                            ax3.cla()
+                            ax3.text(-100105, -100100, 'Select faulty frames', va='center', ha='center')
+                            ax3.text(-100111, -100101, '>On the time-sky graph above\n'
+                                                       'double-click on a point to see\n'
+                                                       'the frame on the left panel.\n'
+                                                       '>To mark this point as faulty,\n'
+                                                       'use the right double-click.\n'
+                                                       '>To undo, use the right\n'
+                                                       'double-click again.', va='top')
+                            ax3.text(-100105, -100109, 'RUN ALIGNMENT', color='w',
+                                     bbox={'facecolor': 'blue', 'alpha': 0.5, 'pad': 5},
+                                     va='center', ha='center')
+                            ax3.set_xlim(-100110, -100100)
+                            ax3.set_ylim(-100110, -100100)
+                            ax3.axis('off')
+                            canvas.draw()
+                            time.sleep(0.5)
+                            root.exit = True
 
         f.canvas.callbacks.connect('button_press_event', update_window_show)
-        f.canvas.callbacks.connect('button_press_event', run_alignment)
+        # f.canvas.callbacks.connect('button_press_event', run_alignment)
 
         root.show()
 
-        while not exit_var_2.get():
-            root.root.update()
+        while not root.exit:
+            root.update()
 
-        root.root.destroy()
+        root.close()
         if not os.path.isdir(os.path.join(reduction_directory, reduction_trash_directory)):
             os.mkdir(os.path.join(reduction_directory, reduction_trash_directory))
 
         for iii in list_to_remove:
             shutil.move(science[iii], os.path.join(reduction_directory, reduction_trash_directory))
 
-        write_local_log('pipeline', list(map(str, list_to_remove)), 'trash')
+        log.write_local_log('pipeline', list(map(str, list_to_remove)), 'trash')
 
     def run():
 
         master_bias = get_master_bias()
-        if not exit_var.get():
+        if not show_progress.exit:
             master_dark = get_master_dark(master_bias)
-            if not exit_var.get():
+            if not show_progress.exit:
                 master_flat = get_master_flat(master_bias, master_dark)
-                if not exit_var.get():
+                if not show_progress.exit:
                     x, y, z = reduce(master_bias, master_dark, master_flat)
-                    if not exit_var.get():
+                    if not show_progress.exit:
                         show_sky(x, y, z)
-                        if not exit_var.get():
-                            write_local_log('pipeline', True, 'reduction_complete')
+                        if not show_progress.exit:
+                            log.write_local_log('pipeline', True, 'reduction_complete')
 
         show_progress.close()
 
     # progress window
 
-    exit_var = BooleanVar(value=False)
-
-    def break_and_exit():
-        exit_var.set(True)
-
-    show_progress = AddOnWindow('HOPS - Reduction', 0, 0, 5, exit_command=break_and_exit)
+    show_progress = ProgressWindow('HOPS - Reduction', 0, 0, 5)
 
     f = Figure()
     f.patch.set_facecolor('white')
     ax = f.add_subplot(111)
     f.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
     ax.axis('off')
-    canvas = FigureCanvasTkAgg(f, show_progress.root)
+    canvas = show_progress.FigureCanvasTkAgg(f)
     canvas.get_tk_widget().pack()
 
     fits_file = pf.open(observation_files[0], memmap=False)
@@ -698,7 +565,7 @@ def reduction():
               vmax=mean + frame_upper_std * std)
     fits_file.close()
 
-    frame1 = Frame(show_progress.root)
+    frame1 = show_progress.Frame()
     frame1.pack()
 
     label_1 = Label(frame1, text="Creating master bias")
@@ -716,7 +583,7 @@ def reduction():
                                      length=300, maximum=100, mode='determinate', value=0)
     percent_label_3 = Label(frame1, text='0.0 %')
 
-    label_4 = Label(frame1, text="Redusing data and calculating statistics")
+    label_4 = Label(frame1, text="Reducing data and calculating statistics")
     progress_bar_4 = ttk.Progressbar(frame1, orient=HORIZONTAL,
                                      length=300, maximum=100, mode='determinate', value=0)
     percent_label_4 = Label(frame1, text='0.0 %')
@@ -731,11 +598,8 @@ def reduction():
         [[label_4, 0, 2]],
         [[progress_bar_4, 0, 1, 1, (20, 0)], [percent_label_4, 1]],
         []
-    ])
+    ], main_font='Courier')
 
     canvas.draw()
-    show_progress.show()
-    show_progress.root.after(200, run)
-    show_progress.mainloop()
-
-    # progress window
+    show_progress.after(200, run)
+    show_progress.loop()

@@ -16,7 +16,6 @@ fitting:
   binning: 1
   burn: 30000
   eccentricity: 0.0
-  eccentricity_fit: false
   inclination: 0.0
   inclination_fit: 0.0
   iterations: 130000
@@ -33,9 +32,7 @@ fitting:
   camera: default
   phot_filter: default
   periastron: 0.0
-  periastron_fit: false
   period: 0.0
-  period_fit: false
   planet: Choose Planet
   manual_planet: False
   rp_over_rs: 0.0
@@ -96,16 +93,16 @@ reduction:
   master_dark_method: median
   master_flat_method: median
 windows:
-  alignment_window: ALIGNMENT
+  alignment_window: HOPS - ALIGNMENT
   button_font:
   - times
   - 15
   - bold
   button_height: 2
   button_width: 30
-  created_by: "HOPS 2.5.7, Copyright (c) 2017-2020, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
+  created_by: "HOPS 2.6.0, Copyright (c) 2017-2020, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
   entries_bd: 3
-  fitting_window: FITTING
+  fitting_window: HOPS - FITTING
   frame_low_std: -3
   frame_upper_std: 20
   main_font:
@@ -114,8 +111,8 @@ windows:
   names_font:
   - Courier
   - 15
-  photometry_window: PHOTOMETRY
-  reduction_window: REDUCTION
+  photometry_window: HOPS - PHOTOMETRY
+  reduction_window: HOPS - REDUCTION
   software_window: HOlomon Photometric Software
   title_font:
   - times

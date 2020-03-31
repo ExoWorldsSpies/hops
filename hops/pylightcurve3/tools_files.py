@@ -45,6 +45,8 @@ def open_fits(path):
     with pf.open(path) as hdulist:
         internal_copy = copy_fits(hdulist)
 
+    internal_copy.verify('fix')
+
     return internal_copy
 
 

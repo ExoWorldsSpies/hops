@@ -34,6 +34,23 @@ def integral_r_f_claret(limb_darkening_coefficients, rprs, z, r1, r2, precision=
     return gauss_numerical_integration(num_claret, r1, r2, precision, limb_darkening_coefficients, rprs, z)
 
 
+# integral definitions for zero method
+
+
+def integral_r_zero(limb_darkening_coefficients, r):
+    musq = 1 - r * r
+    return (-1.0 / 6) * musq * 3.0
+
+
+def num_zero(r, limb_darkening_coefficients, rprs, z):
+    rsq = r * r
+    return r * np.arccos(np.minimum((-rprs ** 2 + z * z + rsq) / (2.0 * z * r), 1.0))
+
+
+def integral_r_f_zero(limb_darkening_coefficients, rprs, z, r1, r2, precision=3):
+    return gauss_numerical_integration(num_zero, r1, r2, precision, limb_darkening_coefficients, rprs, z)
+
+
 # integral definitions for linear method
 
 
@@ -105,7 +122,8 @@ integral_r = {
     'claret': integral_r_claret,
     'linear': integral_r_linear,
     'quad': integral_r_quad,
-    'sqrt': integral_r_sqrt
+    'sqrt': integral_r_sqrt,
+    'zero': integral_r_zero
 }
 
 integral_r_f = {
@@ -113,6 +131,7 @@ integral_r_f = {
     'linear': integral_r_f_linear,
     'quad': integral_r_f_quad,
     'sqrt': integral_r_f_sqrt,
+    'zero': integral_r_f_zero,
 }
 
 

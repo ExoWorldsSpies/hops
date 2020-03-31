@@ -1,78 +1,116 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from .hops_basics import *
+import sys
 
-
-def initialise_window(window, window_name=None, exit_command=None):
-
-    if not window_name:
-        window_name = read_log('windows', 'software_window')
-
-    if not exit_command:
-        def exit_command():
-            os._exit(-1)
-
-    window.wm_title(window_name)
-    window.protocol('WM_DELETE_WINDOW', exit_command)
-
-    window.withdraw()
+from tkinter import Tk, TclError
+from tkinter import Label, Button, Entry, Checkbutton, Scrollbar, Listbox, PhotoImage, Radiobutton, Scale, Frame
+from tkinter import StringVar, BooleanVar, DoubleVar, IntVar
+from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, BOTH, Y, HORIZONTAL
 
 
-def setup_window(window, objects):
+import tkinter.ttk as ttk
+import tkinter.filedialog as tkFileDialog
+from tkinter.messagebox import *
+from urllib.request import urlopen
 
-    main_font = tuple(read_log('windows', 'main_font'))
-    title_font = tuple(read_log('windows', 'title_font'))
-    button_font = tuple(read_log('windows', 'button_font'))
-    entries_bd = read_log('windows', 'entries_bd')
+import warnings
+warnings.filterwarnings(
+    'ignore', message='Matplotlib is building the font cache using fc-list. This may take a moment.')
+warnings.filterwarnings(
+    'ignore', message='The installed version of numexpr 2.4.4 is not supported in pandas and will be not be used')
 
-    for row in range(len(objects)):
-        if len(objects[row]) == 0:
-            label_empty = Label(window, text='')
-            label_empty.grid(row=row, column=100)
-        else:
-            for obj in objects[row]:
+import matplotlib
+matplotlib.use('TkAgg')
 
-                if obj[0].winfo_class() == 'Button':
-                    obj[0].configure(font=button_font)
-                elif obj[0].winfo_class() == 'Entry':
-                    obj[0].configure(bd=entries_bd, font=main_font)
-                elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                    if len(obj) == 5:
-                        if obj[4] == 'title':
-                            obj[0].configure(font=title_font)
-                        else:
-                            obj[0].configure(font=main_font)
-                    else:
-                        obj[0].configure(font=main_font)
+import datetime
+import os
+import sys
+import glob
+import time
+import yaml
+import numpy as np
+import shutil
+import hops.pylightcurve3 as plc
+import matplotlib.cm as cm
+import matplotlib.patches as mpatches
+import matplotlib.patches as mpatch
 
-                if len(obj) >= 4:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                elif len(obj) == 3:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                else:
-                    obj[0].grid(row=row, column=obj[1])
+from astropy.io import fits as pf
+from scipy.optimize import curve_fit
+from matplotlib.figure import Figure
+from matplotlib.offsetbox import AnchoredText
+from matplotlib.backend_bases import key_press_handler, MouseEvent
+import matplotlib.gridspec as gridspec
+try:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+    NavigationToolbar2TkAgg = NavigationToolbar2Tk
+except ImportError:
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backend_bases import FigureCanvasBase
+import matplotlib.image as mpimg
+
+from astroquery.simbad import Simbad
+import requests
+from astropy import units as u
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation
+
+import tkinter.scrolledtext as scrolledtext
+
+import webbrowser
+
+from hops.hops_tools.windows import *
+from hops.hops_tools.logs import log
+
+import glob
+
+def find_fits_files(fits_file):
+
+    fits_list = glob.glob('*{0}*.f*t*'.format(fits_file)) + glob.glob('*{0}*.F*T*'.format(fits_file))
+    fits_list = list(np.unique(fits_list))
+    fits_list.sort()
+    return fits_list
 
 
-def finalise_window(window, center=True):
+def test_fits_keyword(fits_file, keyword):
 
-    window.update_idletasks()
-
-    if center:
-        x = (window.winfo_screenwidth() - window.winfo_reqwidth()) / 2
-        y = (window.winfo_screenheight() - window.winfo_reqheight()) / 2
-        window.geometry('+%d+%d' % (x, y))
+    if len(fits_file) == 0:
+        return [False, 'No keyword found']
 
     else:
-        window.geometry('+%d+%d' % (0, 0))
+        try:
+            fits_file = find_fits_files(fits_file)[0]
 
-    window.update_idletasks()
+            fits = pf.open(fits_file)
 
-    window.lift()
-    window.wm_attributes("-topmost", 1)
-    window.after_idle(window.attributes, '-topmost', 0)
-    window.deiconify()
+            try:
+                fits = [fits['SCI']]
+            except KeyError:
+                sci_id = 0
+                for sci_id in range(len(fits)):
+                    try:
+                        if (fits[sci_id].data).all():
+                            break
+                    except:
+                        pass
+                fits = [fits[sci_id]]
+
+            if fits[0].header[str(keyword)]:
+                return [True, 'Keyword found', fits[0].header[str(keyword)]]
+
+            else:
+                return [False, 'No keyword found']
+
+        except (KeyError, IndexError):
+            return [False, 'No keyword found']
+
+
+filter_map = {'Clear': 'V', 'Luminance': 'V',
+              'U': 'U', 'B': 'B', 'V': 'V', 'R': 'R', 'I': 'I', 'H': 'H', 'J': 'J', 'K': 'K',
+              'u': 'u', 'b': 'b', 'v': 'v', 'y': 'y',
+              'u\'': 'u,', 'g\'': 'g,', 'r\'': 'r,', 'i\'': 'i,', 'z\'': 'z,',
+              'Astrodon ExoPlanet-BB': 'R',
+              'UV': 'U', 'Rc': 'R', 'Ic': 'I', 'Re': 'R', 'Ie': 'I', 'Y': 'y,', 'r': 'r,', 'z': 'z,', 'i': 'i,',
+              }
 
 
 def photometry():
@@ -81,243 +119,292 @@ def photometry():
 
     # get variables
 
-    reduction_directory = read_local_log('pipeline', 'reduction_directory')
-    light_curve_aperture_file = read_local_log('pipeline', 'light_curve_aperture_file')
-    photometry_directory = read_local_log('pipeline', 'photometry_directory')
-    photometry_file = read_local_log('pipeline', 'photometry_file')
-    light_curve_gauss_file = read_local_log('pipeline', 'light_curve_gauss_file')
-    results_figure = read_local_log('pipeline', 'results_figure')
-    fov_figure = read_local_log('pipeline', 'fov_figure')
-    mean_key = read_local_log('pipeline_keywords', 'mean_key')
-    std_key = read_local_log('pipeline_keywords', 'std_key')
-    align_x0_key = read_local_log('pipeline_keywords', 'align_x0_key')
-    align_y0_key = read_local_log('pipeline_keywords', 'align_y0_key')
-    align_u0_key = read_local_log('pipeline_keywords', 'align_u0_key')
-    exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
-    observation_date_key = read_local_log('pipeline_keywords', 'observation_date_key')
-    observation_time_key = read_local_log('pipeline_keywords', 'observation_time_key')
-    mid_exposure = read_local_log('photometry', 'mid_exposure')
-    star_std = read_local_log('alignment', 'star_std')
-    star_psf = read_local_log('alignment', 'star_psf')
-    sky_inner_aperture = read_local_log('photometry', 'sky_inner_aperture')
-    sky_outer_aperture = read_local_log('photometry', 'sky_outer_aperture')
-    max_comparisons = read_local_log('photometry', 'max_comparisons')
-    bin_fits = int(read_local_log('reduction', 'bin_fits'))
-    burn_limit = int(read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
-    targets_r_position = [read_local_log('photometry', 'target_r_position')]
-    targets_u_position = [read_local_log('photometry', 'target_u_position')]
-    targets_aperture = [read_local_log('photometry', 'target_aperture')]
+    reduction_directory = log.read_local_log('pipeline', 'reduction_directory')
+    light_curve_aperture_file = log.read_local_log('pipeline', 'light_curve_aperture_file')
+    photometry_directory_base = log.read_local_log('pipeline', 'photometry_directory')
+    photometry_file = log.read_local_log('pipeline', 'photometry_file')
+    light_curve_gauss_file = log.read_local_log('pipeline', 'light_curve_gauss_file')
+    results_figure = log.read_local_log('pipeline', 'results_figure')
+    fov_figure = log.read_local_log('pipeline', 'fov_figure')
+    mean_key = log.read_local_log('pipeline_keywords', 'mean_key')
+    std_key = log.read_local_log('pipeline_keywords', 'std_key')
+    frame_low_std = log.read_local_log('windows', 'frame_low_std')
+    frame_upper_std = log.read_local_log('windows', 'frame_upper_std')
+    align_x0_key = log.read_local_log('pipeline_keywords', 'align_x0_key')
+    align_y0_key = log.read_local_log('pipeline_keywords', 'align_y0_key')
+    align_u0_key = log.read_local_log('pipeline_keywords', 'align_u0_key')
+    exposure_time_key = log.read_local_log('pipeline_keywords', 'exposure_time_key')
+    observation_date_key = log.read_local_log('pipeline_keywords', 'observation_date_key')
+    observation_time_key = log.read_local_log('pipeline_keywords', 'observation_time_key')
+    mid_exposure = log.read_local_log('photometry', 'mid_exposure')
+    star_std = log.read_local_log('alignment', 'star_std')
+    star_psf = log.read_local_log('alignment', 'star_psf')
+    sky_inner_aperture = log.read_local_log('photometry', 'sky_inner_aperture')
+    sky_outer_aperture = log.read_local_log('photometry', 'sky_outer_aperture')
+    max_comparisons = log.read_local_log('photometry', 'max_comparisons')
+    bin_fits = int(log.read_local_log('reduction', 'bin_fits'))
+    burn_limit = int(log.read_local_log('alignment', 'burn_limit')) * bin_fits * bin_fits
+    targets_r_position = [log.read_local_log('photometry', 'target_r_position')]
+    targets_u_position = [log.read_local_log('photometry', 'target_u_position')]
+    targets_aperture = [log.read_local_log('photometry', 'target_aperture')]
     for comparison in range(max_comparisons):
-        targets_r_position.append(read_local_log('photometry', 'comparison_{0}_r_position'.format(comparison)))
-        targets_u_position.append(read_local_log('photometry', 'comparison_{0}_u_position'.format(comparison)))
-        targets_aperture.append(read_local_log('photometry', 'comparison_{0}_aperture'.format(comparison)))
+        targets_r_position.append(log.read_local_log('photometry', 'comparison_{0}_r_position'.format(comparison + 1)))
+        targets_u_position.append(log.read_local_log('photometry', 'comparison_{0}_u_position'.format(comparison + 1)))
+        targets_aperture.append(log.read_local_log('photometry', 'comparison_{0}_aperture'.format(comparison + 1)))
 
     if star_psf == 0:
         star_psf = star_std
 
     science = find_fits_files(os.path.join(reduction_directory, '*'))
 
-    root = Tk()
+    def measure():
 
-    exit_var = BooleanVar(value=False)
+        gauss_targets_files = []
+        gauss_targets_jd = []
+        gauss_targets_x_position = []
+        gauss_targets_y_position = []
+        gauss_targets_x_std = []
+        gauss_targets_y_std = []
+        gauss_targets_flux = []
+        gauss_targets_sky = []
+        apperture_targets_files = []
+        apperture_targets_jd = []
+        apperture_targets_x_position = []
+        apperture_targets_y_position = []
+        apperture_targets_flux = []
+        apperture_targets_sky = []
 
-    def break_and_exit():
-        exit_var.set(True)
+        # TODO exclude live points
 
-    initialise_window(root, exit_command=break_and_exit)
+        # for each science_file
+        percent = 0
+        lt0 = time.time()
 
-    label1 = Label(root, text='PHOTOMETRY')
-    label2 = Label(root, text='FILE:')
-    label3 = Label(root, text=' ')
-    label4 = Label(root, text='COMPLETE:')
-    label5 = Label(root, text=' ',)
-    label6 = Label(root, text='TIME LEFT:')
-    label7 = Label(root, text=' ')
+        for counter, science_file in enumerate(science):
 
-    setup_window(root, [
-        [[label1, 1, 2]],
-        [[label2, 1], [label3, 2]],
-        [[label4, 1], [label5, 2]],
-        [[label6, 1], [label7, 2]],
-    ])
+            fits = pf.open(science_file)
 
-    gauss_targets_files = []
-    gauss_targets_jd = []
-    gauss_targets_x_position = []
-    gauss_targets_y_position = []
-    gauss_targets_x_std = []
-    gauss_targets_y_std = []
-    gauss_targets_flux = []
-    gauss_targets_sky = []
-    apperture_targets_files = []
-    apperture_targets_jd = []
-    apperture_targets_x_position = []
-    apperture_targets_y_position = []
-    apperture_targets_flux = []
-    apperture_targets_sky = []
+            label_1.configure(text='Running Photometry: {0}'.format(science_file.split(os.sep)[-1]))
+            label_1.update()
 
-    # TODO exclude live points
+            if fits[1].header[align_x0_key]:
 
-    # for each science_file
-    percent = 0
-    lt0 = time.time()
-    for counter, science_file in enumerate(science):
+                # calculate heliocentric julian date
 
-        fits = pf.open(science_file)
+                if observation_date_key == observation_time_key:
+                    observation_time = ' '.join(fits[1].header[observation_date_key].split('T'))
+                else:
+                    observation_time = ' '.join([fits[1].header[observation_date_key].split('T')[0],
+                                                 fits[1].header[observation_time_key]])
 
-        if fits[1].header[align_x0_key]:
+                exp_time = fits[1].header[exposure_time_key]
 
-            # calculate heliocentric julian date
+                julian_date = plc.UTC(observation_time).jd - 0.5 * float(mid_exposure) * exp_time / 60.0 / 60.0 / 24.0
 
-            if observation_date_key == observation_time_key:
-                observation_time = ' '.join(fits[1].header[observation_date_key].split('T'))
-            else:
-                observation_time = ' '.join([fits[1].header[observation_date_key].split('T')[0],
-                                             fits[1].header[observation_time_key]])
+                ref_x_position = fits[1].header[align_x0_key]
+                ref_y_position = fits[1].header[align_y0_key]
+                ref_u_position = fits[1].header[align_u0_key]
 
-            exp_time = fits[1].header[exposure_time_key]
+                gauss_targets_files_test = [science_file]
+                gauss_targets_jd_test = [julian_date]
+                gauss_targets_x_position_test = []
+                gauss_targets_y_position_test = []
+                gauss_targets_x_std_test = []
+                gauss_targets_y_std_test = []
+                gauss_targets_flux_test = []
+                gauss_targets_sky_test = []
 
-            julian_date = plc.UTC(observation_time).jd - 0.5 * float(mid_exposure) * exp_time / 60.0 / 60.0 / 24.0
+                apperture_targets_files_test = [science_file]
+                apperture_targets_jd_test = [julian_date]
+                apperture_targets_x_position_test = []
+                apperture_targets_y_position_test = []
+                apperture_targets_flux_test = []
+                apperture_targets_sky_test = []
 
-            ref_x_position = fits[1].header[align_x0_key]
-            ref_y_position = fits[1].header[align_y0_key]
-            ref_u_position = fits[1].header[align_u0_key]
+                skip_gauss = False
+                skip_aperture = False
 
-            gauss_targets_files_test = [science_file]
-            gauss_targets_jd_test = [julian_date]
-            gauss_targets_x_position_test = []
-            gauss_targets_y_position_test = []
-            gauss_targets_x_std_test = []
-            gauss_targets_y_std_test = []
-            gauss_targets_flux_test = []
-            gauss_targets_sky_test = []
+                for target in range(max_comparisons + 1):
 
-            apperture_targets_files_test = [science_file]
-            apperture_targets_jd_test = [julian_date]
-            apperture_targets_x_position_test = []
-            apperture_targets_y_position_test = []
-            apperture_targets_flux_test = []
-            apperture_targets_sky_test = []
+                    if targets_aperture[target] > 0:
 
-            skip_gauss = False
-            skip_aperture = False
+                        expected_x = (ref_x_position + targets_r_position[target] *
+                         np.cos(ref_u_position + targets_u_position[target]))
 
-            for target in range(max_comparisons + 1):
+                        expected_y = (ref_y_position + targets_r_position[target] *
+                         np.sin(ref_u_position + targets_u_position[target]))
 
-                if targets_aperture[target] > 0:
+                        if (expected_x > 0 and expected_y > 0 and expected_x < len(fits[1].data[0]) and
+                                expected_y < len(fits[1].data)):
 
-                    expected_x = (ref_x_position + targets_r_position[target] *
-                     np.cos(ref_u_position + targets_u_position[target]))
+                            star = plc.find_single_star(fits[1].data,
+                                                        (ref_x_position + targets_r_position[target] *
+                                                                     np.cos(ref_u_position + targets_u_position[target])),
+                                                        (ref_y_position + targets_r_position[target] *
+                                                                     np.sin(ref_u_position + targets_u_position[target])),
+                                                        mean=fits[1].header[mean_key], std=fits[1].header[std_key],
+                                                        burn_limit=burn_limit, star_std=star_std
+                                                        )
+                            # print(star)
 
-                    expected_y = (ref_y_position + targets_r_position[target] *
-                     np.sin(ref_u_position + targets_u_position[target]))
+                            if star:
 
-                    if (expected_x > 0 and expected_y > 0 and expected_x < len(fits[1].data[0]) and
-                            expected_y < len(fits[1].data)):
+                                x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
 
-                        star = plc.find_single_star(fits[1].data,
-                                                    (ref_x_position + targets_r_position[target] *
-                                                                 np.cos(ref_u_position + targets_u_position[target])),
-                                                    (ref_y_position + targets_r_position[target] *
-                                                                 np.sin(ref_u_position + targets_u_position[target])),
-                                                    mean=fits[1].header[mean_key], std=fits[1].header[std_key],
-                                                    burn_limit=burn_limit * 7.0 / 8.0, star_std=star_std
-                                                    )
+                                gauss_targets_x_position_test.append(x_mean)
+                                gauss_targets_y_position_test.append(y_mean)
+                                gauss_targets_x_std_test.append(x_std)
+                                gauss_targets_y_std_test.append(y_std)
+                                gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
+                                gauss_targets_sky_test.append(floor)
 
-                        if star:
+                                try:
 
-                            x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
+                                    sky_area_1 = int(round(sky_inner_aperture * targets_aperture[target]))
+                                    sky_area_2 = int(round(sky_outer_aperture * targets_aperture[target]))
+                                    sky_area_2 = max(sky_area_2, sky_area_1 + 3)
 
-                            gauss_targets_x_position_test.append(x_mean)
-                            gauss_targets_y_position_test.append(y_mean)
-                            gauss_targets_x_std_test.append(x_std)
-                            gauss_targets_y_std_test.append(y_std)
-                            gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
-                            gauss_targets_sky_test.append(floor)
+                                    sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
+                                                            int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
 
-                            try:
-                                x_mean, y_mean, = centroid_x, centroid_y
+                                    sky_area = np.ones_like(sky_area) * sky_area
 
-                                flux_area = fits[1].data[int(y_mean) - targets_aperture[target]:
-                                                         int(y_mean) + targets_aperture[target] + 1,
-                                            int(x_mean) - targets_aperture[target]:
-                                            int(x_mean) + targets_aperture[target] + 1]
-                                flux_pixels = (2 * targets_aperture[target] + 1) ** 2
-                                flux = np.sum(flux_area)
+                                    sky_center = int(len(sky_area) / 2)
 
-                                sky_area_1 = int(sky_inner_aperture * 3 * star_psf)
-                                sky_area_2 = int(sky_outer_aperture * 3 * star_psf)
-                                fits[1].data[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
-                                int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
-                                sky_area = fits[1].data[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
-                                           int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
-                                sky_area = sky_area[np.where((sky_area > 0) &
-                                                             (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-                                                                 std_key]))]
-                                sky = np.sum(sky_area)
-                                sky_pixels = sky_area.size
+                                    sky_area[sky_center - sky_area_1:sky_center + sky_area_1 + 1,
+                                             sky_center - sky_area_1:sky_center + sky_area_1 + 1] = 0
 
-                                apperture_targets_x_position_test.append(x_mean)
-                                apperture_targets_y_position_test.append(y_mean)
-                                apperture_targets_flux_test.append(flux - flux_pixels * sky / sky_pixels)
-                                apperture_targets_sky_test.append(sky / sky_pixels)
-                            except:
+                                    sky_area = sky_area[np.where((sky_area > 0) &
+                                                                 (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
+                                                                     std_key]))]
+
+                                    sky = np.sum(sky_area) / sky_area.size
+
+                                    flux_area = fits[1].data[int(y_mean - targets_aperture[target]) - 2:
+                                                             int(y_mean + targets_aperture[target]) + 3,
+                                                             int(x_mean - targets_aperture[target]) - 2:
+                                                             int(x_mean + targets_aperture[target]) + 3] - sky
+
+                                    flux_area_x, flux_area_y = np.meshgrid(
+                                        np.arange(max(0, int(x_mean - targets_aperture[target]) - 2),
+                                                  min(len(fits[1].data[0]), int(x_mean + targets_aperture[target]) + 3), 1) + 0.5,
+                                        np.arange(max(0, int(y_mean - targets_aperture[target]) - 2),
+                                                  min(len(fits[1].data), int(y_mean + targets_aperture[target]) + 3), 1) + 0.5)
+
+                                    flux_pixels = np.concatenate(np.swapaxes([flux_area, flux_area_x, flux_area_y], 0, 2))
+
+                                    flux = 0
+                                    for pixel in flux_pixels:
+                                        flux += pixel[0] * plc.pixel_to_aperture_overlap(pixel[1], pixel[2], x_mean, y_mean,
+                                                                                         targets_aperture[target])
+
+                                    apperture_targets_x_position_test.append(x_mean)
+                                    apperture_targets_y_position_test.append(y_mean)
+                                    apperture_targets_flux_test.append(flux)
+                                    apperture_targets_sky_test.append(sky)
+
+                                except:
+                                    skip_aperture = True
+
+                            else:
+                                skip_gauss = True
                                 skip_aperture = True
 
                         else:
                             skip_gauss = True
                             skip_aperture = True
 
-                    else:
-                        skip_gauss = True
-                        skip_aperture = True
+                if not skip_gauss:
+                    gauss_targets_files += gauss_targets_files_test
+                    gauss_targets_jd += gauss_targets_jd_test
+                    gauss_targets_x_position += gauss_targets_x_position_test
+                    gauss_targets_y_position += gauss_targets_y_position_test
+                    gauss_targets_x_std += gauss_targets_x_std_test
+                    gauss_targets_y_std += gauss_targets_y_std_test
+                    gauss_targets_flux += gauss_targets_flux_test
+                    gauss_targets_sky += gauss_targets_sky_test
+                else:
+                    print('Skipping Gauss for:', science_file)
 
-            if not skip_gauss:
-                gauss_targets_files += gauss_targets_files_test
-                gauss_targets_jd += gauss_targets_jd_test
-                gauss_targets_x_position += gauss_targets_x_position_test
-                gauss_targets_y_position += gauss_targets_y_position_test
-                gauss_targets_x_std += gauss_targets_x_std_test
-                gauss_targets_y_std += gauss_targets_y_std_test
-                gauss_targets_flux += gauss_targets_flux_test
-                gauss_targets_sky += gauss_targets_sky_test
+                if not skip_aperture:
+                    apperture_targets_files += apperture_targets_files_test
+                    apperture_targets_jd += apperture_targets_jd_test
+                    apperture_targets_x_position += apperture_targets_x_position_test
+                    apperture_targets_y_position += apperture_targets_y_position_test
+                    apperture_targets_flux += apperture_targets_flux_test
+                    apperture_targets_sky += apperture_targets_sky_test
+                else:
+                    print('Skipping aperture for:', science_file)
 
-            if not skip_aperture:
-                apperture_targets_files += apperture_targets_files_test
-                apperture_targets_jd += apperture_targets_jd_test
-                apperture_targets_x_position += apperture_targets_x_position_test
-                apperture_targets_y_position += apperture_targets_y_position_test
-                apperture_targets_flux += apperture_targets_flux_test
-                apperture_targets_sky += apperture_targets_sky_test
+            # counter
+                plotx = ref_x_position + targets_r_position[0] * np.cos(ref_u_position + targets_u_position[0])
+                ploty = ref_y_position + targets_r_position[0] * np.sin(ref_u_position + targets_u_position[0])
 
-        # counter
+                ax.cla()
+                ax.imshow(fits[1].data[int(ploty - 3 * targets_aperture[0]): int(ploty + 3 * targets_aperture[0]),
+                                       int(plotx - 3 * targets_aperture[0]): int(plotx + 3 * targets_aperture[0])],
+                          origin='lower',
+                          extent=(int(plotx - 3 * targets_aperture[0]), int(plotx + 3 * targets_aperture[0]),
+                                  int(ploty - 3 * targets_aperture[0]), int(ploty + 3 * targets_aperture[0])),
+                          cmap=cm.Greys_r,
+                          vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
+                          vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
 
-        new_percent = round(100 * (counter + 1) / float(len(science)), 1)
-        if new_percent != percent:
-            lt1 = time.time()
-            rm_time = (100 - new_percent) * (lt1 - lt0) / new_percent
-            hours = rm_time / 3600.0
-            minutes = (hours - int(hours)) * 60
-            seconds = (minutes - int(minutes)) * 60
-            label3.configure(text='     {0}     '.format(science_file.split(os.sep)[-1]))
-            label5.configure(text='     {0}%    '.format(new_percent))
-            label7.configure(text='     %dh %02dm %02ds     ' % (int(hours), int(minutes), int(seconds)))
-            percent = new_percent
+                ax.set_xlim(plotx - 2 * targets_aperture[0], plotx + 2 * targets_aperture[0])
+                ax.set_ylim(ploty - 2 * targets_aperture[0], ploty + 2 * targets_aperture[0])
+                ax.axis('off')
 
-        if counter == 0:
-            finalise_window(root)
+                if not skip_gauss:
+                    circle = mpatches.Circle((plotx, ploty), targets_aperture[0], ec='r', fill=False)
+                    ax.add_patch(circle)
 
-        root.update()
+                canvas.draw()
 
-        if exit_var.get():
-            break
+            new_percent = round(100 * (counter + 1) / float(len(science)), 1)
+            if new_percent != percent:
+                lt1 = time.time()
+                rm_time = (100 - new_percent) * (lt1 - lt0) / new_percent
+                hours = rm_time / 3600.0
+                minutes = (hours - int(hours)) * 60
+                seconds = (minutes - int(minutes)) * 60
 
-        if counter + 1 == len(science):
-            write_local_log('pipeline', True, 'photometry_complete')
+                progress_bar_1['value'] = new_percent
+                percent_label_1.configure(text='{0} % ({1}h {2}m {3}s left)'.format(new_percent, int(hours),
+                                                                                    int(minutes), int(seconds)))
 
-    root.destroy()
+                percent = new_percent
 
-    if not exit_var.get():
+            if show_progress.exit:
+                break
+
+            if counter + 1 == len(science):
+                log.write_local_log('pipeline', True, 'photometry_complete')
+
+            show_progress.update()
+
+        return [
+            gauss_targets_files,
+            gauss_targets_jd,
+            gauss_targets_x_position,
+            gauss_targets_y_position,
+            gauss_targets_x_std,
+            gauss_targets_y_std,
+            gauss_targets_flux,
+            gauss_targets_sky,
+            apperture_targets_files,
+            apperture_targets_jd,
+            apperture_targets_x_position,
+            apperture_targets_y_position,
+            apperture_targets_flux,
+            apperture_targets_sky,
+        ]
+
+    def plot_lcs(measurements):
+
+        (gauss_targets_files, gauss_targets_jd, gauss_targets_x_position, gauss_targets_y_position, gauss_targets_x_std,
+         gauss_targets_y_std, gauss_targets_flux, gauss_targets_sky, apperture_targets_files, apperture_targets_jd,
+         apperture_targets_x_position, apperture_targets_y_position, apperture_targets_flux,
+         apperture_targets_sky) = measurements
 
         # save results, create photometry directory and move results there
         comparisons_number = len(gauss_targets_x_position) // len(gauss_targets_files) - 1
@@ -375,6 +462,8 @@ def photometry():
         diff = np.abs(aflux[1:] - aflux[:-1])
         apperture_scatter = np.std(diff)
 
+        photometry_directory = photometry_directory_base
+
         if not os.path.isdir(photometry_directory):
             os.mkdir(photometry_directory)
         else:
@@ -384,28 +473,21 @@ def photometry():
             photometry_directory = '{0}_{1}'.format(photometry_directory, str(fi))
             os.mkdir(photometry_directory)
 
-        root = Tk()
+        # plot
 
+        root = ProgressWindow('HOPS - Photometry')
+        f = Figure()
+        f.set_figwidth(9)
+        f.set_figheight(0.8 * root.root.winfo_screenheight() / f.get_dpi())
         if comparisons_number > 1:
-            f = Figure()
-            f.set_figwidth(7)
-            f.set_figheight(0.8 * root.winfo_screenheight() / f.get_dpi())
             ax = f.add_subplot(comparisons_number + 1, 1, 1)
         else:
-            f = Figure()
             ax = f.add_subplot(1, 1, 1)
 
-        exit_var_2 = BooleanVar(value=False)
-
-        def break_and_exit():
-            exit_var_2.set(True)
-
-        initialise_window(root, exit_command=break_and_exit)
-
         f.patch.set_facecolor('white')
-        canvas = FigureCanvasTkAgg(f, root)
+        canvas = root.FigureCanvasTkAgg(f)
         canvas.get_tk_widget().pack()
-        NavigationToolbar2TkAgg(canvas, root)
+        root.NavigationToolbar2Tk(canvas)
 
         ax.plot(targets_jd - targets_jd[0], targets_flux[0] / np.sum(targets_flux[1:], 0)
                 / np.median(targets_flux[0] / np.sum(targets_flux[1:], 0)), 'ko', ms=3, label='Aperture')
@@ -413,7 +495,7 @@ def photometry():
                 / np.median(targets_gauss_flux[0] / np.sum(targets_gauss_flux[1:], 0)), 'ro', ms=3, mec='r', label='PSF')
         ax.tick_params(labelbottom=False)
         ax.set_title(r'$\mathrm{Target}$')
-        ax.legend()
+        ax.legend(loc=(0, 1))
 
         if comparisons_number > 1:
 
@@ -428,16 +510,6 @@ def photometry():
                 all_relative_aperture.append(targets_flux[1:][comp] / np.sum(test_aperture_flux, 0))
                 all_relative_gauss.append(targets_gauss_flux[1:][comp] / np.sum(test_gauss_flux, 0))
 
-            # for comp in range(comparisons_number):
-            #     for comp_cor in range(comparisons_number):
-            #         print('aperture', comp, comp_cor, plc.correlation(all_relative_aperture[comp],
-            #         all_relative_aperture[comp_cor]))
-            #
-            # for comp in range(comparisons_number):
-            #     for comp_cor in range(comparisons_number):
-            #         print('gauss', comp, comp_cor, plc.correlation(all_relative_gauss[comp],
-            #         all_relative_gauss[comp_cor]))
-
             for comp in range(comparisons_number):
 
                 ax = f.add_subplot(comparisons_number + 1, 1, comp + 2)
@@ -446,13 +518,15 @@ def photometry():
                 ax.plot(gauss_targets_jd - gauss_targets_jd[0],
                         all_relative_gauss[comp] / np.median(all_relative_gauss[comp]), 'ro', ms=3, mec='r')
                 ax.tick_params(labelbottom=False)
-                ax.set_title(r'${0}{1}{2}$'.format('\mathrm{', "Comparison \, {0}".format(comp + 1), '}'))
+                f.text(0.881, 0.07 + (comparisons_number - comp - 0.5) * (1 - 0.07 - 0.12) / (comparisons_number + 1),
+                       r'${0}{1}{2}$'.format('\mathrm{', "Comparison \, {0}".format(comp + 1), '}'),
+                       ha='left', va='center')
 
         ax.tick_params(labelbottom=True)
-        ax.set_xlabel(r'$\mathrm{\Delta t} \ \mathrm{[days]}$', fontsize=20)
-        f.text(0.03, 0.5, r'$\mathrm{relative} \ \mathrm{flux}$', fontsize=20,
+        ax.set_xlabel(r'$\mathrm{\Delta t} \ \mathrm{[days]}$', fontsize=12)
+        f.text(0.03, 0.5, r'$\mathrm{relative} \ \mathrm{flux}$', fontsize=12,
                ha='center', va='center', rotation='vertical')
-
+        f.subplots_adjust(0.1, 0.07, 1 - 0.12, 1 - 0.1, 0, 0)
         f.set_figheight(2 * (comparisons_number + 1))
         f.savefig(results_figure, dpi=200)
 
@@ -469,21 +543,21 @@ def photometry():
         fits = pf.open(science[np.random.randint(len(science))])
         exp_time = round(fits[1].header[exposure_time_key], 1)
 
-        ra_dec_string = read_local_log('photometry', 'target_ra_dec')
+        ra_dec_string = log.read_local_log('photometry', 'target_ra_dec')
         ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
         target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
 
         ecc_planet = plc.find_nearest(target)
 
         phot_filter = 'None detected'
-        for key in read_local_log_profile('filter_key').split(','):
+        for key in log.read_local_log_profile('filter_key').split(','):
             check_filter = test_fits_keyword(fits, key)
             if check_filter[0]:
                 if check_filter[2] in filter_map:
                     phot_filter = check_filter[2]
                     break
-            if read_local_log_profile('filter') != '':
-                phot_filter = read_local_log_profile('filter')
+            if log.read_local_log_profile('filter') != '':
+                phot_filter = log.read_local_log_profile('filter')
 
         if gauss_scatter < apperture_scatter:
             files_to_upload = ['PHOTOMETRY_GAUSS.txt', 'PHOTOMETRY_APERTURE.txt']
@@ -513,131 +587,93 @@ def photometry():
         ]))
         w.close()
 
-        finalise_window(root)
+        shutil.copy(log.photometry_output_description, photometry_directory)
 
-        while not exit_var_2.get():
+        root.show()
+
+        while not root.exit:
             root.update()
 
-        root.destroy()
-        #
-        #
-        # #     all fov photometry
-        #
-        # root2 = Tk()
-        #
-        # exit_var = BooleanVar(value=False)
-        #
-        # def break_and_exit():
-        #     exit_var.set(True)
-        #
-        # initialise_window(root2, exit_command=break_and_exit)
-        #
-        # label1 = Label(root2, text='EXTRACTING INDIVIDUAL LIGHT-CURVES')
-        # label2 = Label(root2, text='POSITION:')
-        # label3 = Label(root2, text=' ')
-        # label4 = Label(root2, text='COMPLETE:')
-        # label5 = Label(root2, text=' ', )
-        # label6 = Label(root2, text='TIME LEFT:')
-        # label7 = Label(root2, text=' ')
-        #
-        # setup_window(root2, [
-        #     [[label1, 1, 2]],
-        #     [[label2, 1], [label3, 2]],
-        #     [[label4, 1], [label5, 2]],
-        #     [[label6, 1], [label7, 2]],
-        # ])
-        #
-        # all_targets = plc.open_dict(os.path.join(reduction_directory, 'all_frames.pickle'))
-        #
-        # percent = 0
-        # lt0 = time.time()
-        # for counter, target in enumerate(all_targets):
-        #
-        #     print(target)
-        #
-        #     gauss_flux = []
-        #     gauss_sky = []
-        #     aperture_flux = []
-        #     aperture_sky = []
-        #
-        #     for frame in all_targets[target]:
-        #
-        #         fits = pf.open(os.path.join(reduction_directory, frame))
-        #
-        #         subframe = all_targets[target][frame]
-        #
-        #         if len(subframe.shape) == 0:
-        #
-        #             gauss_flux.append(0.0)
-        #             gauss_sky.append(0.0)
-        #             aperture_flux.append(0.0)
-        #             aperture_sky.append(0.0)
-        #
-        #         else:
-        #
-        #             norm, floor, x_mean, y_mean, x_std, y_std = \
-        #                 fit_2d_gauss_point(subframe, predicted_x_mean=int(len(subframe[0]) / 2),
-        #                                    predicted_y_mean=int(len(subframe) / 2),
-        #                                    search_window=search_window_std * star_std, stde=star_std, snr_lim=False)
-        #
-        #             gauss_flux.append(2 * np.pi * norm * x_std * y_std)
-        #             gauss_sky.append(floor)
-        #
-        #             x_mean = int(len(subframe[0]) / 2)
-        #             y_mean = int(len(subframe) / 2)
-        #
-        #             flux_area = subframe[int(y_mean) - 4 * star_std:
-        #                                  int(y_mean) + 4 * star_std + 1,
-        #                         int(x_mean) - 4 * star_std:
-        #                         int(x_mean) + 4 * star_std + 1]
-        #             flux_pixels = (2 * (4 * star_std) + 1) ** 2
-        #             flux = np.sum(flux_area)
-        #
-        #             sky_area_1 = int(sky_inner_aperture * (4 * star_std))
-        #             sky_area_2 = int(sky_outer_aperture * (4 * star_std))
-        #             subframe[int(y_mean) - sky_area_1:int(y_mean) + sky_area_1 + 1,
-        #             int(x_mean) - sky_area_1:int(x_mean) + sky_area_1 + 1] = 0
-        #             sky_area = subframe[int(y_mean) - sky_area_2:int(y_mean) + sky_area_2 + 1,
-        #                        int(x_mean) - sky_area_2:int(x_mean) + sky_area_2 + 1]
-        #             sky_area = sky_area[np.where((sky_area > 0) &
-        #                                          (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-        #                                              std_key]))]
-        #             sky = np.sum(sky_area)
-        #             sky_pixels = sky_area.size
-        #
-        #             aperture_flux.append(flux - flux_pixels * sky / sky_pixels)
-        #             aperture_sky.append(sky / sky_pixels)
-        #
-        #     all_targets[target]['gauss_flux'] = gauss_flux
-        #     all_targets[target]['gauss_sky'] = gauss_sky
-        #     all_targets[target]['aperture_flux'] = aperture_flux
-        #     all_targets[target]['aperture_sky'] = aperture_sky
-        #
-        #     # counter
-        #
-        #     new_percent = round(100 * (counter + 1) / float(len(all_targets)), 1)
-        #     if new_percent != percent:
-        #         lt1 = time.time()
-        #         rm_time = (100 - new_percent) * (lt1 - lt0) / new_percent
-        #         hours = rm_time / 3600.0
-        #         minutes = (hours - int(hours)) * 60
-        #         seconds = (minutes - int(minutes)) * 60
-        #         label3.configure(text='     {0}     '.format(target))
-        #         label5.configure(text='     {0}%    '.format(new_percent))
-        #         label7.configure(text='     %dh %02dm %02ds     ' % (int(hours), int(minutes), int(seconds)))
-        #         percent = new_percent
-        #
-        #     if counter == 0:
-        #         finalise_window(root2)
-        #
-        #     root2.update()
-        #
-        #     if exit_var.get():
-        #         break
-        #
-        #     if counter + 1 == len(science):
-        #         write_log('pipeline', True, 'extraction_complete')
-        #
-        # root2.destroy()
-        #
-        # plc.save_dict(all_targets, os.path.join(photometry_directory, 'all_stars.pickle'))
+        root.close()
+
+    def run():
+
+        measurements = measure()
+        if not show_progress.exit:
+            plot_lcs(measurements)
+            if not show_progress.exit:
+                log.write_local_log('pipeline', True, 'photometry_complete')
+
+        show_progress.close()
+
+    # progress window
+
+    show_progress = ProgressWindow('HOPS - Photometry', 0, 0, 5)
+
+    f = Figure(figsize=(3, 3))
+    f.patch.set_facecolor('white')
+    ax = f.add_subplot(111)
+    f.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
+    ax.axis('off')
+    canvas = show_progress.FigureCanvasTkAgg(f)
+    canvas.get_tk_widget().pack()
+
+    fits_file = pf.open(science[0], memmap=False)
+    try:
+        fits = [fits_file['SCI']]
+    except KeyError:
+        sci_id = 0
+        for sci_id in range(len(fits_file)):
+            try:
+                if (fits_file[sci_id].data).all():
+                    break
+            except:
+                pass
+        fits = [0, fits_file[sci_id]]
+
+    ref_x_position = fits[1].header[align_x0_key]
+    ref_y_position = fits[1].header[align_y0_key]
+    ref_u_position = fits[1].header[align_u0_key]
+
+    plotx = ref_x_position + targets_r_position[0] * np.cos(ref_u_position + targets_u_position[0])
+    ploty = ref_y_position + targets_r_position[0] * np.sin(ref_u_position + targets_u_position[0])
+
+    ax.cla()
+    ax.imshow(fits[1].data[int(ploty - 3 * targets_aperture[0]): int(ploty + 3 * targets_aperture[0]),
+              int(plotx - 3 * targets_aperture[0]): int(plotx + 3 * targets_aperture[0])],
+              origin='lower',
+              extent=(int(plotx - 3 * targets_aperture[0]), int(plotx + 3 * targets_aperture[0]),
+                      int(ploty - 3 * targets_aperture[0]), int(ploty + 3 * targets_aperture[0])),
+              cmap=cm.Greys_r,
+              vmin=fits[1].header[mean_key] + frame_low_std * fits[1].header[std_key],
+              vmax=fits[1].header[mean_key] + frame_upper_std * fits[1].header[std_key])
+
+    ax.set_xlim(plotx - 2 * targets_aperture[0], plotx + 2 * targets_aperture[0])
+    ax.set_ylim(ploty - 2 * targets_aperture[0], ploty + 2 * targets_aperture[0])
+    ax.axis('off')
+
+    circle = mpatches.Circle((plotx, ploty), targets_aperture[0], ec='r', fill=False)
+    ax.add_patch(circle)
+
+    fits_file.close()
+
+    frame1 = show_progress.Frame()
+    frame1.pack()
+
+    label_1 = Label(frame1, text="Running Photometry: {0}".format(os.path.split(science[0])[1]))
+    progress_bar_1 = ttk.Progressbar(frame1, orient=HORIZONTAL,
+                                     length=200, maximum=100, mode='determinate', value=0)
+    percent_label_1 = Label(frame1, text='0.0 % (0h 0m 0s left)')
+
+    setup_window(frame1, [
+        [],
+        [[label_1, 0]],
+        [[progress_bar_1, 0]],
+        [[percent_label_1, 0]],
+        []
+    ], main_font='Courier')
+
+    canvas.draw()
+    show_progress.after(200, run)
+    show_progress.loop()
+

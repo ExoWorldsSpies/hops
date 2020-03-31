@@ -1,9 +1,30 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from .hops_basics import *
-from .counter import Counter
+import warnings
+warnings.filterwarnings(
+    'ignore', message='Matplotlib is building the font cache using fc-list. This may take a moment.')
+warnings.filterwarnings(
+    'ignore', message='The installed version of numexpr 2.4.4 is not supported in pandas and will be not be used')
+
+import matplotlib
+matplotlib.use('TkAgg')
+
+import os
+import numpy as np
+import shutil
+import hops.pylightcurve3 as plc
+import matplotlib.cm as cm
+
+from astropy.io import fits as pf
+from scipy.optimize import curve_fit
+from matplotlib.figure import Figure
+import matplotlib.gridspec as gridspec
+
+from matplotlib.backend_bases import FigureCanvasBase
+
+from hops.hops_tools.logs import log
+from hops.hops_tools.tests import *
+from hops.hops_tools.windows import ProgressWindow
+
 
 class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
 
@@ -161,7 +182,7 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
             fig.text(0.97, 0.97,  data_dates[set_number], fontsize=fsmain, va='top', ha='right')
 
             logo_ax = fig.add_subplot(gs[0, 0])
-            logo_ax.imshow(holomon_logo_jpg)
+            logo_ax.imshow(log.holomon_logo_jpg)
             logo_ax.spines['top'].set_visible(False)
             logo_ax.spines['bottom'].set_visible(False)
             logo_ax.spines['left'].set_visible(False)
@@ -192,7 +213,7 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
             ax1.plot(self.results['detrended_output_series']['phase'][set_indices],
                      self.results['detrended_output_series']['model'][set_indices], 'r-')
 
-            fig.text(0.04, fbottom + 2.5 * (1 - fbottom) / frow, 'relative flux', fontsize=fsbig, va='center',
+            fig.text(0.04, fbottom + 2.5 * (1 - fbottom) / frow, 'relative flux (de-trended)', fontsize=fsbig, va='center',
                      ha='center', rotation='vertical')
 
             data_ymin = (min(self.results['detrended_input_series']['value'][set_indices])
@@ -218,10 +239,16 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
                 r'$R_\mathrm{p}/R_* = ', self.results['parameters']['rp']['print_value'], '_{-',
                 self.results['parameters']['rp']['print_m_error'], '}', '^{+',
                 self.results['parameters']['rp']['print_p_error'], '}$')
-            mtstr = '{0}{1}{2}{3}{4}{5}{6}{7}'.format(
-                r'$T_\mathrm{BJD_{TDB}} = ', self.results['parameters']['mt']['print_value'], '_{-',
-                self.results['parameters']['mt']['print_m_error'], '}', '^{+',
-                self.results['parameters']['mt']['print_p_error'], '}$')
+            mtstr = '${0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}{13}{14}{15}$'.format(
+                'T_\mathrm{BJD_{TDB}} = ',
+                self.results['parameters']['mt']['print_value'],
+                '_{-', self.results['parameters']['mt']['print_m_error'], '}',
+                '^{+', self.results['parameters']['mt']['print_p_error'], '}',
+                ' \quad \mathrm{O-C_{minutes}} = ',
+                round((self.results['parameters']['mt']['value'] - prediction) * 24 * 60, 1),
+                '_{-', round(self.results['parameters']['mt']['m_error']* 24 * 60, 1), '}',
+                '^{+', round(self.results['parameters']['mt']['p_error']* 24 * 60, 1), '}'
+                )
 
             ax1.text(0, ymin + 0.1 * (ymax - ymin),
                      '{0}{1}{2}'.format(rpstr, '\n', mtstr), ha='center', va='center', fontsize=fsmain)
@@ -265,331 +292,271 @@ class HOPSTransitAndPolyFitting(plc.TransitAndPolyFitting):
             return fig
 
 
-def initialise_window(window, window_name=None, exit_command=None):
-
-    if not window_name:
-        window_name = read_log('windows', 'software_window')
-
-    if not exit_command:
-        def exit_command():
-            os._exit(-1)
-
-    window.wm_title(window_name)
-    window.protocol('WM_DELETE_WINDOW', exit_command)
-
-    window.withdraw()
-
-
-def setup_window(window, objects):
-
-    main_font = tuple(read_log('windows', 'main_font'))
-    title_font = tuple(read_log('windows', 'title_font'))
-    button_font = tuple(read_log('windows', 'button_font'))
-    entries_bd = read_log('windows', 'entries_bd')
-
-    for row in range(len(objects)):
-        if len(objects[row]) == 0:
-            label_empty = Label(window, text='')
-            label_empty.grid(row=row, column=100)
-        else:
-            for obj in objects[row]:
-
-                if obj[0].winfo_class() == 'Button':
-                    obj[0].configure(font=button_font)
-                elif obj[0].winfo_class() == 'Entry':
-                    obj[0].configure(bd=entries_bd, font=main_font)
-                elif obj[0].winfo_class() in ['Label', 'Radiobutton']:
-                    if len(obj) == 5:
-                        if obj[4] == 'title':
-                            obj[0].configure(font=title_font)
-                        else:
-                            obj[0].configure(font=main_font)
-                    else:
-                        obj[0].configure(font=main_font)
-
-                if len(obj) >= 4:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2], rowspan=obj[3])
-                elif len(obj) == 3:
-                    obj[0].grid(row=row, column=obj[1], columnspan=obj[2])
-                else:
-                    obj[0].grid(row=row, column=obj[1])
-
-
-def finalise_window(window, center=True, topmost=False):
-
-    window.update_idletasks()
-
-    if center:
-        x = (window.winfo_screenwidth() - window.winfo_reqwidth()) / 2
-        y = (window.winfo_screenheight() - window.winfo_reqheight()) / 2
-        window.geometry('+%d+%d' % (x, y))
-
-    else:
-        window.geometry('+%d+%d' % (0, 0))
-
-    window.update_idletasks()
-
-    window.lift()
-    window.wm_attributes("-topmost", 1)
-    # if not topmost:
-    window.after_idle(window.attributes, '-topmost', 0)
-
-    window.deiconify()
-
-
 def fitting():
 
-    fitting_directory = read_local_log('pipeline', 'fitting_directory')
-    reduction_directory = read_local_log('pipeline', 'reduction_directory')
-    exposure_time_key = read_local_log('pipeline_keywords', 'exposure_time_key')
-    light_curve_file = read_local_log('fitting', 'light_curve_file')
-    scatter = read_local_log('fitting', 'scatter')
-    iterations = read_local_log('fitting', 'iterations')
-    burn = read_local_log('fitting', 'burn')
-    planet = read_local_log('fitting', 'planet')
-    metallicity = read_local_log('fitting', 'metallicity')
-    temperature = read_local_log('fitting', 'temperature')
-    logg = read_local_log('fitting', 'logg')
-    phot_filter = read_local_log('fitting', 'phot_filter')
-    period = read_local_log('fitting', 'period')
-    period_fit = read_local_log('fitting', 'period_fit')
-    mid_time = read_local_log('fitting', 'mid_time')
-    mid_time_fit = read_local_log('fitting', 'mid_time_fit')
-    rp_over_rs = read_local_log('fitting', 'rp_over_rs')
-    rp_over_rs_fit = read_local_log('fitting', 'rp_over_rs_fit')
-    sma_over_rs = read_local_log('fitting', 'sma_over_rs')
-    sma_over_rs_fit = read_local_log('fitting', 'sma_over_rs_fit')
-    inclination = read_local_log('fitting', 'inclination')
-    inclination_fit = read_local_log('fitting', 'inclination_fit')
-    eccentricity = read_local_log('fitting', 'eccentricity')
-    eccentricity_fit = read_local_log('fitting', 'eccentricity_fit')
-    periastron = read_local_log('fitting', 'periastron')
-    periastron_fit = read_local_log('fitting', 'periastron_fit')
-    observer = read_local_log('fitting', 'observer')
-    observatory = read_local_log('fitting', 'observatory')
-    telescope = read_local_log('fitting', 'telescope')
-    camera = read_local_log('fitting', 'camera')
-    target_ra_dec = read_local_log('fitting', 'target_ra_dec')
+    fitting_directory_base = log.read_local_log('pipeline', 'fitting_directory')
+    reduction_directory = log.read_local_log('pipeline', 'reduction_directory')
+    exposure_time_key = log.read_local_log('pipeline_keywords', 'exposure_time_key')
+    light_curve_file = log.read_local_log('fitting', 'light_curve_file')
+    scatter = log.read_local_log('fitting', 'scatter')
+    iterations = log.read_local_log('fitting', 'iterations')
+    burn = log.read_local_log('fitting', 'burn')
+    planet = log.read_local_log('fitting', 'planet')
+    metallicity = log.read_local_log('fitting', 'metallicity')
+    temperature = log.read_local_log('fitting', 'temperature')
+    logg = log.read_local_log('fitting', 'logg')
+    phot_filter = log.read_local_log('fitting', 'phot_filter')
+    period = log.read_local_log('fitting', 'period')
+    mid_time = log.read_local_log('fitting', 'mid_time')
+    mid_time_fit = log.read_local_log('fitting', 'mid_time_fit')
+    rp_over_rs = log.read_local_log('fitting', 'rp_over_rs')
+    rp_over_rs_fit = log.read_local_log('fitting', 'rp_over_rs_fit')
+    sma_over_rs = log.read_local_log('fitting', 'sma_over_rs')
+    sma_over_rs_fit = log.read_local_log('fitting', 'sma_over_rs_fit')
+    inclination = log.read_local_log('fitting', 'inclination')
+    inclination_fit = log.read_local_log('fitting', 'inclination_fit')
+    eccentricity = log.read_local_log('fitting', 'eccentricity')
+    periastron = log.read_local_log('fitting', 'periastron')
+    observer = log.read_local_log('fitting', 'observer')
+    observatory = log.read_local_log('fitting', 'observatory')
+    telescope = log.read_local_log('fitting', 'telescope')
+    camera = log.read_local_log('fitting', 'camera')
+    target_ra_dec = log.read_local_log('fitting', 'target_ra_dec')
 
-    if not os.path.isdir(fitting_directory):
-        os.mkdir(fitting_directory)
-    else:
-        fi = 2
-        while os.path.isdir('{0}_{1}'.format(fitting_directory, str(fi))):
-            fi += 1
-        fitting_directory = '{0}_{1}'.format(fitting_directory, str(fi))
-        os.mkdir(fitting_directory)
+    def fit():
 
-    if period_fit:
-        period_fit = [period + period_fit[0], period + period_fit[1]]
-    else:
-        period_fit = False
-    if mid_time_fit:
-        mid_time_fit = [mid_time + mid_time_fit[0], mid_time + mid_time_fit[1]]
-    else:
-        mid_time_fit = False
-    if rp_over_rs_fit:
-        rp_over_rs_fit = [rp_over_rs * rp_over_rs_fit[0], rp_over_rs * rp_over_rs_fit[1]]
-    else:
-        rp_over_rs_fit = False
-    if sma_over_rs_fit:
-        sma_over_rs_fit = [sma_over_rs * sma_over_rs_fit[0], sma_over_rs * sma_over_rs_fit[1]]
-    else:
-        sma_over_rs_fit = False
-    if inclination_fit:
-        inclination_fit = [inclination + inclination_fit[0], inclination + inclination_fit[1]]
-    else:
-        inclination_fit = False
-    if eccentricity_fit:
-        eccentricity_fit = [eccentricity + eccentricity_fit[0], eccentricity + eccentricity_fit[1]]
-    else:
-        eccentricity_fit = False
-    if periastron_fit:
-        periastron_fit = [periastron + periastron_fit[0], periastron + periastron_fit[1]]
-    else:
-        periastron_fit = False
+        if mid_time_fit:
+            mid_time_fit_p = [mid_time + mid_time_fit[0], mid_time + mid_time_fit[1]]
+        else:
+            mid_time_fit_p = False
+        if rp_over_rs_fit:
+            rp_over_rs_fit_p = [rp_over_rs * rp_over_rs_fit[0], rp_over_rs * rp_over_rs_fit[1]]
+        else:
+            rp_over_rs_fit_p = False
+        if sma_over_rs_fit:
+            sma_over_rs_fit_p = [sma_over_rs * sma_over_rs_fit[0], sma_over_rs * sma_over_rs_fit[1]]
+        else:
+            sma_over_rs_fit_p = False
+        if inclination_fit:
+            inclination_fit_p = [inclination + inclination_fit[0], inclination + inclination_fit[1]]
+        else:
+            inclination_fit_p = False
 
-    science = find_fits_files(os.path.join(reduction_directory, '*'))
-    exp_time = pf.open(science[np.random.randint(len(science))])[1].header[exposure_time_key]
+        science = find_fits_files(os.path.join(reduction_directory, '*'))
+        exp_time = pf.open(science[np.random.randint(len(science))])[1].header[exposure_time_key]
 
-    light_curve = np.loadtxt(light_curve_file, unpack=True)
+        light_curve = np.loadtxt(light_curve_file, unpack=True)
 
-    date = plc.JD(light_curve[0][0]).utc.isoformat()[:15].replace('T', ' ')
-    obs_duration = round(24 * (light_curve[0][-1] - light_curve[0][0]), 1)
+        date = plc.JD(light_curve[0][0]).utc.isoformat()[:15].replace('T', ' ')
+        obs_duration = round(24 * (light_curve[0][-1] - light_curve[0][0]), 1)
 
-    # filter out outliers
+        # filter out outliers
 
-    light_curve_0 = light_curve[0]
-    light_curve_1 = light_curve[1]
+        light_curve_0 = light_curve[0]
+        light_curve_1 = light_curve[1]
 
-    light_curve_0 = light_curve_0[np.where(~np.isnan(light_curve_1))]
-    light_curve_1 = light_curve_1[np.where(~np.isnan(light_curve_1))]
+        light_curve_0 = light_curve_0[np.where(~np.isnan(light_curve_1))]
+        light_curve_1 = light_curve_1[np.where(~np.isnan(light_curve_1))]
 
-    moving_average = []
-    for i in range(-10, 11):
-        moving_average.append(np.roll(light_curve_1, i))
+        moving_average = []
+        for i in range(-10, 11):
+            moving_average.append(np.roll(light_curve_1, i))
 
-    median = np.median(moving_average, 0)
-    med = np.median([np.abs(ff - median) for ff in moving_average], 0)
+        median = np.median(moving_average, 0)
+        med = np.median([np.abs(ff - median) for ff in moving_average], 0)
 
-    flag = np.where((np.abs(light_curve_1 - median) < scatter * med))[0]
+        flag = np.where((np.abs(light_curve_1 - median) < scatter * med))[0]
 
-    light_curve_0 = light_curve_0[flag]
-    light_curve_1 = light_curve_1[flag]
+        light_curve_0 = light_curve_0[flag]
+        light_curve_1 = light_curve_1[flag]
 
-    # fix timing
+        # fix timing
 
-    ra_dec_string = target_ra_dec.replace(':', ' ').split(' ')
-    target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
-    light_curve_0 = np.array([plc.JD(ff + 0.5 * exp_time / 60.0 / 60.0 / 24.0).bjd_tdb(target) for ff in light_curve_0])
+        ra_dec_string = target_ra_dec.replace(':', ' ').split(' ')
+        target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
+        light_curve_0 = np.array([plc.JD(ff + 0.5 * exp_time / 60.0 / 60.0 / 24.0).bjd_tdb(target) for ff in light_curve_0])
 
-    # predictions
+        # predictions
 
-    limb_darkening_coefficients = plc.clablimb('claret', logg, max(4000, temperature), metallicity,
-                                               filter_map[phot_filter])
+        limb_darkening_coefficients = plc.clablimb('claret', logg, max(4000, temperature), metallicity,
+                                                   filter_map[phot_filter])
 
-    predicted_mid_time = (mid_time + round((np.mean(light_curve_0) - mid_time) / period) * period)
+        predicted_mid_time = (mid_time + round((np.mean(light_curve_0) - mid_time) / period) * period)
 
-    # define models
+        # define models
 
-    def mcmc_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+        def mcmc_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
 
-        data_delta_t = time_array - light_curve_0[0]
+            data_delta_t = time_array - light_curve_0[0]
 
-        detrend = detrend_zero * (1 + detrend_one * data_delta_t +
-                                  detrend_two * data_delta_t * data_delta_t)
-        transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs,
-                                               period, sma_over_rs, eccentricity,
-                                               inclination, periastron,
-                                               predicted_mid_time + model_mid_time,
-                                               time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
+            detrend = detrend_zero * (1 + detrend_one * data_delta_t +
+                                      detrend_two * data_delta_t * data_delta_t)
+            transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs,
+                                                   period, sma_over_rs, eccentricity,
+                                                   inclination, periastron,
+                                                   predicted_mid_time + model_mid_time,
+                                                   time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
 
-        return detrend * transit_model
+            return detrend * transit_model
 
-    def independent_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
+        def independent_f(time_array, detrend_zero, detrend_one, detrend_two, model_rp_over_rs, model_mid_time):
 
-        data_delta_t = time_array - light_curve_0[0]
+            data_delta_t = time_array - light_curve_0[0]
 
-        detrend = detrend_zero * (1 + detrend_one * data_delta_t +
-                                  detrend_two * data_delta_t * data_delta_t)
-        transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs, period,
-                                               sma_over_rs, eccentricity, inclination,
-                                               periastron, predicted_mid_time + model_mid_time,
-                                               time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
+            detrend = detrend_zero * (1 + detrend_one * data_delta_t +
+                                      detrend_two * data_delta_t * data_delta_t)
+            transit_model = plc.transit_integrated('claret', limb_darkening_coefficients, model_rp_over_rs, period,
+                                                   sma_over_rs, eccentricity, inclination,
+                                                   periastron, predicted_mid_time + model_mid_time,
+                                                   time_array, float(exp_time), max(1, int(float(exp_time) / 10)))
 
-        return detrend, transit_model
+            return detrend, transit_model
 
-    # set noise level
+        # set noise level
 
-    sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
-    sigma = np.std(sigma, 0)
+        sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
+        sigma = np.std(sigma, 0)
 
-    popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
-                           p0=[np.mean(light_curve_1), 1, -1, rp_over_rs, 0],
-                           sigma=sigma, maxfev=10000)
+        popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
+                               p0=[np.mean(light_curve_1), 1, -1, rp_over_rs, 0],
+                               sigma=sigma, maxfev=10000)
 
-    fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
+        fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
 
-    test = []
-    for i in range(-int(len(light_curve_0) / 2), int(len(light_curve_0) / 2)):
-        test.append([np.sum((light_curve_1 / fit_detrend - np.roll(fit_transit_model, i)) ** 2), i])
-    test.sort()
+        test = []
+        for i in range(-int(len(light_curve_0) / 2), int(len(light_curve_0) / 2)):
+            test.append([np.sum((light_curve_1 / fit_detrend - np.roll(fit_transit_model, i)) ** 2), i])
+        test.sort()
 
-    popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1, p0=[
-        popt[0], popt[1], popt[2], popt[3],
-        popt[4] + (test[0][1]) * exp_time / 60.0 / 60.0 / 24.0],
-                           sigma=sigma, maxfev=10000)
+        popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1, p0=[
+            popt[0], popt[1], popt[2], popt[3],
+            popt[4] + (test[0][1]) * exp_time / 60.0 / 60.0 / 24.0],
+                               sigma=sigma, maxfev=10000)
 
-    residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
+        residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
 
-    sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
-    sigma = np.std(sigma, 0)
+        sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
+        sigma = np.std(sigma, 0)
 
-    mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, sigma]],
-                                         method='claret',
-                                         limb_darkening_coefficients=limb_darkening_coefficients,
-                                         rp_over_rs=rp_over_rs,
-                                         period=period,
-                                         sma_over_rs=sma_over_rs,
-                                         eccentricity=eccentricity,
-                                         inclination=inclination,
-                                         periastron=periastron,
-                                         mid_time=mid_time,
-                                         fit_rp_over_rs=rp_over_rs_fit,
-                                         iterations=iterations,
-                                         walkers=50,
-                                         burn=burn,
-                                         fit_first_order=True,
-                                         fit_second_order=True,
-                                         fit_period=period_fit,
-                                         fit_sma_over_rs=sma_over_rs_fit,
-                                         fit_eccentricity=eccentricity_fit,
-                                         fit_inclination=inclination_fit,
-                                         fit_periastron=periastron_fit,
-                                         fit_mid_time=mid_time_fit,
-                                         precision=3,
-                                         exp_time=round(exp_time, 1),
-                                         time_factor=int(round(exp_time, 1) / 10),
-                                         counter=Counter('FITTING', 'FITTING', 100, 100)
-                                         )
+        def function_to_call(counter):
 
-    mcmc_fit.run_mcmc()
-    mcmc_fit.save_results(os.path.join(fitting_directory, 'results.txt'))
-    mcmc_fit.save_models(os.path.join(fitting_directory, 'model.txt'))
-    mcmc_fit.save_detrended_models(os.path.join(fitting_directory, 'detrended_model.txt'))
-    mcmc_fit.plot_hops_corner(fitting_directory)
-    figure = mcmc_fit.plot_hops_output(
-        planet,
-        ['{0} (UT)\nDur: {1}h / Exp: {2}s\nFilter: {3}'.format(date, obs_duration, exp_time, phot_filter)],
-        observer, '{0} / {1} / {2}'.format(observatory, telescope, camera), fitting_directory)
-    shutil.copy('log.yaml', '{0}{1}log.yaml'.format(fitting_directory, os.sep))
+            if counter.update_now:
 
-    w = open('{0}/output_description.txt'.format(fitting_directory), 'w')
-    w.write('\n'.join([
-        '--- results.txt ---',
-        'Contains the fitting results, where N0, L0, Q0 are the 0th, 1st and 2nd order systematics,',
-        'fitted on the light curve at the same time as the transit, ldc1, ldc2, ldc3, ldc4 are the limb darkening',
-        'coefficients calculated for the specific filter and stellar properties given during the fitting process,',
-        'rp is the planet to star radius ratio (no units), a is the semi-major axis relatively to the stellar radius',
-        '(no units), e is the eccentricity (no units), i is the inclination (degrees), w is the argument of periastron',
-        '(degrees) and mt is the mid-transit time (BJD_TDB).',
-        '',
-        '--- set_1_model.txt ---',
-        'Contains the data and the final model. The columns contain the following information (in order):',
-        '1. mid-exposure time in BJD_TDB',
-        '2. orbital phase',
-        '3. relative flux',
-        '4. uncertainty on the relative flux used during fitting',
-        '5. model',
-        '6. fitting residuals',
-        '',
-        '--- set_1_detrended_model.txt ---',
-        'Contains the detrended data and the final model, where all fluxes have been divided by the best-fit model for',
-        'the systematics. The columns contain the following information (in order):',
-        '1. mid-exposure time in BJD_TDB',
-        '2. orbital phase',
-        '3. detrended relative flux',
-        '4. detrended uncertainty on the relative flux used during fitting',
-        '5. detrended model',
-        '6. detrended fitting residuals',
-    ]))
-    w.close()
+                progress_bar_1['value'] = counter.percent
+                percent_label_1.configure(
+                    text='{0} % ({1}h {2}m {3}s left)'.format(counter.percent,
+                                                              int(counter.time_left.split(':')[0]),
+                                                              int(counter.time_left.split(':')[1]),
+                                                              int(counter.time_left.split(':')[2])
+                                                              ))
+                show_progress.update()
 
-    roott = Tk()
-    exit_var_2 = BooleanVar(value=False)
+            if show_progress.exit:
+                return False
+            else:
+                return True
 
-    def break_and_exit():
-        exit_var_2.set(True)
+        mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, sigma]],
+                                             method='claret',
+                                             limb_darkening_coefficients=limb_darkening_coefficients,
+                                             rp_over_rs=rp_over_rs,
+                                             period=period,
+                                             sma_over_rs=sma_over_rs,
+                                             eccentricity=eccentricity,
+                                             inclination=inclination,
+                                             periastron=periastron,
+                                             mid_time=mid_time,
+                                             fit_rp_over_rs=rp_over_rs_fit_p,
+                                             iterations=iterations,
+                                             walkers=50,
+                                             burn=burn,
+                                             fit_first_order=True,
+                                             fit_second_order=True,
+                                             fit_period=False,
+                                             fit_sma_over_rs=sma_over_rs_fit_p,
+                                             fit_eccentricity=False,
+                                             fit_inclination=inclination_fit_p,
+                                             fit_periastron=False,
+                                             fit_mid_time=mid_time_fit_p,
+                                             precision=3,
+                                             exp_time=round(exp_time, 1),
+                                             time_factor=int(round(exp_time, 1) / 10),
+                                             function_to_call=function_to_call
+                                             )
+        try:
+            mcmc_fit.run_mcmc()
+        except ValueError:
+            show_progress.exit = True
 
-    initialise_window(roott, exit_command=break_and_exit)
+        if not show_progress.exit:
 
-    canvas = FigureCanvasTkAgg(figure, roott)
-    canvas.get_tk_widget().pack()
-    NavigationToolbar2TkAgg(canvas, roott)
+            fitting_directory = fitting_directory_base
 
-    finalise_window(roott, topmost=True)
+            if not os.path.isdir(fitting_directory):
+                os.mkdir(fitting_directory)
+            else:
+                fi = 2
+                while os.path.isdir('{0}_{1}'.format(fitting_directory, str(fi))):
+                    fi += 1
+                fitting_directory = '{0}_{1}'.format(fitting_directory, str(fi))
+                os.mkdir(fitting_directory)
 
-    while not exit_var_2.get():
-        roott.update()
+            mcmc_fit.save_results(os.path.join(fitting_directory, 'results.txt'))
+            mcmc_fit.save_models(os.path.join(fitting_directory, 'model.txt'))
+            mcmc_fit.save_detrended_models(os.path.join(fitting_directory, 'detrended_model.txt'))
+            mcmc_fit.plot_hops_corner(fitting_directory)
+            figure = mcmc_fit.plot_hops_output(
+                planet,
+                ['{0} (UT)\nDur: {1}h / Exp: {2}s\nFilter: {3}'.format(date, obs_duration, exp_time, phot_filter)],
+                observer, '{0} / {1} / {2}'.format(observatory, telescope, camera), fitting_directory)
+            shutil.copy('log.yaml', '{0}{1}log.yaml'.format(fitting_directory, os.sep))
 
-    roott.destroy()
+            shutil.copy(log.fitting_output_description, fitting_directory)
+
+            return figure
+
+    def plot_fit(figure):
+
+        root = ProgressWindow('HOPS - Fitting')
+
+        canvas = root.FigureCanvasTkAgg(figure)
+        canvas.get_tk_widget().pack()
+        root.NavigationToolbar2Tk(canvas)
+
+        root.show()
+
+        while not root.exit:
+            root.update()
+
+        root.close()
+
+    def run():
+
+        figure = fit()
+        if not show_progress.exit:
+            plot_fit(figure)
+            if not show_progress.exit:
+                log.write_local_log('pipeline', True, 'fitting_complete')
+
+        show_progress.close()
+
+    show_progress = ProgressWindow('HOPS - Fitting', 0, 0, 5)
+
+    label_1 = show_progress.Label(text="Running MCMC fitting")
+
+    progress_bar_1 = show_progress.Progressbar()
+    percent_label_1 = show_progress.Label(text='0.0 % (0h 0m 0s left)')
+
+    show_progress.setup_window([
+        [],
+        [],
+        [[label_1, 0]],
+        [[progress_bar_1, 0]],
+        [[percent_label_1, 0]],
+        [],
+        []
+    ], main_font='Courier')
+
+    show_progress.after(200, run)
+    show_progress.loop()
+

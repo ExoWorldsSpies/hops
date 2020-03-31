@@ -1,0 +1,35 @@
+
+--- results.txt ---
+Contains the fitting results, where N0, L0, Q0 are the 0th, 1st and 2nd order systematics,
+fitted on the light curve at the same time as the transit, ldc1, ldc2, ldc3, ldc4 are the limb darkening
+coefficients calculated for the specific filter and stellar properties given during the fitting process,
+rp is the planet to star radius ratio (no units), a is the semi-major axis relatively to the stellar radius
+(no units), e is the eccentricity (no units), i is the inclination (degrees), w is the argument of periastron
+(degrees) and mt is the mid-transit time (BJD_TDB).
+
+--- set_1_model.txt ---
+Contains the data and the final model. The columns contain the following information (in order):
+1. mid-exposure time in BJD_TDB
+2. orbital phase
+3. relative flux
+4. uncertainty on the relative flux used during fitting
+5. model
+6. fitting residuals
+
+--- set_1_detrended_model.txt ---
+Contains the detrended data and the final model, where all fluxes have been divided by the best-fit model for
+the systematics. The columns contain the following information (in order):
+1. mid-exposure time in BJD_TDB
+2. orbital phase
+3. detrended relative flux
+4. detrended uncertainty on the relative flux used during fitting
+5. detrended model
+6. detrended fitting residuals
+
+--- corner.pdf ---
+Shows the correlation between the fitted parameters during the MCMC process. A good fitting is indicated by
+well-shaped normal distributions in all the plots across the diagonal.
+
+--- detrended_model.pdf ---
+Shows the final transit model, data and residuals (data-model), divided by the best fit model for the systematics
+(a second-order polynomial is fitted simultaneously with the transit model).
