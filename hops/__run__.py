@@ -1656,7 +1656,10 @@ class FittingWindow(MainWindow):
             if not check_ra_dec[0]:
                 enable_buttons = False
 
-            for input_entry in [self.scatter_entry, self.iterations_entry, self.burn_entry, self.phot_filter_entry,
+            if self.phot_filter_entry not in filter_map:
+                enable_buttons = False
+
+            for input_entry in [self.scatter_entry, self.iterations_entry, self.burn_entry,
                                 self.metallicity_entry, self.temperature_entry, self.logg_entry, self.period_entry, self.mid_time_entry,
                                 self.rp_over_rs_entry, self.sma_over_rs_entry, self.inclination_entry, self.eccentricity_entry,
                                 self.periastron_entry, self.target_ra_dec_entry]:
