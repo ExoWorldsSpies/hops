@@ -901,7 +901,7 @@ class PhotometryWindow(MainWindow):
                     star = plc.find_single_star(
                         self.fits[1].data, event.xdata, event.ydata,
                         mean=self.fits[1].header[self.mean_key], std=self.fits[1].header[self.std_key],
-                        burn_limit=self.burn_limit * 7.0 / 8.0, star_std=self.star_std)
+                        burn_limit=self.burn_limit * 0.95, star_std=self.star_std)
 
                     if not star:
                         showinfo('Star not acceptable.',
@@ -960,7 +960,12 @@ class PhotometryWindow(MainWindow):
                                 self.fits[1].data, self.targets_x_position[i_target].get(),
                                 self.targets_y_position[i_target].get(),
                                 mean=self.fits[1].header[self.mean_key], std=self.fits[1].header[self.std_key],
-                                burn_limit=self.burn_limit * 0.9, star_std=self.star_std)
+                                burn_limit=self.burn_limit * 0.95, star_std=self.star_std)
+
+                            if not star:
+                                xx = self.clear_target(i_target)
+                                xx()
+                                return None
 
                             self.targets_flux[i_target].set(2 * np.pi * star[2] * star[4] * star[5])
 
