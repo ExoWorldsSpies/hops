@@ -16,7 +16,7 @@ matplotlib.use('TkAgg')
 import os
 import glob
 import numpy as np
-from matplotlib.cm import Greys_r
+from matplotlib.cm import Greys, Greys_r
 import matplotlib.patches as mpatches
 from scipy.optimize import curve_fit
 from matplotlib.figure import Figure
@@ -27,7 +27,7 @@ from urllib.request import urlopen
 
 from tkinter import Tk, TclError
 from tkinter import Label, Button, Scale
-from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, BOTH, Y, HORIZONTAL
+from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, BOTH, Y, HORIZONTAL, StringVar
 from tkinter.messagebox import showinfo
 
 from hops.hops_tools.windows import MainWindow, AddOnWindow, SideWindow, setup_window, openweb_simbad
@@ -703,6 +703,7 @@ class PhotometryWindow(MainWindow):
         self.flip_fov_button = Button(frame1, text='Flip FOV')
         self.mirror_fov_button = Button(frame1, text='Mirror FOV')
         self.reset_fov_button = Button(frame1, text='RESET PLOT')
+        self.reverse_color_button = Button(frame1, text='INVERT\nBLACK & WHITE')
 
         self.f = Figure()
         self.f.patch.set_facecolor('white')
@@ -797,13 +798,16 @@ class PhotometryWindow(MainWindow):
         self.plot_white.set(self.fits[1].header[self.mean_key] +
                             self.frame_upper_std * self.fits[1].header[self.std_key])
 
+        self.min_label = StringVar(frame1, value='Min (black pixels)')
+        self.max_label = StringVar(frame1, value='Max (white pixels)')
+
         setup_window(frame1, [
             [[fov_help_label, 0, 6]],
             [],
             [[self.reset_fov_button, 0, 6]],
             [[self.flip_fov_button, 0], [self.mirror_fov_button, 1], [self.plot_black_entry, 2, 2],
              [self.plot_white_entry, 4, 2]],
-            [[Label(frame1, text='Min (black pixels)'), 2, 2], [Label(frame1, text='Max (white pixels)'), 4, 2]],
+            [[self.reverse_color_button, 0, 2], [Label(frame1, textvar=self.min_label), 2, 2], [Label(frame1, textvar=self.max_label), 4, 2]],
             [],
         ])
 
@@ -818,6 +822,7 @@ class PhotometryWindow(MainWindow):
 
         self.flip_fov_button['command'] = self.flip_fov
         self.reset_fov_button['command'] = self.reset_fov
+        self.reverse_color_button['command'] = self.reverse_color
         self.plot_white_entry.bind("<ButtonRelease-1>", self.update_window)
         self.plot_black_entry.bind("<ButtonRelease-1>", self.update_window)
 
@@ -1072,6 +1077,17 @@ class PhotometryWindow(MainWindow):
 
     def mirror_fov(self):
         self.ax.set_xlim(self.ax.get_xlim()[1], self.ax.get_xlim()[0])
+        self.canvas.draw()
+
+    def reverse_color(self):
+        if self.image.cmap == Greys_r:
+            self.image.cmap = Greys
+            self.min_label.set('Min (white pixels)')
+            self.max_label.set('Max (black pixels)')
+        else:
+            self.image.cmap = Greys_r
+            self.min_label.set('Min (black pixels)')
+            self.max_label.set('Max (white pixels)')
         self.canvas.draw()
 
     def reset_fov(self):
@@ -1661,7 +1677,7 @@ class FittingWindow(MainWindow):
             if not check_ra_dec[0]:
                 enable_buttons = False
 
-            if self.phot_filter_entry not in filter_map:
+            if self.phot_filter.get() not in filter_map:
                 enable_buttons = False
 
             for input_entry in [self.scatter_entry, self.iterations_entry, self.burn_entry,
