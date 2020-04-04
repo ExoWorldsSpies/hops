@@ -625,7 +625,7 @@ def photometry():
 
     fits_file = pf.open(science[0], memmap=False)
     try:
-        fits = [fits_file['SCI']]
+        fits = [0, fits_file['SCI']]
     except KeyError:
         sci_id = 0
         for sci_id in range(len(fits_file)):
