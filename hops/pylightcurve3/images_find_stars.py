@@ -46,32 +46,34 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
 
 def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, burn_limit=50000, star_std=2,
                      std_limit=3.0):
-
-    if mean is None or std is None:
-        try:
-            fit_mean, fit_std = one_d_distribution(data_array, gaussian_fit=True)[2:4]
-        except:
-            fit_mean = np.mean(data_array)
-            fit_std = np.std(data_array)
-
-        if not mean:
-            mean = fit_mean
-
-        if not std:
-            std = fit_std
-
-    centroids = find_centroids(data_array, predicted_x - 5 * star_std, predicted_x + 5 * star_std,
-                               predicted_y - 5 * star_std, predicted_y + 5 * star_std, mean, std, burn_limit, star_std,
-                               std_limit)
-
-    centroids = sorted(centroids, key=lambda x: np.sqrt((x[0] - predicted_x) ** 2 + (x[1] - predicted_y) ** 2))
-
     star = None
-    for centroid in centroids:
-        star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
-        if star:
-            star = [star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5], centroid[0], centroid[1]]
-            break
+
+    if 0 < predicted_x < len(data_array[0]) and 0 < predicted_x < len(data_array):
+
+        if mean is None or std is None:
+            try:
+                fit_mean, fit_std = one_d_distribution(data_array, gaussian_fit=True)[2:4]
+            except:
+                fit_mean = np.mean(data_array)
+                fit_std = np.std(data_array)
+
+            if not mean:
+                mean = fit_mean
+
+            if not std:
+                std = fit_std
+
+        centroids = find_centroids(data_array, predicted_x - 5 * star_std, predicted_x + 5 * star_std,
+                                   predicted_y - 5 * star_std, predicted_y + 5 * star_std, mean, std, burn_limit, star_std,
+                                   std_limit)
+
+        centroids = sorted(centroids, key=lambda x: np.sqrt((x[0] - predicted_x) ** 2 + (x[1] - predicted_y) ** 2))
+
+        for centroid in centroids:
+            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
+            if star:
+                star = [star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5], centroid[0], centroid[1]]
+                break
 
     return star
 
