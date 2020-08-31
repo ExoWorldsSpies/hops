@@ -23,6 +23,19 @@ def _break_min_sec(value):
     return a, c, d
 
 
+def _break_seconds(seconds):
+
+    seconds = float(seconds)
+    seconds_int = int(seconds)
+    seconds_dec = int(str(seconds).split('.')[1])
+    a = int(seconds_int / 3600.0)
+    seconds_int = int(round(seconds_int - a * 3600.0))
+    b = int(seconds_int / 60.0)
+    seconds_int = int(round(seconds_int - b * 60.0))
+    c = float('{0}.{1}'.format(seconds_int, seconds_dec))
+    return a, b, c
+
+
 def _collapse_min_sec(degrees_hours, minutes, seconds):
 
         try:
@@ -270,15 +283,16 @@ class Target:
             sign = '+'
             dec_print = self.dec
 
-        self.coord = '{0}:{1}:{2}.{3} {4}{5}:{6}:{7}.{8}'.format(str(self.ra.hms.h).zfill(2),
-                                                                 str(self.ra.hms.m).zfill(2),
-                                                                 str(int(round(self.ra.hms.s, 4))).zfill(2),
-                                                                 str(round(self.ra.hms.s, 4) - int(round(self.ra.hms.s, 4)))[2:],
-                                                                 sign,
-                                                                 str(dec_print.dms.d).zfill(2),
-                                                                 str(dec_print.dms.m).zfill(2),
-                                                                 str(int(round(dec_print.dms.s, 4))).zfill(2),
-                                                                 str(round(dec_print.dms.s, 4) - int(round(dec_print.dms.s, 4)))[2:])
+        ra_h, ra_m, ra_s = _break_seconds(round(self.ra.hours * 3600, 2))
+        dec_d, dec_m, dec_s = _break_seconds(round(dec_print.deg * 3600, 2))
+
+        self.coord = '{0}:{1}:{2} {3}{4}:{5}:{6}'.format(str(ra_h).zfill(2),
+                                                         str(ra_m).zfill(2),
+                                                         '{0:.2f}'.format(ra_s).zfill(5),
+                                                         sign,
+                                                         str(dec_d).zfill(2),
+                                                         str(dec_m).zfill(2),
+                                                         '{0:.2f}'.format(dec_s).zfill(5))
 
     def distance_from_target(self, target):
 

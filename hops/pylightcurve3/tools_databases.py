@@ -22,7 +22,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 class Database:
 
-    def __init__(self, database_name, package_name, file=__file__, vital=False, date_to_update='daily', expire_date=None,
+    def __init__(self, database_name, package_name, file=__file__, vital=False, date_to_update='daily',
                  frequencey=None, force_update=False, update=False, ask_size=None, database_file_name='_0database.pickle',
                  package_path=os.path.expanduser('~'), directory_name='database',
                  last_update_file_name='database_last_update.txt'):
@@ -56,15 +56,7 @@ class Database:
                     else:
                         must_update_date_2 = datetime.datetime.now().date() + datetime.timedelta(days=365)
 
-                    if expire_date:
-                        must_update_date_3 = datetime.date(int('20{0}'.format(expire_date[:2])), int(expire_date[2:4]),
-                                                           int(expire_date[4:6]))
-                    else:
-                        must_update_date_3 = must_update_date_2
-
-                    if (last_update_date < must_update_date or
-                            datetime.datetime.now().date() > must_update_date_2 or
-                            datetime.datetime.now().date() > must_update_date_3):
+                    if last_update_date < must_update_date or datetime.datetime.now().date() > must_update_date_2:
                         update = True
                     else:
                         update = False

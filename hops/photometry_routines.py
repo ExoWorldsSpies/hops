@@ -166,13 +166,17 @@ def photometry():
         gauss_targets_x_std = []
         gauss_targets_y_std = []
         gauss_targets_flux = []
+        gauss_targets_flux_error = []
         gauss_targets_sky = []
+        gauss_targets_sky_error = []
         apperture_targets_files = []
         apperture_targets_jd = []
         apperture_targets_x_position = []
         apperture_targets_y_position = []
         apperture_targets_flux = []
+        apperture_targets_flux_error = []
         apperture_targets_sky = []
+        apperture_targets_sky_error = []
 
         # TODO exclude live points
 
@@ -212,14 +216,18 @@ def photometry():
                 gauss_targets_x_std_test = []
                 gauss_targets_y_std_test = []
                 gauss_targets_flux_test = []
+                gauss_targets_flux_error_test = []
                 gauss_targets_sky_test = []
+                gauss_targets_sky_error_test = []
 
                 apperture_targets_files_test = [science_file]
                 apperture_targets_jd_test = [julian_date]
                 apperture_targets_x_position_test = []
                 apperture_targets_y_position_test = []
                 apperture_targets_flux_test = []
+                apperture_targets_flux_error_test = []
                 apperture_targets_sky_test = []
+                apperture_targets_sky_error_test = []
 
                 skip_gauss = False
                 skip_aperture = False
@@ -252,7 +260,7 @@ def photometry():
 
                             if star:
 
-                                x_mean, y_mean, norm, floor, x_std, y_std, centroid_x, centroid_y = star
+                                x_mean, y_mean, norm, floor, x_sigma, y_sigma, centroid_x, centroid_y = star
 
                                 if target:
                                     plotx = x_mean
@@ -260,10 +268,17 @@ def photometry():
 
                                 gauss_targets_x_position_test.append(x_mean)
                                 gauss_targets_y_position_test.append(y_mean)
-                                gauss_targets_x_std_test.append(x_std)
-                                gauss_targets_y_std_test.append(y_std)
-                                gauss_targets_flux_test.append(2 * np.pi * norm * x_std * y_std)
+                                gauss_targets_x_std_test.append(x_sigma)
+                                gauss_targets_y_std_test.append(y_sigma)
+                                gauss_targets_flux_test.append(2 * np.pi * norm * x_sigma * y_sigma)
+                                gauss_targets_flux_error_test.append(
+                                    np.sqrt(
+                                        np.abs(2 * np.pi * norm * x_sigma * y_sigma) +
+                                        2 * np.abs(9 * floor * x_sigma * y_sigma)
+                                    )
+                                )
                                 gauss_targets_sky_test.append(floor)
+                                gauss_targets_sky_error_test.append(np.sqrt(floor))
 
                                 try:
 
@@ -281,16 +296,17 @@ def photometry():
                                     sky_area[sky_center - sky_area_1:sky_center + sky_area_1 + 1,
                                              sky_center - sky_area_1:sky_center + sky_area_1 + 1] = 0
 
-                                    sky_area = sky_area[np.where((sky_area > 0) &
-                                                                 (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-                                                                     std_key]))]
+                                    sky_area = sky_area[np.where(sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
+                                                                 std_key])]
 
-                                    sky = np.sum(sky_area) / sky_area.size
+                                    sky_total = np.sum(sky_area)
+                                    sky = np.sum(sky_total) / sky_area.size
+                                    sky_err = np.sqrt(np.abs(sky_total)) / sky_area.size
 
                                     flux_area = fits[1].data[int(y_mean - targets_aperture[target]) - 2:
                                                              int(y_mean + targets_aperture[target]) + 3,
                                                              int(x_mean - targets_aperture[target]) - 2:
-                                                             int(x_mean + targets_aperture[target]) + 3] - sky
+                                                             int(x_mean + targets_aperture[target]) + 3]
 
                                     flux_area_x, flux_area_y = np.meshgrid(
                                         np.arange(max(0, int(x_mean - targets_aperture[target]) - 2),
@@ -301,14 +317,19 @@ def photometry():
                                     flux_pixels = np.concatenate(np.swapaxes([flux_area, flux_area_x, flux_area_y], 0, 2))
 
                                     flux = 0
+                                    flux_err = 0
                                     for pixel in flux_pixels:
-                                        flux += pixel[0] * plc.pixel_to_aperture_overlap(pixel[1], pixel[2], x_mean, y_mean,
-                                                                                         targets_aperture[target])
+                                        overlap = plc.pixel_to_aperture_overlap(pixel[1], pixel[2], x_mean, y_mean,
+                                                                                targets_aperture[target])
+                                        flux += (pixel[0] - sky) * overlap
+                                        flux_err = np.sqrt(flux_err ** 2 + (np.abs(pixel[0]) + sky_err**2) * (overlap**2))
 
                                     apperture_targets_x_position_test.append(x_mean)
                                     apperture_targets_y_position_test.append(y_mean)
                                     apperture_targets_flux_test.append(flux)
+                                    apperture_targets_flux_error_test.append(flux_err)
                                     apperture_targets_sky_test.append(sky)
+                                    apperture_targets_sky_error_test.append(sky_err)
 
                                 except:
                                     skip_aperture = True
@@ -329,7 +350,9 @@ def photometry():
                     gauss_targets_x_std += gauss_targets_x_std_test
                     gauss_targets_y_std += gauss_targets_y_std_test
                     gauss_targets_flux += gauss_targets_flux_test
+                    gauss_targets_flux_error += gauss_targets_flux_error_test
                     gauss_targets_sky += gauss_targets_sky_test
+                    gauss_targets_sky_error += gauss_targets_sky_error_test
                 else:
                     print('Skipping Gauss for:', science_file)
 
@@ -339,7 +362,9 @@ def photometry():
                     apperture_targets_x_position += apperture_targets_x_position_test
                     apperture_targets_y_position += apperture_targets_y_position_test
                     apperture_targets_flux += apperture_targets_flux_test
+                    apperture_targets_flux_error += apperture_targets_flux_error_test
                     apperture_targets_sky += apperture_targets_sky_test
+                    apperture_targets_sky_error += apperture_targets_sky_error_test
                 else:
                     print('Skipping aperture for:', science_file)
 
@@ -395,21 +420,25 @@ def photometry():
             gauss_targets_x_std,
             gauss_targets_y_std,
             gauss_targets_flux,
+            gauss_targets_flux_error,
             gauss_targets_sky,
+            gauss_targets_sky_error,
             apperture_targets_files,
             apperture_targets_jd,
             apperture_targets_x_position,
             apperture_targets_y_position,
             apperture_targets_flux,
+            apperture_targets_flux_error,
             apperture_targets_sky,
+            apperture_targets_sky_error,
         ]
 
     def plot_lcs(measurements):
 
         (gauss_targets_files, gauss_targets_jd, gauss_targets_x_position, gauss_targets_y_position, gauss_targets_x_std,
-         gauss_targets_y_std, gauss_targets_flux, gauss_targets_sky, apperture_targets_files, apperture_targets_jd,
-         apperture_targets_x_position, apperture_targets_y_position, apperture_targets_flux,
-         apperture_targets_sky) = measurements
+         gauss_targets_y_std, gauss_targets_flux, gauss_targets_flux_error, gauss_targets_sky, gauss_targets_sky_error,
+         apperture_targets_files, apperture_targets_jd, apperture_targets_x_position, apperture_targets_y_position,
+         apperture_targets_flux, apperture_targets_flux_error, apperture_targets_sky, apperture_targets_sky_error) = measurements
 
         # save results, create photometry directory and move results there
         comparisons_number = len(gauss_targets_x_position) // len(gauss_targets_files) - 1
@@ -428,16 +457,24 @@ def photometry():
         targets_y_std = np.swapaxes(np.reshape(gauss_targets_y_std, (measurements_number, targets_number)), 0, 1)
         targets_flux = np.swapaxes(np.reshape(gauss_targets_flux, (measurements_number, targets_number)), 0, 1)
         targets_gauss_flux = np.swapaxes(np.reshape(gauss_targets_flux, (measurements_number, targets_number)), 0, 1)
+        targets_flux_error = np.swapaxes(np.reshape(gauss_targets_flux_error, (measurements_number, targets_number)), 0, 1)
         targets_sky = np.swapaxes(np.reshape(gauss_targets_sky, (measurements_number, targets_number)), 0, 1)
+        targets_sky_error = np.swapaxes(np.reshape(gauss_targets_sky_error, (measurements_number, targets_number)), 0, 1)
 
         targets_results = [targets_jd] + (list(targets_x_position) + list(targets_y_position) +
                                           list(targets_x_std) + list(targets_y_std) + list(targets_flux) +
-                                          list(targets_sky))
+                                          list(targets_flux_error) + list(targets_sky) + list(targets_sky_error))
 
         np.savetxt(photometry_file.replace('.txt', '_g.txt'), np.swapaxes(targets_results, 0, 1))
 
         np.savetxt(light_curve_gauss_file,
-                   np.swapaxes([targets_jd, targets_flux[0] / np.sum(targets_flux[1:], 0)], 0, 1))
+                   np.swapaxes([targets_jd,
+                                targets_flux[0] / np.sum(targets_flux[1:], 0),
+                                np.sqrt(
+                                    (targets_flux_error[0] / targets_flux[0]) ** 2 +
+                                    (np.sqrt(np.sum(targets_flux_error[1:]**2, 0)) / np.sum(targets_flux[1:], 0)) ** 2
+                                ) * np.abs(targets_flux[0] / np.sum(targets_flux[1:], 0))
+                                ], 0, 1))
 
         gflux = targets_flux[0] / np.sum(targets_flux[1:], 0)
         diff = np.abs(gflux[1:] - gflux[:-1])
@@ -453,15 +490,23 @@ def photometry():
         targets_y_position = np.swapaxes(np.reshape(apperture_targets_y_position,
                                                     (measurements_number, targets_number)), 0, 1)
         targets_flux = np.swapaxes(np.reshape(apperture_targets_flux, (measurements_number, targets_number)), 0, 1)
+        targets_flux_error = np.swapaxes(np.reshape(apperture_targets_flux_error, (measurements_number, targets_number)), 0, 1)
         targets_sky = np.swapaxes(np.reshape(apperture_targets_sky, (measurements_number, targets_number)), 0, 1)
+        targets_sky_error = np.swapaxes(np.reshape(apperture_targets_sky_error, (measurements_number, targets_number)), 0, 1)
 
         targets_results = [targets_jd] + (list(targets_x_position) + list(targets_y_position) + list(targets_flux) +
-                                          list(targets_sky))
+                                          list(targets_flux_error) + list(targets_sky) + list(targets_sky_error))
 
         np.savetxt(photometry_file.replace('.txt', '_a.txt'), np.swapaxes(targets_results, 0, 1))
 
         np.savetxt(light_curve_aperture_file,
-                   np.swapaxes([targets_jd, targets_flux[0] / np.sum(targets_flux[1:], 0)], 0, 1))
+                   np.swapaxes([targets_jd,
+                                targets_flux[0] / np.sum(targets_flux[1:], 0),
+                                np.sqrt(
+                                    (targets_flux_error[0] / targets_flux[0]) ** 2 +
+                                    (np.sqrt(np.sum(targets_flux_error[1:] ** 2, 0)) / np.sum(targets_flux[1:], 0)) ** 2
+                                ) * np.abs(targets_flux[0] / np.sum(targets_flux[1:], 0))
+                                ], 0, 1))
 
         aflux = targets_flux[0] / np.sum(targets_flux[1:], 0)
         diff = np.abs(aflux[1:] - aflux[:-1])

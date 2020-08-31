@@ -14,12 +14,24 @@ Contains the relative light curve of the target as calculated by the aperture ph
 the following information (in order):
 1. exposure start time in JD_UTC
 2. relative flux (flux of the target divided by the sum of all the comparison stars)
+3. relative flux uncertainty
+
+CAUTION!!!!!!!
+The uncertainties reported do not take into account the gain and the read-noise of the camera.
+If the read-noise of your camera is much lower than the flux of the stars studied, the true
+uncertainties can be approximated by dividing the reported uncertainties with the square root of the camera's gain.
 
 --- PHOTOMETRY_GAUSS.txt ---
 Contains the relative light curve of the target as calculated by the PSF fitting photometry method. The columns contain
 the following information (in order):
 1. exposure start time in JD_UTC
 2. relative flux (flux of the target divided by the sum of all the comparison stars)
+3. relative flux uncertainty
+
+CAUTION!!!!!!!
+The uncertainties reported do not take into account the gain and the read-noise of the camera.
+If the read-noise of your camera is much lower than the flux of the stars studied, the true
+uncertainties can be approximated by dividing the reported uncertainties with the square root of the camera's gain.
 
 --- PHOTOMETRY_a.txt ---
 Contains all the data related to the aperture photometry method. The columns contain
@@ -40,10 +52,20 @@ the following information (in order):
 . comparison 2 total flux in counts
 . comparison 3 total flux in counts
 ...
+. target total flux uncertainty in counts
+. comparison 1 total flux uncertainty in counts
+. comparison 2 total flux uncertainty in counts
+. comparison 3 total flux uncertainty in counts
+...
 . target sky/pixel flux in counts
 . comparison 1 sky flux/pixel in counts
 . comparison 2 sky flux/pixel in counts
 . comparison 3 sky flux/pixel in counts
+...
+. target sky/pixel flux uncertainty in counts
+. comparison 1 sky flux/pixel uncertainty in counts
+. comparison 2 sky flux/pixel uncertainty in counts
+. comparison 3 sky flux/pixel uncertainty in counts
 ...
 
 --- PHOTOMETRY_g.txt ---
@@ -75,8 +97,18 @@ the following information (in order):
 . comparison 2 PSF volume in counts
 . comparison 3 PSF volume in counts
 ...
+. target PSF volume uncertainty in counts
+. comparison 1 PSF volume uncertainty in counts
+. comparison 2 PSF volume uncertainty in counts
+. comparison 3 PSF volume uncertainty in counts
+...
 . target PSF baseline in counts
 . comparison 1 PSF baseline in counts
 . comparison 2 PSF baseline in counts
 . comparison 3 PSF baseline in counts
+...
+. target PSF baseline uncertainty in counts
+. comparison 1 PSF baseline uncertainty in counts
+. comparison 2 PSF baseline uncertainty in counts
+. comparison 3 PSF baseline uncertainty in counts
 ...

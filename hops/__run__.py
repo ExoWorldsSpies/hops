@@ -1817,8 +1817,11 @@ class FittingWindow(MainWindow):
 
                 # set noise level
 
-                sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
-                sigma = np.std(sigma, 0)
+                if len(light_curve) == 3:
+                    sigma = light_curve[2][flag]
+                else:
+                    sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
+                    sigma = np.std(sigma, 0)
 
                 popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
                                        p0=[np.mean(light_curve_1), 1, -1, rp_over_rs_to_plot, 0],
@@ -1838,8 +1841,12 @@ class FittingWindow(MainWindow):
 
                 residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
 
-                sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
-                sigma = np.std(sigma, 0)
+                if len(light_curve) == 3:
+                    print(np.std(residuals)/np.median(sigma))
+                    sigma *= np.std(residuals)/np.median(sigma)
+                else:
+                    sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
+                    sigma = np.std(sigma, 0)
 
                 # results
 
@@ -1849,6 +1856,7 @@ class FittingWindow(MainWindow):
                 fit_detrend, fit_transit_model = independent_f(light_curve_0, *popt)
                 phase = np.array((light_curve_0 - new_mid_time) / period_to_plot)
                 detrended_data = light_curve_1 / fit_detrend
+                detrended_uncertainties = sigma / fit_detrend
                 residuals = detrended_data - fit_transit_model
                 std_res = np.std(residuals)
                 res_autocorr = np.correlate(residuals, residuals, mode='full')
@@ -1861,7 +1869,7 @@ class FittingWindow(MainWindow):
 
                 # plot
 
-                self.ax1.plot(phase, detrended_data, 'ko', ms=2, label='De-trended data')
+                self.ax1.errorbar(phase, detrended_data, detrended_uncertainties, c='k', fmt='o', ms=2, lw=0.5, label='De-trended data')
                 self.ax1.plot(phase, fit_transit_model, 'r-', label='Best-fit model (T$_0$ = {0}, R$_p$/R$_s$ = {1})'.format(
                     round(new_mid_time, 5), round(popt[3], 5)))
                 self.ax1.plot(phase, predicted_transit_model, 'c-', label='Expected model (T$_0$ = {0}, R$_p$/R$_s$ = {1})'.format(
@@ -1883,7 +1891,7 @@ class FittingWindow(MainWindow):
                 self.ax1.text(x_max - 0.4*x_max, ymin + 0.1 * (ymax - ymin),
                          'O-C: {0} min'.format(round((new_mid_time - predicted_mid_time) * 24 * 60, 1)))
 
-                self.ax2.plot(phase, residuals, 'ko', ms=2)
+                self.ax2.errorbar(phase, residuals, detrended_uncertainties, c='k', fmt='o', ms=2, lw=0.5)
                 self.ax2.plot(phase, np.zeros_like(phase), 'r-')
 
                 self.ax2.set_ylim(- 5 * std_res, 5 * std_res)

@@ -1,9 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-__version__ = '2.6.1'
-__message__ = 'Important - Circular aperture photometry applied\nFix - Fitting button disabled'
+__version__ = '2.6.2'
+__message__ = 'Includes uncertainties in the final photometry output'
 
 from .__run__ import run_app
 

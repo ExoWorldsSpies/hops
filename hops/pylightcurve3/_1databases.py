@@ -17,7 +17,7 @@ class Databases:
         self.clablimb = Database('clablimb', 'pylightcurve', __file__, date_to_update='200228',
                                  update=update).path
         self.ephemeris = Database('ephemeris', 'pylightcurve', __file__, date_to_update='200228',
-                                  expire_date='200628', frequencey=30, update=update).path
+                                  frequencey=30, update=update).path
         self.oec = Database('oec', 'pylightcurve', __file__, date_to_update='200228', frequencey=30,
                             update=update).path
 

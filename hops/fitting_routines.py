@@ -414,8 +414,11 @@ def fitting():
 
         # set noise level
 
-        sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
-        sigma = np.std(sigma, 0)
+        if len(light_curve) == 3:
+            sigma = light_curve[2][flag]
+        else:
+            sigma = np.array([np.roll(light_curve_1, ff) for ff in range(-10, 10)])
+            sigma = np.std(sigma, 0)
 
         popt, pcov = curve_fit(mcmc_f, light_curve_0, light_curve_1,
                                p0=[np.mean(light_curve_1), 1, -1, rp_over_rs, 0],
@@ -435,8 +438,11 @@ def fitting():
 
         residuals = light_curve_1 - mcmc_f(light_curve_0, *popt)
 
-        sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
-        sigma = np.std(sigma, 0)
+        if len(light_curve) == 3:
+            sigma *= np.std(residuals) / np.median(sigma)
+        else:
+            sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
+            sigma = np.std(sigma, 0)
 
         def function_to_call(counter):
 
