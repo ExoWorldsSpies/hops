@@ -294,10 +294,10 @@ def photometry():
                                     sky_center = int(len(sky_area) / 2)
 
                                     sky_area[sky_center - sky_area_1:sky_center + sky_area_1 + 1,
-                                             sky_center - sky_area_1:sky_center + sky_area_1 + 1] = 0
+                                             sky_center - sky_area_1:sky_center + sky_area_1 + 1] = -100000
 
-                                    sky_area = sky_area[np.where(sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
-                                                                 std_key])]
+                                    sky_area = sky_area[np.where((sky_area!=-100000) * (sky_area < fits[1].header[mean_key] + 3 * fits[1].header[
+                                                                 std_key]))]
 
                                     sky_total = np.sum(sky_area)
                                     sky = np.sum(sky_total) / sky_area.size
