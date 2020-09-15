@@ -1,5 +1,5 @@
 
-__version__ = '2.6.3'
+__version__ = '2.6.4'
 __message__ = 'Includes uncertainties in the final photometry output'
 
 from .__run__ import run_app

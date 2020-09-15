@@ -48,7 +48,7 @@ def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, 
                      std_limit=3.0):
     star = None
 
-    if 0 < predicted_x < len(data_array[0]) and 0 < predicted_x < len(data_array):
+    if 0 < predicted_x < len(data_array[0]) and 0 < predicted_y < len(data_array):
 
         if mean is None or std is None:
             try:
