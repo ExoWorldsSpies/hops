@@ -29,7 +29,7 @@ try:
           'You can freely move this file to your preferred location.'.format(shortcut))
 except IOError:
     try:
-        shortcut = os.path.join(glob.glob(os.path.join(os.path.expanduser('~'), '*', 'Desktop')[0]), name + '.' + executable[system])
+        shortcut = os.path.join(glob.glob(os.path.join(os.path.expanduser('~'), '*', 'Desktop'))[0], name + '.' + executable[system])
         w = open(shortcut, 'w')
         w.write('python \"' + app_dir + '\"')
         w.close()
