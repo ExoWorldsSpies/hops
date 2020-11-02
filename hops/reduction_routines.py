@@ -319,7 +319,8 @@ def reduction():
                 data_frame = plc.bin_frame(data_frame, bin_fits)
 
             try:
-                distribution = plc.one_d_distribution(data_frame.flatten()[::int(200000.0/bin_to)], gaussian_fit=True)
+                distribution = plc.one_d_distribution(data_frame.flatten()[::int(200000.0 / bin_to)],
+                                                      gaussian_fit=True, mad_filter=5.0)
                 mean = distribution[2]
                 std = distribution[3]
             except:

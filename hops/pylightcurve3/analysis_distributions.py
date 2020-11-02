@@ -9,23 +9,28 @@ from .analysis_functions_and_fit import fit_gaussian, fit_two_d_gaussian
 from .tools_maths import values_to_print
 
 
-def one_d_distribution(datax, step=None, abs_step=None, min_value=None, max_value=None,
+def one_d_distribution(datax, step=None, abs_step=None, min_value=None, max_value=None, mad_filter=None,
                        confidence_interval=None, gaussian_fit=False):
 
-    datax = np.array(datax, dtype=np.float)
-    datax = datax.flatten()
+    datax = 1.0 * datax.flatten()
 
     if min_value is None and max_value is None:
-        min_value = np.min(datax)
-        max_value = np.max(datax)
-    else:
-        if max_value is None:
+        if mad_filter:
+            data_median = np.median(datax)
+            data_mad = np.sqrt(np.median((datax - data_median) ** 2))
+            min_value = data_median - mad_filter * data_mad
+            max_value = data_median + mad_filter * data_mad
+        else:
+            min_value = np.min(datax)
             max_value = np.max(datax)
+    else:
         if min_value is None:
             min_value = np.min(datax)
+        if max_value is None:
+            max_value = np.max(datax)
 
-        datax = datax[np.where(datax < max_value)]
-        datax = datax[np.where(datax > min_value)]
+    datax = datax[np.where(datax < max_value)]
+    datax = datax[np.where(datax > min_value)]
 
     if abs_step is not None:
         step = abs_step
