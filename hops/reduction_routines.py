@@ -348,10 +348,12 @@ def reduction():
             time_in_file = time_in_file.split('.')[0]
             time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
 
-            hdu = pf.ImageHDU(header=fits[0].header, data=np.array(data_frame, dtype=np.float32))
+            hdu = pf.ImageHDU(header=fits[0].header,
+                              data=np.nan_to_num(np.array(data_frame, dtype=np.float32),
+                                                 nan=0.0, posinf=0.0, neginf=0.0))
 
-            plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '{0}{1}{2}{3}_{4}'.format(reduction_directory,
-                                                 os.sep, reduction_prefix, time_in_file, science_file.split(os.sep)[-1]))
+            plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '{0}{1}{2}{3}_{4}'.format(
+                reduction_directory, os.sep, reduction_prefix, time_in_file, science_file.split(os.sep)[-1]))
 
             if counter == 0:
                 ax.cla()

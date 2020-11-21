@@ -1,6 +1,6 @@
 
-__version__ = '2.6.4'
-__message__ = 'Includes uncertainties in the final photometry output'
+__version__ = '2.6.5'
+__message__ = 'Fixed link to IERS earth rotation data.\nAdded filter for nan values.'
 
 from .__run__ import run_app
 
