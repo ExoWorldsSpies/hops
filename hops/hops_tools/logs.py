@@ -116,6 +116,15 @@ class HOPSLog:
             test = self.open_yaml(self.files['local_log'])
         except:
             shutil.copy(self.files['log'], self.files['local_log'])
+            self.write_local_log('pipeline', self.read_local_log_profile('observation_files'), 'observation_files')
+            self.write_local_log('reduction', self.read_local_log_profile('bias_files'), 'bias_files')
+            self.write_local_log('reduction', self.read_local_log_profile('dark_files'), 'dark_files')
+            self.write_local_log('reduction', self.read_local_log_profile('flat_files'), 'flat_files')
+            self.write_local_log('reduction', self.read_local_log_profile('bin_fits'), 'bin_fits')
+            self.write_local_log('pipeline_keywords', self.read_local_log_profile('exposure_time_key'), 'exposure_time_key')
+            self.write_local_log('pipeline_keywords', self.read_local_log_profile('observation_date_key'), 'observation_date_key')
+            self.write_local_log('pipeline_keywords', self.read_local_log_profile('observation_time_key'), 'observation_time_key')
+
 
     def copy_local_log_file(self, directory):
         shutil.copy(self.files['local_log'], os.path.join(directory, 'log.yaml'))

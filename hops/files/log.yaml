@@ -63,7 +63,7 @@ pipeline:
   fov_figure: FOV.pdf
   light_curve_aperture_file: PHOTOMETRY_APERTURE.txt
   light_curve_gauss_file: PHOTOMETRY_GAUSS.txt
-  observation_files: ''
+  observation_files: 'Autosave'
   photometry_complete: false
   photometry_directory: PHOTOMETRY
   photometry_file: PHOTOMETRY.txt
