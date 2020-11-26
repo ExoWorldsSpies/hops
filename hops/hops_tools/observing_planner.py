@@ -210,7 +210,7 @@ class ObservingPlanner(AddOnWindow):
     
         # get variables from log and set as tk variables those to be modified
     
-        self.object_search = StringVar(self.frame1, value='Orion nebula')
+        self.object_search = StringVar(self.frame1, value='M42')
         self.skyobject = StringVar(self.frame1, value=' ')
         self.target_ra = StringVar(self.frame1, value=' ')
         self.target_dec = StringVar(self.frame1, value=' ')
@@ -385,10 +385,10 @@ class ObservingPlanner(AddOnWindow):
                 self.target_ra.set(str(result_table['RA']))
                 self.target_dec.set(str(result_table['DEC']))
 
-            except requests.exceptions.ConnectionError:
+            except:
                 self.target_ra.set('Import manually')
                 self.target_dec.set('Import manually')
-                self.skyobject.set('No connection')
+                self.skyobject.set('Not found or no connection')
 
             self.update_object.set(False)
 
