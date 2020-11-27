@@ -132,11 +132,11 @@ def reduction():
 
         if len(bias_frames) > 0:
             if master_bias_method == 'median':
-                master_bias = np.median(bias_frames, 0)
+                master_bias = np.nanmedian(bias_frames, 0)
             elif master_bias_method == 'mean':
-                master_bias = np.mean(bias_frames, 0)
+                master_bias = np.nanmean(bias_frames, 0)
             else:
-                master_bias = np.median(bias_frames, 0)
+                master_bias = np.nanmedian(bias_frames, 0)
         else:
             master_bias = 0.0
             progress_bar_1['value'] = 0
@@ -195,11 +195,11 @@ def reduction():
 
         if len(dark_frames) > 0:
             if master_dark_method == 'median':
-                master_dark = np.median(dark_frames, 0)
+                master_dark = np.nanmedian(dark_frames, 0)
             elif master_dark_method == 'mean':
-                master_dark = np.mean(dark_frames, 0)
+                master_dark = np.nanmean(dark_frames, 0)
             else:
-                master_dark = np.median(dark_frames, 0)
+                master_dark = np.nanmedian(dark_frames, 0)
         else:
             master_dark = 0.0
             progress_bar_2['value'] = 0
@@ -256,17 +256,17 @@ def reduction():
                     progress_bar_3.update()
                     percent_label_3.update()
 
-        print('Median of each Flat: ', ' '.join([str(round(np.median(ff))) for ff in flat_frames]))
+        print('Median of each Flat: ', ' '.join([str(round(np.nanmedian(ff))) for ff in flat_frames]))
         if len(flat_frames) > 0:
             if master_flat_method == 'mean':
-                flat_frames = [ff / np.mean(ff) for ff in flat_frames]
-                master_flat = np.mean(flat_frames, 0)
+                flat_frames = [ff / np.nanmean(ff) for ff in flat_frames]
+                master_flat = np.nanmean(flat_frames, 0)
             else:
-                flat_frames = [ff / np.median(ff) for ff in flat_frames]
-                master_flat = np.median(flat_frames, 0)
+                flat_frames = [ff / np.nanmedian(ff) for ff in flat_frames]
+                master_flat = np.nanmedian(flat_frames, 0)
             print('Median Flat: ', round(np.median(master_flat), 3))
             master_flat = master_flat / np.median(master_flat)
-            master_flat = np.where(master_flat == 0, 1, master_flat)
+            master_flat = np.where(master_flat == 0, np.nan, master_flat)
         else:
             master_flat = 1.0
             progress_bar_3['value'] = 0
@@ -314,6 +314,7 @@ def reduction():
 
             data_frame = np.ones_like(fits[0].data) * fits[0].data
             data_frame = (data_frame - master_bias - fits[0].header[exposure_time_key] * master_dark) / master_flat
+            data_frame[np.where(np.isnan(data_frame))] = 0
 
             if bin_fits > 1:
                 data_frame = plc.bin_frame(data_frame, bin_fits)
@@ -348,9 +349,7 @@ def reduction():
             time_in_file = time_in_file.split('.')[0]
             time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
 
-            hdu = pf.ImageHDU(header=fits[0].header,
-                              data=np.nan_to_num(np.array(data_frame, dtype=np.float32),
-                                                 nan=0.0, posinf=0.0, neginf=0.0))
+            hdu = pf.ImageHDU(header=fits[0].header, data=np.array(data_frame, dtype=np.float32))
 
             plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '{0}{1}{2}{3}_{4}'.format(
                 reduction_directory, os.sep, reduction_prefix, time_in_file, science_file.split(os.sep)[-1]))
