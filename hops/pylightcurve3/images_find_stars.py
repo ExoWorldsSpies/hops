@@ -168,6 +168,10 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
 
         psf = (waverage(psf_x, psf_x_err)[0], waverage(psf_y, psf_y_err)[0])
 
+        not_trails = np.where(psf_x < 3 * max(psf))
+
+        stars = np.array(stars)[not_trails]
+
         if order_by_flux:
             stars = sorted(stars, key=lambda x: -x[-1])
         else:
