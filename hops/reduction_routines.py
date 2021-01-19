@@ -310,11 +310,12 @@ def reduction():
                         pass
                 fits = [fits_file[sci_id]]
 
-            fits_file.close()
 
             data_frame = np.ones_like(fits[0].data) * fits[0].data
             data_frame = (data_frame - master_bias - fits[0].header[exposure_time_key] * master_dark) / master_flat
             data_frame[np.where(np.isnan(data_frame))] = 0
+
+            fits_file.close()
 
             if bin_fits > 1:
                 data_frame = plc.bin_frame(data_frame, bin_fits)
