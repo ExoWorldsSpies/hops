@@ -573,7 +573,7 @@ def photometry():
                        ha='left', va='center')
 
         ax.tick_params(labelbottom=True)
-        ax.set_xlabel(r'$\mathrm{\Delta t} \ \mathrm{[days]}$', fontsize=12)
+        ax.set_xlabel(r'$\Delta t \ \mathrm{[days]}$', fontsize=12)
         f.text(0.03, 0.5, r'$\mathrm{relative} \ \mathrm{flux}$', fontsize=12,
                ha='center', va='center', rotation='vertical')
         f.subplots_adjust(0.1, 0.07, 1 - 0.12, 1 - 0.1, 0, 0)

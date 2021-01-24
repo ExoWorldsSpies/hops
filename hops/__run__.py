@@ -12,7 +12,6 @@ warnings.filterwarnings(
 
 import matplotlib
 matplotlib.use('TkAgg')
-matplotlib.rcParams['text.usetex'] = True
 
 import os
 import glob
