@@ -1,6 +1,6 @@
 
-__version__ = '2.6.8'
-__message__ = 'Fixed issue with matplotlib and math characters'
+__version__ = '3.0.0'
+__message__ = 'Version 3 is now online with many new features!'
 
 from .__run__ import run_app
 

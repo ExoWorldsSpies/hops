@@ -4,15 +4,16 @@ from __future__ import print_function
 
 import numpy as np
 import warnings
-import time
+import sys
 
 from .analysis_functions_and_fit import fit_two_d_gaussian
 from .analysis_distributions import one_d_distribution
-from .tools_maths import waverage
+from .tools_maths import waverage, mad
 from .exoplanet_lc import transit_flux_drop
 
 
-def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limit, star_std, std_limit):
+def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std, std_limit,
+                        force_circles=False):
 
     star = None
     try:
@@ -26,17 +27,21 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
                                    np.arange(y_min, y_max + 1) + 0.5)
 
         dataz = data_array[y_min: y_max + 1, x_min: x_max + 1]
+
+        # error = np.sqrt(np.abs(dataz))
+        # error[np.where((np.sqrt((datax-centroid_x)**2 + (datay-centroid_y)**2) > 3 * star_std) * (dataz > mean + 3 * std))] = 10**6
+        # popt, pcov = fit_two_d_gaussian(datax, datay, dataz, point_xy=(centroid_x, centroid_y),
+        #                             sigma=star_std, positive=True, floor=mean, maxfev=1000,
+        #                             errors=error, symmetric=force_circles)
         popt, pcov = fit_two_d_gaussian(datax, datay, dataz, point_xy=(centroid_x, centroid_y),
-                                        sigma=star_std, positive=True, maxfev=1000)
+                                        sigma=star_std, positive=True, floor=mean, maxfev=1000,
+                                        symmetric=force_circles)
+
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            if popt[0] > std_limit * std and popt[0] + popt[1] < burn_limit:
-                if np.sqrt(pcov[0][0]) != np.inf:
-                    if popt[0] > std_limit * np.sqrt(pcov[0][0]):
-                        star = (popt, pcov)
-                else:
-                    star = (popt, pcov)
+            if popt[0] > std_limit * std:
+                star = (popt, pcov)
 
     except:
         pass
@@ -44,12 +49,12 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
     return star
 
 
-def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, burn_limit=50000, star_std=2,
+def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, burn_limit=65000, star_std=2,
                      std_limit=3.0):
+
     star = None
 
     if 0 < predicted_x < len(data_array[0]) and 0 < predicted_y < len(data_array):
-
         if mean is None or std is None:
             try:
                 fit_mean, fit_std = one_d_distribution(data_array, gaussian_fit=True)[2:4]
@@ -70,7 +75,7 @@ def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, 
         centroids = sorted(centroids, key=lambda x: np.sqrt((x[0] - predicted_x) ** 2 + (x[1] - predicted_y) ** 2))
 
         for centroid in centroids:
-            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
+            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, star_std, std_limit)
             if star:
                 star = [star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5], centroid[0], centroid[1]]
                 break
@@ -79,8 +84,10 @@ def find_single_star(data_array, predicted_x, predicted_y, mean=None, std=None, 
 
 
 def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_centre=None, y_centre=None,
-                   mean=None, std=None, burn_limit=50000, star_std=2, std_limit=3.0, order_by_flux=False,
-                   progress_pack=None):
+                   mean=None, std=None, burn_limit=65000, star_std=None, std_limit=5.0,
+                   force_circles=False, psf_variation_allowed=0.2,
+                   order_by_flux=False, order_by_distance_and_flux=False,
+                   progressbar=None, progress_window=None, verbose=False):
 
     if mean is None or std is None:
         try:
@@ -95,6 +102,9 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
         if not std:
             std = fit_std
 
+    if not star_std:
+        star_std = fast_psf_find(data_array, mean, std, burn_limit)
+
     if x_upper is None:
         x_upper = data_array.shape[1]
 
@@ -107,73 +117,86 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
     if y_centre is None:
         y_centre = data_array.shape[0] / 2
 
-    centroids = find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit)
+    if verbose:
+        print('\nAnalysing frame...')
+
+    centroids = find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit, verbose)
+
+    if progress_window:
+        if progress_window.exit:
+            return None, None
 
     stars = []
     psf_x = []
     psf_x_err = []
     psf_y = []
     psf_y_err = []
+    if verbose:
+        print('Verifying stars...')
 
-    if progress_pack:
-        count_total = len(centroids)
+    for num, centroid in enumerate(centroids):
 
-        progress_bar, percent_label = progress_pack
+        star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, star_std, std_limit,
+                                   force_circles=force_circles)
 
-        lt0 = time.time()
-        percent = 0
-        for counter, centroid in enumerate(centroids):
+        if star:
 
-            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
+            if force_circles:
+                star = [star[0], star[1]]
+                star[0] = list(star[0])
+                star[0].append(star[0][4])
 
-            if star:
-                stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
-                              np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
-                              2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+            stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
+                          np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
+                          2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+
+            if force_circles:
                 psf_x.append(star[0][4])
-                psf_x_err.append(np.sqrt(star[1][4][4]))
-                psf_y.append(star[0][5])
-                psf_y_err.append(np.sqrt(star[1][5][5]))
+                psf_x_err.append(np.sqrt(abs(star[1][4][4])))
+                psf_y.append(star[0][4])
+                psf_y_err.append(np.sqrt(abs(star[1][4][4])))
 
-            new_percent = round(100 * (counter + 1) / count_total, 0)
-            if new_percent != percent:
-                lt1 = time.time()
-                rm_time = (100 - new_percent) * (lt1 - lt0) / new_percent
-                hours = rm_time / 3600.0
-                minutes = (hours - int(hours)) * 60
-                seconds = (minutes - int(minutes)) * 60
+            else:
 
-                progress_bar['value'] = new_percent
-                percent_label.configure(text='{0} % ({1}h {2}m {3}s left)'.format(new_percent, int(hours),
-                                                                                  int(minutes), int(seconds)))
-                progress_bar.update()
-                percent_label.update()
-                percent = new_percent
+                if star[0][4] > star[0][5]:
+                    psf_x.append(star[0][4])
+                    psf_x_err.append(np.sqrt(abs(star[1][4][4])))
+                    psf_y.append(star[0][5])
+                    psf_y_err.append(np.sqrt(abs(star[1][5][5])))
+                else:
+                    psf_y.append(star[0][4])
+                    psf_y_err.append(np.sqrt(abs(star[1][4][4])))
+                    psf_x.append(star[0][5])
+                    psf_x_err.append(np.sqrt(abs(star[1][5][5])))
 
-    else:
-        for num, centroid in enumerate(centroids):
+        if verbose:
+            sys.stdout.write('\r\033[K')
+            sys.stdout.write('{0}/{1}'.format(num + 1, len(centroids)))
+            sys.stdout.flush()
 
-            star = _star_from_centroid(data_array, centroid[0], centroid[1], mean, std, burn_limit, star_std, std_limit)
-
-            if star:
-                stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
-                              np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
-                              2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
-                psf_x.append(star[0][4])
-                psf_x_err.append(np.sqrt(star[1][4][4]))
-                psf_y.append(star[0][5])
-                psf_y_err.append(np.sqrt(star[1][5][5]))
+    if verbose:
+        print('')
 
     if len(stars) > 0:
 
         psf = (waverage(psf_x, psf_x_err)[0], waverage(psf_y, psf_y_err)[0])
 
-        not_trails = np.where(psf_x < 3 * max(psf))
+        not_trails = np.where((psf_x < (1.0 + psf_variation_allowed) * psf[0]) * (psf_x > (1 - psf_variation_allowed) * psf[0]))
 
         stars = np.array(stars)[not_trails]
 
+        data_array_len = 1.0 * len(data_array)
+
         if order_by_flux:
-            stars = sorted(stars, key=lambda x: -x[-1])
+            if order_by_flux == True:
+                stars = sorted(stars, key=lambda x: -x[-1])
+            else:
+                stars = sorted(stars, key=lambda x: abs(x[-1] - order_by_flux))
+        elif order_by_distance_and_flux:
+            if order_by_distance_and_flux == True:
+                stars = sorted(stars, key=lambda x: -x[-1] / (x[-2] ** 3))
+            else:
+                stars = sorted(stars, key=lambda x: (x[-2]/data_array_len) + 100 * abs((x[-1] - order_by_distance_and_flux)/order_by_distance_and_flux))
         else:
             stars = sorted(stars, key=lambda x: x[-2])
 
@@ -183,7 +206,7 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
         return None, None
 
 
-def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit):
+def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit, verbose=False):
 
     x_upper = int(min(x_upper, len(data_array[0])))
     y_upper = int(min(y_upper, len(data_array)))
@@ -193,16 +216,34 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
     data_array = np.full_like(data_array[y_low:y_upper + 1, x_low:x_upper + 1],
                               data_array[y_low:y_upper + 1, x_low:x_upper + 1])
 
+    star_std = int(round(star_std))
+
     test = []
+
+    if verbose:
+        print('Finding stars 1/4...')
 
     for i in range(-star_std, star_std + 1):
         for j in range(-star_std, star_std + 1):
             rolled = np.roll(np.roll(data_array, i, 0), j, 1)
             test.append(rolled)
 
+    test = np.array(test)
+
+    if verbose:
+        print('Finding stars 2/4...')
+
     median_test = np.median(test, 0)
+
+    if verbose:
+        print('Finding stars 3/4...')
+
     max_test = np.max(test, 0)
     del test
+
+    if verbose:
+        print('Finding stars 4/4...')
+
     stars = np.where((data_array < burn_limit) & (data_array > mean + std_limit * std) & (max_test == data_array)
                      & (median_test > mean + 2 * std))
     del data_array
@@ -211,6 +252,64 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
     stars = np.swapaxes(stars, 0, 1)
 
     return stars
+
+
+def fast_psf_find(data_array, mean, std, burn_limit):
+
+    star_std = 2
+    std_limit = 3
+
+    stars = []
+    check = 105
+
+    while len(stars) < 10 and check >= 5:
+
+        limit = mean + check*std
+
+        bright = np.where(data_array > limit)
+        test = np.where((bright[0] > star_std) * (bright[1] > star_std) * (bright[0] < len(data_array) - star_std - 1) * (bright[1] < len(data_array[0]) - star_std - 1))
+        bright = (bright[0][test], bright[1][test])
+
+        test = []
+        for i in range(-star_std, star_std + 1):
+            for j in range(-star_std, star_std + 1):
+                test.append(data_array[bright[0] + i, bright[1]+j])
+
+        median_test = np.median(test, 0)
+        max_test = np.max(test, 0)
+        data_array_test = data_array[bright]
+
+        del test
+        stars = np.where((max_test < burn_limit) & (max_test == data_array_test) & (median_test > mean + 2 * std))[0]
+        stars = np.swapaxes([data_array_test[stars], bright[1][stars], bright[0][stars]], 0, 1)
+
+        stars = sorted(stars, key=lambda x: -x[0])
+
+        check -= 20
+
+    psf_x = []
+    psf_x_err = []
+    psf_y = []
+    psf_y_err = []
+
+    for centroid in stars[:10]:
+        star = _star_from_centroid(data_array, centroid[1], centroid[2], mean, std, star_std, std_limit)
+
+        if star:
+            if star[0][4] > star[0][5]:
+                psf_x.append(star[0][4])
+                psf_x_err.append(np.sqrt(star[1][4][4]))
+                psf_y.append(star[0][5])
+                psf_y_err.append(np.sqrt(star[1][5][5]))
+            else:
+                psf_y.append(star[0][4])
+                psf_y_err.append(np.sqrt(star[1][4][4]))
+                psf_x.append(star[0][5])
+                psf_x_err.append(np.sqrt(star[1][5][5]))
+
+    psf = (waverage(psf_x, psf_x_err)[0], waverage(psf_y, psf_y_err)[0])
+
+    return max(psf)
 
 
 def pixel_to_aperture_overlap(x_pix, y_pix, x_ap, y_ap, ap):

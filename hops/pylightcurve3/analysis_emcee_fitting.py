@@ -17,7 +17,7 @@ from .analysis_distributions import one_d_distribution
 class EmceeFitting:
 
     def __init__(self, input_data, model, initials, limits1, limits2, walkers, iterations, burn_in,
-                 names, print_names, counter='auto', strech_prior=1000.0, function_to_call=None):
+                 names, print_names, counter='auto', strech_prior=1.0, function_to_call=None):
 
         self.input_data = (np.array(input_data[0]), np.array(input_data[1]))
 
@@ -56,28 +56,26 @@ class EmceeFitting:
 
         self.function_to_call = function_to_call
 
+        self.fitted_parameters_indices = np.where(~np.isnan(self.limits1 * self.limits2))[0]
+
         self.mcmc_run_complete = False
 
-    def run_mcmc(self):
+        dimensions = len(self.fitted_parameters_indices)
 
-        fitted_parameters_indices = np.where(~np.isnan(self.limits1 * self.limits2))[0]
-
-        dimensions = len(fitted_parameters_indices)
-
-        internal_limits1 = self.limits1[fitted_parameters_indices]
-        internal_limits2 = self.limits2[fitted_parameters_indices]
-        internal_initials = self.initials[fitted_parameters_indices]
+        internal_limits1 = self.limits1[self.fitted_parameters_indices]
+        internal_limits2 = self.limits2[self.fitted_parameters_indices]
+        internal_initials = self.initials[self.fitted_parameters_indices]
 
         walkers_initial_positions = np.random.uniform(
             (internal_initials -
              (internal_initials - internal_limits1) / self.strech_prior)[:, None] * np.ones(self.walkers),
             (internal_initials +
              (internal_limits2 - internal_initials) / self.strech_prior)[:, None] * np.ones(self.walkers))
-        walkers_initial_positions = np.swapaxes(walkers_initial_positions, 0, 1)
+        self.walkers_initial_positions = np.swapaxes(walkers_initial_positions, 0, 1)
 
         def internal_model(theta):
             parameters = self.initials
-            parameters[fitted_parameters_indices] = theta
+            parameters[self.fitted_parameters_indices] = theta
             return self.model(*parameters)
 
         def likelihood(theta, data_y, data_y_error):
@@ -98,20 +96,51 @@ class EmceeFitting:
 
             def probability(theta, data_y, data_y_error):
                 self.counter.update()
-                xx = self.function_to_call(self.counter)
+                return prior(theta) + likelihood(theta, data_y, data_y_error)
+        elif self.function_to_call:
+
+            def probability(theta, data_y, data_y_error):
+                xx = self.function_to_call()
                 if not xx:
                     return 'a'
                 return prior(theta) + likelihood(theta, data_y, data_y_error)
+
         else:
             def probability(theta, data_y, data_y_error):
                 return prior(theta) + likelihood(theta, data_y, data_y_error)
 
-        sampler = emcee.EnsembleSampler(self.walkers, dimensions, probability, args=self.input_data)
-        sampler.run_mcmc(walkers_initial_positions, int(self.iterations) // int(self.walkers))
-        mcmc_results = sampler.flatchain
+        self.sampler = emcee.EnsembleSampler(self.walkers, dimensions, probability, args=self.input_data)
+
+    def run_mcmc(self):
+        self.sampler.run_mcmc(self.walkers_initial_positions, int(self.iterations) // int(self.walkers))
+
+    def rerun_mcmc(self):
+        self.sampler.run_mcmc(None, int(self.iterations) // int(self.walkers))
+
+    def get_results(self):
+        mcmc_results = self.sampler.flatchain
 
         self.results['input_series']['value'] = self.input_data[0]
         self.results['input_series']['error'] = self.input_data[1]
+
+        trace_to_analyse = 0
+        vars_check = 0
+        for var in range(len(self.names)):
+
+            if not np.isnan(self.limits1[var]):
+
+                trace = mcmc_results[:, np.where(self.fitted_parameters_indices == var)[0][0]]
+                trace = trace.reshape(int(self.walkers), len(trace) // int(self.walkers))
+                trace = (np.swapaxes(trace, 0, 1).flatten())[self.burn_in:]
+
+                median = np.median(trace)
+                mad = np.sqrt(np.median((trace - median) ** 2))
+
+                trace_to_analyse += (trace > (median - 5 * mad)) * (trace < (median + 5 * mad))
+
+                vars_check += 1
+
+        trace_to_analyse = np.where(trace_to_analyse == vars_check)
 
         for var in range(len(self.names)):
 
@@ -124,9 +153,11 @@ class EmceeFitting:
                             'print_value': self.initials[var], 'print_m_error': '-', 'print_p_error': '-'}
 
             else:
-                trace = mcmc_results[:, np.where(fitted_parameters_indices == var)[0][0]]
-                trace = trace.reshape(int(self.walkers), int(self.iterations) // int(self.walkers))
+                trace = mcmc_results[:, np.where(self.fitted_parameters_indices == var)[0][0]]
+                trace = trace.reshape(int(self.walkers), len(trace) // int(self.walkers))
                 trace = (np.swapaxes(trace, 0, 1).flatten())[self.burn_in:]
+
+                trace = trace[trace_to_analyse]
 
                 bins, counts, value, m_error, p_error, print_value, print_m_error, print_p_error = \
                     one_d_distribution(trace, confidence_interval=0.68)

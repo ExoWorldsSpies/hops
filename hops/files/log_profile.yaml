@@ -1,8 +1,15 @@
 observer_key: OBSERVER
-observatory_key: OBSERVAT
 telescope_key: TELESCOP
+focal_length_key: FOCALLEN
+aperture_key: APTDIA
 camera_key: INSTRUME
+pixel_width_key: XPIXSZ
+pixel_height_key: YPIXSZ
 filter_key: FILTER
+observatory_key: OBSERVAT
+observatory_latitude_key: SITELAT,LAT-OBS
+observatory_longitude_key: SITELONG,LONG-OBS
+observatory_altitude_key: SITEALT,ALT-OBS
 observation_date_key: DATE-OBS
 observation_time_key: TIME-OBS
 target_ra_key: OBJCTRA,RA
@@ -15,11 +22,16 @@ flat_files: flat
 bin_fits: '1'
 observer: ''
 telescope: ''
+focal_length: ''
+aperture: ''
 camera: ''
+pixel_width: ''
+pixel_height: ''
 filter: ''
 observatory: 'My Observatory'
 observatory_lat: '+00 00 00'
 observatory_long: '00 00 00'
+observatory_alt: '0'
 observatory_time_zone: '0'
 observatory_horizon_s: '0'
 observatory_horizon_sw: '0'

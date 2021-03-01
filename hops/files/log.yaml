@@ -1,120 +1,153 @@
-alignment:
-  burn_limit: 65536
-  min_calibration_stars_number: 5
-  rotation_tolerance: 0.1
-  search_window_std: 5
-  shift_tolerance_p: 10
-  star_std: 2
-  star_psf: 0
-  star_psf_x: 0
-  star_psf_y: 0
-  min_x: 0
-  min_y: 0
-  max_x: 0
-  max_y: 0
-fitting:
-  binning: 1
-  burn: 30000
-  eccentricity: 0.0
-  inclination: 0.0
-  inclination_fit: 0.0
-  iterations: 130000
-  light_curve_file: Choose Light-curve file
-  logg: 0.0
-  metallicity: 0.0
-  mid_time: 0.0
-  mid_time_fit:
-  - -0.2
-  - 0.2
-  observatory: default
-  observer: default
-  telescope: default
-  camera: default
-  phot_filter: default
-  periastron: 0.0
-  period: 0.0
-  planet: Choose Planet
-  manual_planet: False
-  rp_over_rs: 0.0
-  rp_over_rs_fit:
-  - 0.5
-  - 2.0
-  scatter: 3.0
-  sma_over_rs: 0.0
-  sma_over_rs_fit: false
-  target_ra_dec: hh:mm:ss +dd:mm:ss
-  temperature: 0.0
-photometry:
-  auto_target_ra_dec: None detected
-  max_comparisons: 10
-  sky_inner_aperture: 1.7
-  sky_outer_aperture: 2.4
-  target_aperture: 0
-  target_ra_dec: hh:mm:ss +dd:mm:ss
-  target_x_position: 0
-  target_y_position: 0
-  use_auto_target_ra_dec: true
-  mid_exposure: false
-pipeline:
-  alignment_complete: false
-  directory: Choose Directory
-  directory_short: Choose Directory
-  fitting_directory: FITTING
-  fov_figure: FOV.pdf
-  light_curve_aperture_file: PHOTOMETRY_APERTURE.txt
-  light_curve_gauss_file: PHOTOMETRY_GAUSS.txt
-  observation_files: 'Autosave'
-  photometry_complete: false
-  photometry_directory: PHOTOMETRY
-  photometry_file: PHOTOMETRY.txt
-  reduction_complete: false
-  reduction_directory: REDUCED_DATA
-  reduction_prefix: out_
-  reduction_trash_directory: REDUCED_DATA_TRASH
-  results_figure: RESULTS.pdf
-  trash: []
-pipeline_keywords:
-  align_star_area_key: ALIGN_SA
-  align_u0_key: ALIGN_U0
-  align_x0_key: ALIGN_X0
-  align_y0_key: ALIGN_Y0
-  exposure_time_key: EXPTIME
-  mean_key: MEAN
-  observation_date_key: DATE-OBS
-  observation_time_key: TIME-OBS
-  std_key: STD
-reduction:
-  bias_files: bias
-  bin_fits: 1
-  bin_to: 10000
-  dark_files: dark
-  flat_files: flat
-  master_bias_method: median
-  master_dark_method: median
-  master_flat_method: median
-windows:
-  alignment_window: HOPS - ALIGNMENT
-  button_font:
-  - times
-  - 15
-  - bold
-  button_height: 2
-  button_width: 30
-  created_by: "HOPS 2.6.8, Copyright (c) 2017-2020, Angelos Tsiaras, atsiaras@star.ucl.ac.uk"
-  entries_bd: 3
-  fitting_window: HOPS - FITTING
-  frame_low_std: -3
-  frame_upper_std: 20
-  main_font:
-  - times
-  - 15
-  names_font:
-  - Courier
-  - 15
-  photometry_window: HOPS - PHOTOMETRY
-  reduction_window: HOPS - REDUCTION
-  software_window: HOlomon Photometric Software
-  title_font:
-  - times
-  - 17
-  - bold
+burn_limit: 65536
+min_calibration_stars_number: 5
+rotation_tolerance: 0.1
+search_window_std: 5
+shift_tolerance_p: 20
+#star_std: 2
+#star_psf: 0
+#star_psf_x: 0
+#star_psf_y: 0
+min_x: 0
+min_y: 0
+max_x: 0
+max_y: 0
+binning: 1
+burn: 100000
+eccentricity: 0.0
+inclination: 0.0
+inclination_fit: False
+iterations: 150000
+light_curve_file: Choose Light-curve file
+logg: 0.0
+metallicity: 0.0
+mid_time: 0.0
+mid_time_fit:
+- -0.1
+- 0.1
+observatory: default
+observer: default
+telescope: default
+camera: default
+filter: default
+periastron: 0.0
+period: 0.0
+planet: Choose Planet
+manual_planet: False
+rp_over_rs: 0.0
+rp_over_rs_fit:
+- 0.5
+- 2.0
+scatter: 3.0
+sma_over_rs: 0.0
+sma_over_rs_fit: False
+temperature: 0.0
+auto_target_ra_dec: hh:mm:ss +dd:mm:ss
+manual_target_ra_dec: hh:mm:ss +dd:mm:ss
+simbad_target_name: Target name
+max_comparisons: 10
+sky_inner_aperture: 1.7
+sky_outer_aperture: 2.4
+target_ra_dec: hh:mm:ss +dd:mm:ss
+target_name: ''
+time_stamp: exposure start
+data_target_complete: false
+data_target_version: false
+alignment_complete: false
+alignment_version: false
+fitting_complete: false
+fitting_version: false
+observation_files: Autosave
+photometry_complete: false
+photometry_version: false
+reduction_complete: false
+reduction_version: false
+trash: []
+exposure_time_key: EXPTIME
+observation_date_key: DATE-OBS
+observation_time_key: TIME-OBS
+bias_files: bias
+bin_fits: 1
+dark_files: dark
+flat_files: flat
+master_bias_method: median
+master_dark_method: median
+master_flat_method: median
+sky_threshold: 0
+psf_threshold: 0
+photometry_fov_options:
+  - auto
+  - auto
+  - 0
+  - 0
+  - 0
+  - 0
+show_good_comparisons: True
+show_good_comparisons_percent: 40
+use_variable_aperture: False
+use_geometric_center: False
+target_ra_dec_choice: 0
+comparison_10_aperture: 0.0
+comparison_10_r_position: 0.0
+comparison_10_u_position: 0.0
+comparison_10_x_position: 0.0
+comparison_10_y_position: 0.0
+comparison_10_active: True
+comparison_1_aperture: 0.0
+comparison_1_r_position: 0.0
+comparison_1_u_position: 0.0
+comparison_1_x_position: 0.0
+comparison_1_y_position: 0.0
+comparison_1_active: True
+comparison_2_aperture: 0.0
+comparison_2_r_position: 0.0
+comparison_2_u_position: 0.0
+comparison_2_x_position: 0.0
+comparison_2_y_position: 0.0
+comparison_2_active: True
+comparison_3_aperture: 0.0
+comparison_3_r_position: 0.0
+comparison_3_u_position: 0.0
+comparison_3_x_position: 0.0
+comparison_3_y_position: 0.0
+comparison_3_active: True
+comparison_4_aperture: 0.0
+comparison_4_r_position: 0.0
+comparison_4_u_position: 0.0
+comparison_4_x_position: 0.0
+comparison_4_y_position: 0.0
+comparison_4_active: True
+comparison_5_aperture: 0.0
+comparison_5_r_position: 0.0
+comparison_5_u_position: 0.0
+comparison_5_x_position: 0.0
+comparison_5_y_position: 0.0
+comparison_5_active: True
+comparison_6_aperture: 0.0
+comparison_6_r_position: 0.0
+comparison_6_u_position: 0.0
+comparison_6_x_position: 0.0
+comparison_6_y_position: 0.0
+comparison_6_active: True
+comparison_7_aperture: 0.0
+comparison_7_r_position: 0.0
+comparison_7_u_position: 0.0
+comparison_7_x_position: 0.0
+comparison_7_y_position: 0.0
+comparison_7_active: True
+comparison_8_aperture: 0.0
+comparison_8_r_position: 0.0
+comparison_8_u_position: 0.0
+comparison_8_x_position: 0.0
+comparison_8_y_position: 0.0
+comparison_8_active: True
+comparison_9_aperture: 0.0
+comparison_9_r_position: 0.0
+comparison_9_u_position: 0.0
+comparison_9_x_position: 0.0
+comparison_9_y_position: 0.0
+comparison_9_active: True
+target_aperture: 0.0
+target_r_position: 0.0
+target_u_position: 0.0
+target_x_position: 0.0
+target_y_position: 0.0

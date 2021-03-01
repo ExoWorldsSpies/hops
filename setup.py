@@ -1,19 +1,14 @@
-from setuptools import setup
+
 import os
 import glob
-import platform
+
+from setuptools import setup
 
 name = 'hops'
 description = 'HOlomon Photometry Software - A software to analyse data from small ground-based telescopes'
 url = 'https://https://github.com/ExoWorldsSpies/hops'
-
-system = platform.system()
-if system == 'Windows':
-    install_requires = ['pyaml', 'requests', 'matplotlib >= 3.1.3', 'numpy>=1.17.0,<1.19.4', 'emcee', 'seaborn',
-                        'astropy', 'scipy', 'astroquery', 'pillow', 'quantities']
-else:
-    install_requires = ['pyaml', 'requests', 'matplotlib >= 3.1.3', 'numpy>=1.17.0', 'emcee', 'seaborn',
-                        'astropy', 'scipy', 'astroquery', 'pillow', 'quantities']
+install_requires = ['pyaml', 'requests', 'matplotlib>=3.3.3', 'numpy>=1.20.0', 'emcee', 'seaborn',
+                    'astropy', 'scipy', 'astroquery>=0.4', 'pillow', 'quantities']
 
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
@@ -44,6 +39,8 @@ version = ' '
 for i in open(os.path.join(name, '__init__.py')):
     if len(i.split('__version__')) > 1:
         version = i.split()[-1][1:-1]
+
+print('HOPS ', version)
 
 setup(
     name=name,

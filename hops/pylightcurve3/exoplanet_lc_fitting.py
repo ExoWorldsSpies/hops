@@ -126,15 +126,15 @@ class TransitAndPolyFitting:
             self.names.append('N{0}'.format(str(set_number)))
             self.print_names.append('N_{0}'.format(str(set_number)))
             self.initial.append(np.mean(set_arrays[1]))
-            self.limits1.append(0.5 * np.mean(set_arrays[1]))
-            self.limits2.append(1.5 * np.mean(set_arrays[1]))
+            self.limits1.append(0.9 * np.min(set_arrays[1]))
+            self.limits2.append(1.1 * np.max(set_arrays[1]))
 
             self.names.append('L{0}'.format(str(set_number)))
             self.print_names.append('L_{0}'.format(str(set_number)))
             self.initial.append(0)
             if self.fit_first_order:
-                self.limits1.append(-max_limit)
-                self.limits2.append(max_limit)
+                self.limits1.append(-3)
+                self.limits2.append(3)
             else:
                 self.limits1.append(np.nan)
                 self.limits2.append(np.nan)
@@ -143,8 +143,8 @@ class TransitAndPolyFitting:
             self.print_names.append('Q_{0}'.format(str(set_number)))
             self.initial.append(0)
             if self.fit_second_order:
-                self.limits1.append(-max_limit)
-                self.limits2.append(max_limit)
+                self.limits1.append(-3)
+                self.limits2.append(3)
             else:
                 self.limits1.append(np.nan)
                 self.limits2.append(np.nan)
@@ -194,7 +194,7 @@ class TransitAndPolyFitting:
                 self.limits2.append(np.nan)
 
         self.names += ['rp', 'P', 'a', 'e', 'i', 'w', 'mt']
-        self.print_names += ['R_\mathrm{p}/R_*', 'P', 'a/R_*', 'e', 'i', '\omega', 'T_0']
+        self.print_names += ['R_\mathrm{p}/R_*', 'P', 'a/R_*', 'e', 'i', '\omega', 'T_{mid}']
         self.initial += [self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity,
                          self.inclination, self.periastron, self.mid_time]
         limits = self.limits1 + [self.fit_rp_over_rs, self.fit_period, self.fit_sma_over_rs, self.fit_eccentricity,
@@ -281,6 +281,15 @@ class TransitAndPolyFitting:
     def run_mcmc(self):
 
         self.fitting.run_mcmc()
+
+    def rerun_mcmc(self):
+
+        self.fitting.rerun_mcmc()
+
+    def get_results(self):
+
+        self.fitting.get_results()
+
         self.results = self.fitting.results
         self.mcmc_run_complete = True
 

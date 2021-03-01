@@ -16,21 +16,23 @@ def one_d_distribution(datax, step=None, abs_step=None, min_value=None, max_valu
 
     if min_value is None and max_value is None:
         if mad_filter:
-            data_median = np.median(datax)
-            data_mad = np.sqrt(np.median((datax - data_median) ** 2))
-            min_value = data_median - mad_filter * data_mad
-            max_value = data_median + mad_filter * data_mad
+            median = np.median(datax)
+            mad = np.sqrt(np.median((datax - median) ** 2))
+            min_value = median - 5 * mad
+            max_value = median + 5 * mad
+            datax = datax[np.where(datax < max_value)]
+            datax = datax[np.where(datax > min_value)]
         else:
             min_value = np.min(datax)
             max_value = np.max(datax)
     else:
-        if min_value is None:
-            min_value = np.min(datax)
         if max_value is None:
             max_value = np.max(datax)
+        if min_value is None:
+            min_value = np.min(datax)
 
-    datax = datax[np.where(datax < max_value)]
-    datax = datax[np.where(datax > min_value)]
+        datax = datax[np.where(datax < max_value)]
+        datax = datax[np.where(datax > min_value)]
 
     if abs_step is not None:
         step = abs_step

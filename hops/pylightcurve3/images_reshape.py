@@ -9,7 +9,7 @@ def bin_frame(data_frame, binning):
 
     binning = int(binning)
 
-    if binning <= 2:
+    if binning <= 1:
         return data_frame
 
     new_frame = []

@@ -42,7 +42,7 @@ def copy_dict(dictionary):
 
 def open_fits(path):
 
-    with pf.open(path) as hdulist:
+    with pf.open(path, memmap=False) as hdulist:
         internal_copy = copy_fits(hdulist)
 
     internal_copy.verify('fix')

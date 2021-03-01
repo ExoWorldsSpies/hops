@@ -112,7 +112,7 @@ def two_d_gaussian(x_array, y_array, model_norm, model_floor, model_x_mean, mode
                                               + c * ((y_array - model_y_mean) ** 2))))
 
 
-def fit_two_d_gaussian(datax, datay, dataz, positive=False, symmetric=False, point_xy=None, sigma=None,
+def fit_two_d_gaussian(datax, datay, dataz, errors=None, positive=False, symmetric=False, point_xy=None, sigma=None, floor=None,
                        maxfev=10000):
 
     # TODO option to restrict the space searched
@@ -121,7 +121,10 @@ def fit_two_d_gaussian(datax, datay, dataz, positive=False, symmetric=False, poi
     datay = np.array(datay, dtype=np.float)
     dataz = np.array(dataz, dtype=np.float)
 
-    initial_floor = np.median(dataz)
+    if not floor:
+        initial_floor = np.median(dataz)
+    else:
+        initial_floor = floor
     initial_norm = np.max(dataz) - initial_floor
     if sigma is not None:
         initial_x_sigma = sigma
@@ -197,7 +200,10 @@ def fit_two_d_gaussian(datax, datay, dataz, positive=False, symmetric=False, poi
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        popt, pcov = curve_fit(gaussian_to_fit, (datax, datay), dataz.flatten(), p0=initial_values, maxfev=maxfev)
+        if errors is not None:
+            popt, pcov = curve_fit(gaussian_to_fit, (datax, datay), dataz.flatten(), p0=initial_values, sigma=errors.flatten(), maxfev=maxfev)
+        else:
+            popt, pcov = curve_fit(gaussian_to_fit, (datax, datay), dataz.flatten(), p0=initial_values, maxfev=maxfev)
 
     if positive:
         popt[0] = np.abs(popt[0])
