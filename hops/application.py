@@ -319,6 +319,7 @@ class HOPS(AppWindow):
                 self.log.get_param('directory_short'), self.log.get_param('target_name')))
 
             self.reduction_button.activate()
+            trash = 0
 
             if not os.path.isfile(self.log.all_frames):
                 self.log.set_param('reduction_complete', False)
@@ -328,11 +329,13 @@ class HOPS(AppWindow):
                     if not os.path.isfile(os.path.join(self.log.reduction_directory, i)):
                         self.log.set_param('reduction_complete', False)
                         break
+                    if all_frames[i][self.log.skip_key]:
+                        trash += 1
 
             if self.log.get_param('reduction_complete'):
                 self.reduction_complete.set('Completed under v{0}'.format(self.log.get_param('reduction_version')))
                 self.inspection_button.activate()
-                self.inspection_complete.set('Files discarded: {0}'.format(len(self.log.get_param('trash'))))
+                self.inspection_complete.set('Files discarded: {0}'.format(trash))
                 self.alignment_button.activate()
 
                 all_frames = plc.open_dict(self.log.all_frames)
