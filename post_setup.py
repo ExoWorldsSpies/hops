@@ -20,15 +20,20 @@ executable = {'Darwin': 'command', 'Linux': 'sh', 'Windows': 'cmd'}[platform.sys
 
 try:
     shortcut_path = os.path.join(os.path.expanduser('~'), 'Desktop', name + '.' + executable)
-except IOError:
+    w = open(shortcut_path, 'w')
+    w.write(shortcut)
+    w.close()
+except:
     try:
         shortcut_path = os.path.join(glob.glob(os.path.join(os.path.expanduser('~'), '*', 'Desktop'))[0], name + '.' + executable)
+        w = open(shortcut_path, 'w')
+        w.write(shortcut)
+        w.close()
     except IndexError:
         shortcut_path = os.path.join(os.path.expanduser('~'), name + '.' + executable)
-
-w = open(shortcut_path, 'w')
-w.write(shortcut)
-w.close()
+        w = open(shortcut_path, 'w')
+        w.write(shortcut)
+        w.close()
 
 if platform.system() == 'Darwin':
     os.system('chmod 755 ' + shortcut_path)
