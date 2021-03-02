@@ -553,7 +553,7 @@ class HOPSDropDown(HOPSWidget):
     def __init__(self, window, initial=' ', options=[], instance=str, command=None, width=None):
 
         if initial not in options:
-            raise RuntimeError('DropDown menu: Not valid initial value.')
+            raise RuntimeError('DropDown menu: Not valid initial value ({0}).'.format(initial))
 
         self.variable = StringVar(window.root, value=initial)
         self.instance = instance

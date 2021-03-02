@@ -71,7 +71,15 @@ class DataTargetWindow(MainWindow):
                                      command=self.update_flat_files)
         self.flat_files_test = self.Label(text=' ')
 
-        self.bin_fits = self.DropDown(initial=int(self.log.get_param('bin_fits')), options=[1, 2, 3, 4], instance=int)
+        try:
+            initial_bin = self.log.get_param('bin_fits')
+            initial_bin = max(1, initial_bin)
+            initial_bin = min(initial_bin, 4)
+        except:
+            print('WARNING the bin_fits parameter should be 1, 2, 3 or 4. Re-setting it to 1.')
+            initial_bin = 1
+
+        self.bin_fits = self.DropDown(initial=initial_bin, options=[1, 2, 3, 4], instance=int)
 
         self.show_header_button = self.Button(text='Show header', command=self.header_window.show)
 
