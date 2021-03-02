@@ -85,6 +85,9 @@ class InspectiontWindow(MainWindow):
         self.ax2_width = box2.width
         self.ax2_height = box2.height
 
+        self.dbclick = False
+        self.dbclick_xy = (0, 0)
+
         self.replot()
 
         self.setup_window([
@@ -108,7 +111,7 @@ class InspectiontWindow(MainWindow):
             []
         ])
 
-        self.apply_thresholds()
+        self.replot()
 
     def update_window(self, event=None):
 
@@ -117,7 +120,11 @@ class InspectiontWindow(MainWindow):
             if event.inaxes is None:
                 return None
 
-        if event.dblclick:
+        if (event.x, event.y) != self.dbclick_xy:
+            self.dbclick_xy = (event.x, event.y)
+            return None
+        else:
+            self.dbclick_xy = (0, 0)
 
             if event.y < self.yspil:
 
