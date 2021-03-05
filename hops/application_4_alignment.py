@@ -180,7 +180,7 @@ class AlignmentWindow(MainWindow):
                 for star in stars:
                     if star[2] + star[3] < 2.0 * self.burn_limit / 3.0:
                         if star[-1] > (2 * np.pi * (std_limit * frame_std) * frame_star_psf * frame_star_psf):
-                            self.alignment_log(star[-1],
+                            self.alignment_log(star[0], star[1], star[-1],
                                                2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
                             bright_stars.append(star)
                 std_limit -= 5
@@ -192,7 +192,7 @@ class AlignmentWindow(MainWindow):
                     bright_stars = []
                     for star in stars:
                         if star[-1] > (2 * np.pi * (std_limit * frame_std) * frame_star_psf * frame_star_psf):
-                            self.alignment_log(star[-1],
+                            self.alignment_log(star[0], star[1], star[-1],
                                                2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
                             bright_stars.append(star)
                     std_limit -= 5
@@ -375,6 +375,7 @@ class AlignmentWindow(MainWindow):
         else:
 
             x, y, u, star = self.settings_to_check[self.setting_checking]
+            self.alignment_log('Checking star at: ', x, y, ', with rotation:', u)
 
             if self.redraw >= 1:
                 self.circle.set_center((x, y))

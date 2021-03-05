@@ -41,7 +41,10 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std,
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             if popt[0] > std_limit * std:
-                star = (popt, pcov)
+                if np.nan not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
+                    if np.inf not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
+                        if 0 not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
+                            star = (popt, pcov)
 
     except:
         pass
