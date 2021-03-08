@@ -1,3 +1,2 @@
-#!/bin/bash
 
-mydir="$(dirname "$BASH_SOURCE")"
+SET mydir=%cd%

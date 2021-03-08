@@ -42,5 +42,5 @@ elif platform.system() == 'Linux':
 
 
 print('HOPS successfully installed.')
-print('The shortcut has been saved in your Desktop:\n\n{0}\n\n'
+print('The shortcut has been saved here:\n\n{0}\n\n'
       'You can freely move this file to your preferred location.'.format(shortcut_path))
