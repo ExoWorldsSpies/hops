@@ -5,7 +5,6 @@ import matplotlib
 import scipy
 import tkinter
 import emcee
-import astropy
 import astroquery
 import sys
 
@@ -31,8 +30,6 @@ def run_app():
     print('    @ {0}'.format(matplotlib.__file__).replace('/__init__.py', ''))
     print('Emcee version: {0}'.format(emcee.__version__))
     print('    @ {0}'.format(emcee.__file__).replace('/__init__.py', ''))
-    print('Astropy version: {0}'.format(astropy.__version__))
-    print('    @ {0}'.format(astropy.__file__).replace('/__init__.py', ''))
     print('Astroquery version: {0}'.format(astroquery.__version__))
     print('    @ {0}'.format(astroquery.__file__).replace('/__init__.py', ''))
 

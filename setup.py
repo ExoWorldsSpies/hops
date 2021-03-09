@@ -8,7 +8,7 @@ name = 'hops'
 description = 'HOlomon Photometry Software - A software to analyse data from small ground-based telescopes'
 url = 'https://https://github.com/ExoWorldsSpies/hops'
 install_requires = ['pyaml', 'requests', 'matplotlib>=3.3.3', 'numpy>=1.20.0', 'emcee', 'seaborn',
-                    'astropy', 'scipy', 'astroquery>=0.4', 'pillow', 'quantities']
+                    'astropy', 'scipy', 'astroquery==0.4.1', 'pillow', 'quantities']
 
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
