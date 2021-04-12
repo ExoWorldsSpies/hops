@@ -871,11 +871,10 @@ class HOPSFitsWindow(HOPSWidget):
         if isinstance(input, str):
             fits = get_fits_data(input)
             input_name = os.path.split(input)[1]
-        elif isinstance(input, pf.ImageHDU) or isinstance(input, pf.PrimaryHDU):
+        elif isinstance(input, pf.ImageHDU) or isinstance(input, pf.PrimaryHDU) or isinstance(input, pf.CompImageHDU):
             fits = [input]
         else:
-            print(type(input))
-            raise RuntimeError('Invalid input')
+            raise RuntimeError('Invalid input ', type(input))
 
         self.fits_name.set(input_name)
 
