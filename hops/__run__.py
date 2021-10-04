@@ -38,4 +38,4 @@ def run_app():
     from .application import HOPS
 
     app = HOPS()
-    app.run()
+    app.run(f_after=app.log.check_for_updates)

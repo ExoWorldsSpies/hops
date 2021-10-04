@@ -120,7 +120,7 @@ class HOPSLog:
 
         self.software_name = 'HOlomon Photometric Software'
         if self.new_avail != '':
-            self.updates = "UPDATES & USER MANUAL " + self.new_avail
+            self.updates = "UPDATES & USER MANUAL - " + self.new_avail
         else:
             self.updates = "UPDATES & USER MANUAL"
 
