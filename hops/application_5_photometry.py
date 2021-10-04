@@ -30,7 +30,6 @@ class PhotometryWindow(MainWindow):
         self.visible_fov_x_min = self.log.get_param('min_x')
         self.visible_fov_y_min = self.log.get_param('min_y')
         self.visible_fov_x_max = self.log.get_param('max_x')
-        self.visible_fov_x_max = self.log.get_param('max_x')
         self.visible_fov_y_max = self.log.get_param('max_y')
 
         self.all_frames = plc.open_dict(self.log.all_frames)
@@ -610,7 +609,6 @@ class PhotometryProgressWindow(MainWindow):
         self.target_ra_dec = self.log.get_param('target_ra_dec')
         self.visible_fov_x_min = self.log.get_param('min_x')
         self.visible_fov_y_min = self.log.get_param('min_y')
-        self.visible_fov_x_max = self.log.get_param('max_x')
         self.visible_fov_x_max = self.log.get_param('max_x')
         self.visible_fov_y_max = self.log.get_param('max_y')
         self.use_geometric_center = self.log.get_param('use_geometric_center')

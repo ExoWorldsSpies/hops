@@ -3,6 +3,8 @@ import os
 import glob
 import numpy as np
 import shutil
+import urllib
+import json
 from scipy.optimize import curve_fit as scipy_curve_fit
 import hops.pylightcurve3 as plc
 import matplotlib.image as mpimg
@@ -140,6 +142,27 @@ class FittingWindow(MainWindow):
             self.auto_mid_time.set(plc.HJDUTC(ecc_planet.planet.mid_time, target).bjd_tdb(target))
         elif ecc_planet.planet.time_format == 'JD_UTC':
             self.auto_mid_time.set(plc.JD(ecc_planet.planet.mid_time).bjd_tdb(target))
+
+        # try updating from ExoClock
+        try:
+
+            ecc_data = json.loads(urllib.request.urlopen(
+                'https://www.exoclock.space/database/planets/{0}/json'.format(ecc_planet.planet.name)).read())
+
+            self.auto_metallicity = self.Label(text=ecc_data['meta'], instance=float)
+            self.auto_temperature = self.Label(text=ecc_data['teff'], instance=float)
+            self.auto_logg = self.Label(text=ecc_data['logg'], instance=float)
+            self.auto_period = self.Label(text=ecc_data['ephem_period'], instance=float)
+            self.auto_mid_time = self.Label(text=ecc_data['ephem_mid_time'], instance=float)
+            self.auto_rp_over_rs = self.Label(text=ecc_data['rp_over_rs'], instance=float)
+            self.auto_sma_over_rs = self.Label(text=ecc_data['sma_over_rs'], instance=float)
+            self.auto_eccentricity = self.Label(text=ecc_data['eccentricity'], instance=float)
+            self.auto_inclination = self.Label(text=ecc_data['inclination'], instance=float)
+            self.auto_periastron = self.Label(text=ecc_data['periastron'], instance=float)
+
+        except urllib.error.URLError:
+            print('\nPlanet information could not get automatically updated from ExoClock (no connection)')
+            pass
 
         if self.planet.get() == 'Choose Planet':
             self.planet.set(self.auto_planet.get())
