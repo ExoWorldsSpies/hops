@@ -98,8 +98,9 @@ class FittingWindow(MainWindow):
                                               width=40, command=self.update_window)
 
         self.scatter = self.Entry(value=self.log.get_param('scatter'), instance=float, command=self.update_window)
-        self.iterations = self.Entry(value=self.log.get_param('iterations'), instance=int, command=self.update_window)
-        self.burn = self.Entry(value=self.log.get_param('burn'), instance=int, command=self.update_window)
+        self.iterations = self.Entry(value=self.log.get_param('iterations'), instance=int)
+        self.burn = self.Entry(value=self.log.get_param('burn'), instance=int)
+        self.a_i_fit = self.CheckButton(initial=self.log.get_param('a_i_fit'), text='Fit for a/Rs, i.',)
         self.manual_planet = self.CheckButton(initial=self.log.get_param('manual_planet'),
                                               text='Enter param. manually', command=self.update_window)
 
@@ -253,9 +254,11 @@ class FittingWindow(MainWindow):
 
             [[self.Label(text='log(g*) [cm/s^2]'), 1], [self.auto_logg, 2], [self.logg, 3]],
 
-            [[self.Label(text='Scatter limit'), 1], [self.scatter, 2], [self.Label(text='default = 3.0'), 3]],
-            [[self.Label(text='MCMC Iterations'), 1], [self.iterations, 2], [self.Label(text='default = 150000'), 3]],
-            [[self.Label(text='MCMC Burn-in\n(less than Iterations)'), 1], [self.burn, 2], [self.Label(text='default = 100000'), 3]],
+            [[self.Label(text='Advanced fitting options:'), 1, 9]],
+
+            [[self.Label(text='Scatter limit\n(default=3.0)'), 1], [self.scatter, 2], [self.a_i_fit, 3]],
+            [[self.Label(text='MCMC Iterations\n(default=100000)'), 1], [self.iterations, 2]],
+            [[self.Label(text='MCMC Burn-in\n(default=20000)'), 1], [self.burn, 2]],
 
             [[self.Button(text='RETURN TO MAIN MENU', command=self.close), 1, 3]],
             [[self.Button(text='SAVE OPTIONS & RETURN TO MAIN MENU', command=self.save_and_return), 1, 3]],
@@ -275,6 +278,7 @@ class FittingWindow(MainWindow):
 
             self.scatter.disable()
             self.iterations.disable()
+            self.a_i_fit.disable()
             self.burn.disable()
             self.metallicity.disable()
             self.temperature.disable()
@@ -296,6 +300,7 @@ class FittingWindow(MainWindow):
             self.scatter.activate()
             self.iterations.activate()
             self.burn.activate()
+            self.a_i_fit.activate()
             self.manual_planet.activate()
             self.planet.activate()
             self.target_ra_dec.activate()
@@ -546,6 +551,13 @@ class FittingWindow(MainWindow):
                              r'AutoCorr = %.1f' %res_autocorr,
                              fontsize=self.fsmain)
 
+                    if self.a_i_fit.get():
+                        a_fit = [sma_over_rs_to_plot * 0.5, sma_over_rs_to_plot * 2.0]
+                        i_fit = [inclination_to_plot - 10, min(90.0, inclination_to_plot + 10)]
+                    else:
+                        a_fit = False
+                        i_fit = False
+
                     self.mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, sigma]],
                                                               method='claret',
                                                               limb_darkening_coefficients=limb_darkening_coefficients,
@@ -558,14 +570,14 @@ class FittingWindow(MainWindow):
                                                               mid_time=mid_time_to_plot,
                                                               fit_rp_over_rs=np.array(self.log.get_param('rp_over_rs_fit')) * rp_over_rs_to_plot,
                                                               iterations=self.iterations.get(),
-                                                              walkers=50,
+                                                              walkers=20,
                                                               burn=self.burn.get(),
                                                               fit_first_order=True,
                                                               fit_second_order=True,
                                                               fit_period=False,
-                                                              fit_sma_over_rs=self.log.get_param('sma_over_rs_fit'),
+                                                              fit_sma_over_rs=a_fit,
                                                               fit_eccentricity=False,
-                                                              fit_inclination=self.log.get_param('inclination_fit'),
+                                                              fit_inclination=i_fit,
                                                               fit_periastron=False,
                                                               fit_mid_time=list(np.array(self.log.get_param('mid_time_fit')) + mid_time_to_plot),
                                                               precision=3,
@@ -628,6 +640,7 @@ class FittingWindow(MainWindow):
         self.log.set_param('scatter', self.scatter.get())
         self.log.set_param('iterations', self.iterations.get())
         self.log.set_param('burn', self.burn.get())
+        self.log.set_param('a_i_fit', self.a_i_fit.get())
         self.log.set_param('manual_planet', self.manual_planet.get())
         self.log.set_param('planet', planet_to_plot)
         self.log.set_param('target_ra_dec', target_ra_dec_to_plot)
@@ -745,6 +758,7 @@ class FittingProgressWindow(MainWindow):
         self.scatter = self.log.get_param('scatter')
         self.iterations = self.log.get_param('iterations')
         self.burn = self.log.get_param('burn')
+        self.a_i_fit = self.log.get_param('a_i_fit')
         self.planet = self.log.get_param('planet')
         self.target_ra_dec = self.log.get_param('target_ra_dec')
         self.metallicity = self.log.get_param('metallicity')
@@ -874,6 +888,13 @@ class FittingProgressWindow(MainWindow):
         sigma = np.array([np.roll(residuals, ff) for ff in range(-10, 10)])
         sigma = np.std(sigma, 0)
 
+        if self.a_i_fit:
+            a_fit = [self.sma_over_rs * 0.5, self.sma_over_rs * 2.0]
+            i_fit = [self.inclination - 10, min(90.0, self.inclination + 10)]
+        else:
+            a_fit = False
+            i_fit = False
+
         self.mcmc_fit = HOPSTransitAndPolyFitting([[light_curve_0, light_curve_1, sigma]],
                                                   method='claret',
                                                   limb_darkening_coefficients=limb_darkening_coefficients,
@@ -886,14 +907,14 @@ class FittingProgressWindow(MainWindow):
                                                   mid_time=self.mid_time,
                                                   fit_rp_over_rs=np.array(self.log.get_param('rp_over_rs_fit')) * self.rp_over_rs,
                                                   iterations=int(self.iterations / (self.iterations/1000)),
-                                                  walkers=50,
+                                                  walkers=20,
                                                   burn=self.burn,
                                                   fit_first_order=True,
                                                   fit_second_order=True,
                                                   fit_period=False,
-                                                  fit_sma_over_rs=self.log.get_param('sma_over_rs_fit'),
+                                                  fit_sma_over_rs=a_fit,
                                                   fit_eccentricity=False,
-                                                  fit_inclination=self.log.get_param('inclination_fit'),
+                                                  fit_inclination=i_fit,
                                                   fit_periastron=False,
                                                   fit_mid_time=list(np.array(self.log.get_param('mid_time_fit')) + self.mid_time),
                                                   precision=3,

@@ -12,11 +12,10 @@ min_y: 0
 max_x: 0
 max_y: 0
 binning: 1
-burn: 100000
+burn: 20000
 eccentricity: 0.0
 inclination: 0.0
-inclination_fit: False
-iterations: 150000
+iterations: 100000
 light_curve_file: Choose Light-curve file
 logg: 0.0
 metallicity: 0.0
@@ -39,7 +38,7 @@ rp_over_rs_fit:
 - 2.0
 scatter: 3.0
 sma_over_rs: 0.0
-sma_over_rs_fit: False
+a_i_fit: False
 temperature: 0.0
 auto_target_ra_dec: hh:mm:ss +dd:mm:ss
 manual_target_ra_dec: hh:mm:ss +dd:mm:ss

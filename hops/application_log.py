@@ -258,14 +258,6 @@ class HOPSLog:
             elif i in main_log:
                 self.set_param(i, local_log[i])
 
-        # for compatibility with hops 2.6
-
-        if self.get_param('inclination_fit') == 0.0:
-            self.set_param('inclination_fit', False)
-
-        if self.get_param('sma_over_rs_fit') == 0.0:
-            self.set_param('sma_over_rs_fit', False)
-
     def initiate_local_log(self):
 
         local_log_path = os.path.join(self.get_param('directory'), self.files['local_log'])
