@@ -789,6 +789,11 @@ class HOPSFitsWindow(HOPSWidget):
         self.mirror = IntVar(widget, value=0)
         self.white_sky = IntVar(widget, value=0)
 
+        if input_name:
+            if len(input_name) > 50:
+                split = [input_name[i:i + 50] for i in range(0, len(input_name), 50)]
+                input_name = '\n'.join(split)
+
         self.fits_name = StringVar(widget, value=input_name)
         self.fits_name_label = Label(widget, textvar=self.fits_name)
 
@@ -875,6 +880,11 @@ class HOPSFitsWindow(HOPSWidget):
             fits = [input]
         else:
             raise RuntimeError('Invalid input ', type(input))
+
+        if input_name:
+            if len(input_name) > 50:
+                split = [input_name[i:i + 50] for i in range(0, len(input_name), 50)]
+                input_name = '\n'.join(split)
 
         self.fits_name.set(input_name)
 
