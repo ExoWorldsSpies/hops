@@ -295,7 +295,7 @@ def fast_psf_find(data_array, mean, std, burn_limit):
     psf_y = []
     psf_y_err = []
 
-    for centroid in stars[:10]:
+    for centroid in stars:
         star = _star_from_centroid(data_array, centroid[1], centroid[2], mean, std, star_std, std_limit)
 
         if star:
@@ -309,6 +309,9 @@ def fast_psf_find(data_array, mean, std, burn_limit):
                 psf_y_err.append(np.sqrt(star[1][4][4]))
                 psf_x.append(star[0][5])
                 psf_x_err.append(np.sqrt(star[1][5][5]))
+
+        if len(psf_x) > 10:
+            break
 
     psf = (waverage(psf_x, psf_x_err)[0], waverage(psf_y, psf_y_err)[0])
 

@@ -81,6 +81,16 @@ class DataTargetWindow(MainWindow):
 
         self.bin_fits = self.DropDown(initial=initial_bin, options=[1, 2, 3, 4], instance=int)
 
+        try:
+            initial_crop = self.log.get_param('crop_fits')
+            initial_crop = max(0.2, initial_crop)
+            initial_crop = min(initial_crop, 1)
+        except:
+            print('WARNING the crop_fits parameter should be 1, 0.8, 0.6, 0.4, or 0.2. Re-setting it to 1.')
+            initial_crop = 1
+
+        self.crop_fits = self.DropDown(initial=initial_crop, options=[1, 0.8, 0.6, 0.4, 0.2], instance=float)
+
         self.show_header_button = self.Button(text='Show header', command=self.header_window.show)
 
         self.exposure_time_key = self.Entry(value=self.log.get_param('exposure_time_key'), instance=str,
@@ -142,6 +152,7 @@ class DataTargetWindow(MainWindow):
              ],
 
             [[self.Label(text='Bin fits files (reduced only)'), 1], [self.bin_fits, 2]],
+            [[self.Label(text='Subframe (reduced only)'), 1], [self.crop_fits, 2]],
 
             [[self.show_header_button, 2]],
 
@@ -290,6 +301,7 @@ class DataTargetWindow(MainWindow):
             self.dark_files.set(self.log.get_param('dark_files'))
             self.flat_files.set(self.log.get_param('flat_files'))
             self.bin_fits.set(self.log.get_param('bin_fits'))
+            self.crop_fits.set(self.log.get_param('crop_fits'))
             self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
             self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
             self.target_name.set(self.log.get_param('target_name'))
@@ -637,6 +649,7 @@ class DataTargetWindow(MainWindow):
         self.log.set_param('dark_files', self.dark_files.get())
         self.log.set_param('flat_files', self.flat_files.get())
         self.log.set_param('bin_fits', self.bin_fits.get())
+        self.log.set_param('crop_fits', self.crop_fits.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())
         self.log.set_param('manual_target_ra_dec', self.manual_target_ra_dec.get())

@@ -66,6 +66,7 @@ observation_date_key: DATE-OBS
 observation_time_key: TIME-OBS
 bias_files: bias
 bin_fits: 1
+crop_fits: 1
 dark_files: dark
 flat_files: flat
 master_bias_method: median

@@ -246,13 +246,21 @@ class ReductionWindow(MainWindow):
 
             fits = get_fits_data(science_file)
 
-            exp_time = fits[0].header[self.log.get_param('exposure_time_key')]
+            exp_time = float(fits[0].header[self.log.get_param('exposure_time_key')])
             data_frame = np.ones_like(fits[0].data) * fits[0].data
             data_frame = (data_frame - self.master_bias - exp_time * self.master_dark) / self.master_flat
             data_frame[np.where(np.isnan(data_frame))] = 0
 
-            if self.log.get_param('bin_fits') > 1:
-                data_frame = plc.bin_frame(data_frame, self.log.get_param('bin_fits'))
+            bin_fits = self.log.get_param('bin_fits')
+            if bin_fits > 1:
+                data_frame = plc.bin_frame(data_frame, bin_fits)
+
+            crop_fits = self.log.get_param('crop_fits')
+            if crop_fits < 1:
+                crop_x = int(len(data_frame[0]) * crop_fits / 2.0)
+                crop_y = int(len(data_frame) * crop_fits / 2.0)
+                data_frame = data_frame[crop_y: -crop_y]
+                data_frame = data_frame[:, crop_x: -crop_x]
 
             try:
                 distribution = plc.one_d_distribution(data_frame.flatten()[::int(200000.0/self.log.bin_to)],
@@ -293,6 +301,7 @@ class ReductionWindow(MainWindow):
             fits[0].header.set(self.log.std_key, std)
             fits[0].header.set(self.log.psf_key, psf)
             fits[0].header.set(self.log.time_key, julian_date)
+            fits[0].header.set(self.log.get_param('exposure_time_key'), exp_time)
 
             # write the new fits file
             # important to keep it like this for windows!
