@@ -257,8 +257,8 @@ class ReductionWindow(MainWindow):
 
             crop_fits = self.log.get_param('crop_fits')
             if crop_fits < 1:
-                crop_x = int(len(data_frame[0]) * crop_fits / 2.0)
-                crop_y = int(len(data_frame) * crop_fits / 2.0)
+                crop_x = int(len(data_frame[0]) * (1 - crop_fits) / 2.0)
+                crop_y = int(len(data_frame) * (1 - crop_fits) / 2.0)
                 data_frame = data_frame[crop_y: -crop_y]
                 data_frame = data_frame[:, crop_x: -crop_x]
 
