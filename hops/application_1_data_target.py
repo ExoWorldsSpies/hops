@@ -512,10 +512,13 @@ class DataTargetWindow(MainWindow):
                     result_table = Simbad.query_object(name)[0]
 
                 self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'), str(result_table['DEC']).replace(' ', ':')))
-                main_id = result_table['MAIN_ID']
+                try:
+                    main_id = result_table['MAIN_ID'].decode("utf-8")
+                except:
+                    main_id = result_table['MAIN_ID']
+
                 while '  ' in main_id:
                     main_id = main_id.replace('  ', ' ')
-                print(main_id)
                 self.target_name_2.set(main_id)
             except:
                 self.target_ra_dec_2.set('Coordinates not found')
