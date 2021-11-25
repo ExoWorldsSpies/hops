@@ -507,8 +507,6 @@ class DataTargetWindow(MainWindow):
                     if 'bd' in name:
                         name = name[:3] + name[3:].replace('-', ' ')
 
-                print(name)
-
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     result_table = Simbad.query_object(name)[0]
