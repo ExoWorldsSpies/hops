@@ -24,6 +24,32 @@
   twomass_id: 08523579+2819509
   v_mag: 5.96
   v_mag_calc: false
+AUMic:
+  dec: '-31:20:27.241'
+  gaia_bp_mag: 8.936
+  gaia_dec: -31.34245001640323
+  gaia_g_mag: 7.84
+  gaia_id: '6794047652729201024'
+  gaia_parallax: 102.829
+  gaia_pm_dec: -359.895
+  gaia_pm_ra: 281.424
+  gaia_ra: 311.2911368830972
+  gaia_rp_mag: 6.812
+  h_mag: 4.831
+  i_mag: 6.593
+  i_mag_calc: false
+  j_mag: 5.436
+  k_mag: 4.529
+  notes: ''
+  r_mag: 9.078
+  r_mag_calc: false
+  ra: '20:45:09.5323'
+  simbad_id: V* AU Mic
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=V*+AU+Mic"
+    target="_blank">V* AU Mic</a>
+  twomass_id: 20450949-3120266
+  v_mag: 8.627
+  v_mag_calc: false
 CoRoT-10:
   dec: '+00:44:46.003'
   gaia_bp_mag: 15.503
@@ -204,6 +230,32 @@ CoRoT-3:
   twomass_id: 19281326+0007185
   v_mag: 13.292
   v_mag_calc: false
+DSTucA:
+  dec: '-69:11:44.709'
+  gaia_bp_mag: 8.704
+  gaia_dec: -69.19604296286967
+  gaia_g_mag: 8.319
+  gaia_id: '6387058411482257536'
+  gaia_parallax: 22.666
+  gaia_pm_dec: -67.44
+  gaia_pm_ra: 79.464
+  gaia_ra: 354.9154672903039
+  gaia_rp_mag: 7.814
+  h_mag: 6.759
+  i_mag: 7.702
+  i_mag_calc: true
+  j_mag: 7.122
+  k_mag: 6.676
+  notes: ''
+  r_mag: 9.28
+  r_mag_calc: false
+  ra: '23:39:39.4809'
+  simbad_id: HD 222259A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+222259A"
+    target="_blank">HD 222259A</a>
+  twomass_id: 23393949-6911448
+  v_mag: 8.47
+  v_mag_calc: false
 EPIC211945201:
   dec: '+19:24:08.051'
   gaia_bp_mag: 10.352
@@ -224,9 +276,9 @@ EPIC211945201:
   r_mag: 9.847
   r_mag_calc: true
   ra: '09:06:17.7565'
-  simbad_id: BD+19  2158
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%19++2158"
-    target="_blank">BD+19  2158</a>
+  simbad_id: BD+19 2158
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B19+2158"
+    target="_blank">BD+19 2158</a>
   twomass_id: 09061775+1924080
   v_mag: 10.15
   v_mag_calc: false
@@ -255,6 +307,32 @@ EPIC246851721:
   twomass_id: 05154075+1616435
   v_mag: 11.24
   v_mag_calc: false
+G9-40:
+  dec: '+21:04:34.202'
+  gaia_bp_mag: 14.118
+  gaia_dec: 21.074796050555275
+  gaia_g_mag: 12.733
+  gaia_id: '684992690384102528'
+  gaia_parallax: 35.778
+  gaia_pm_dec: -318.469
+  gaia_pm_ra: 175.512
+  gaia_ra: 134.71885141913484
+  gaia_rp_mag: 11.583
+  h_mag: 9.433
+  i_mag: 12.135
+  i_mag_calc: false
+  j_mag: 10.058
+  k_mag: 9.19
+  notes: ''
+  r_mag: 12.683
+  r_mag_calc: false
+  ra: '08:58:52.3299'
+  simbad_id: G 9-40
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=G+9-40" target="_blank">G
+    9-40</a>
+  twomass_id: 08585232+2104344
+  v_mag: 13.821
+  v_mag_calc: false
 GJ1132:
   dec: '-47:09:24.189'
   gaia_bp_mag: 13.758
@@ -275,9 +353,9 @@ GJ1132:
   r_mag: 13.067
   r_mag_calc: false
   ra: '10:14:51.7783'
-  simbad_id: L  320-124
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L++320-124"
-    target="_blank">L  320-124</a>
+  simbad_id: L 320-124
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+320-124"
+    target="_blank">L 320-124</a>
   twomass_id: 10145184-4709244
   v_mag: 13.49
   v_mag_calc: false
@@ -307,6 +385,32 @@ GJ1214:
   twomass_id: 17151894+0457496
   v_mag: 15.1
   v_mag_calc: false
+GJ1252:
+  dec: '-56:27:25.156'
+  gaia_bp_mag: 12.481
+  gaia_dec: -56.46228651718171
+  gaia_g_mag: 11.236
+  gaia_id: '6468968316900356736'
+  gaia_parallax: 49.056
+  gaia_pm_dec: -1230.623
+  gaia_pm_ra: 424.414
+  gaia_ra: 306.92864618750525
+  gaia_rp_mag: 10.161
+  h_mag: 8.161
+  i_mag: 10.489
+  i_mag_calc: true
+  j_mag: 8.697
+  k_mag: 7.915
+  notes: ''
+  r_mag: 11.83
+  r_mag_calc: false
+  ra: '20:27:42.0813'
+  simbad_id: L 210-70
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+210-70"
+    target="_blank">L 210-70</a>
+  twomass_id: 20274210-5627262
+  v_mag: 12.68
+  v_mag_calc: false
 GJ143:
   dec: '-63:29:56.761'
   gaia_bp_mag: 8.329
@@ -327,9 +431,9 @@ GJ143:
   r_mag: 7.43
   r_mag_calc: false
   ra: '03:26:59.2228'
-  simbad_id: HD  21749
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++21749"
-    target="_blank">HD  21749</a>
+  simbad_id: HD 21749
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+21749"
+    target="_blank">HD 21749</a>
   twomass_id: 03265922-6329569
   v_mag: 8.143
   v_mag_calc: false
@@ -353,11 +457,63 @@ GJ3470:
   r_mag: 11.934
   r_mag_calc: false
   ra: '07:59:05.8395'
-  simbad_id: LP  424-4
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP++424-4"
-    target="_blank">LP  424-4</a>
+  simbad_id: LP 424-4
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+424-4"
+    target="_blank">LP 424-4</a>
   twomass_id: 07590587+1523294
   v_mag: 12.33
+  v_mag_calc: false
+GJ3473:
+  dec: '+03:20:19.692'
+  gaia_bp_mag: 13.969
+  gaia_dec: 3.337162929242049
+  gaia_g_mag: 12.465
+  gaia_id: '3094290054327367168'
+  gaia_parallax: 36.515
+  gaia_pm_dec: -381.015
+  gaia_pm_ra: -403.168
+  gaia_ra: 120.59360653644428
+  gaia_rp_mag: 11.271
+  h_mag: 9.063
+  i_mag: 11.901
+  i_mag_calc: false
+  j_mag: 9.627
+  k_mag: 8.829
+  notes: ''
+  r_mag: 13.44
+  r_mag_calc: false
+  ra: '08:02:22.8828'
+  simbad_id: G 50-16
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=G+50-16" target="_blank">G
+    50-16</a>
+  twomass_id: 08022287+0320196
+  v_mag: 13.74
+  v_mag_calc: false
+GJ357:
+  dec: '-21:39:38.878'
+  gaia_bp_mag: 11.19
+  gaia_dec: -21.665063362065673
+  gaia_g_mag: 9.88
+  gaia_id: '5664814198431308288'
+  gaia_parallax: 105.883
+  gaia_pm_dec: -990.311
+  gaia_pm_ra: 138.694
+  gaia_ra: 144.00746441016133
+  gaia_rp_mag: 8.792
+  h_mag: 6.74
+  i_mag: 8.577
+  i_mag_calc: false
+  j_mag: 7.337
+  k_mag: 6.475
+  notes: ''
+  r_mag: 9.858
+  r_mag_calc: false
+  ra: '09:36:01.6372'
+  simbad_id: L 678-39
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+678-39"
+    target="_blank">L 678-39</a>
+  twomass_id: 09360161-2139371
+  v_mag: 10.906
   v_mag_calc: false
 GJ436:
   dec: '+26:42:23.658'
@@ -379,11 +535,37 @@ GJ436:
   r_mag: 10.272
   r_mag_calc: false
   ra: '11:42:11.0933'
-  simbad_id: Ross  905
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Ross++905"
-    target="_blank">Ross  905</a>
+  simbad_id: Ross 905
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Ross+905"
+    target="_blank">Ross 905</a>
   twomass_id: 11421096+2642251
   v_mag: 10.613
+  v_mag_calc: false
+GJ486:
+  dec: '+09:45:05.031'
+  gaia_bp_mag: 11.665
+  gaia_dec: 9.749418089072192
+  gaia_g_mag: 10.094
+  gaia_id: '3735000631158990976'
+  gaia_parallax: 123.821
+  gaia_pm_dec: -459.8
+  gaia_pm_ra: -1008.602
+  gaia_ra: 191.98153095982005
+  gaia_rp_mag: 8.902
+  h_mag: 6.666
+  i_mag: 8.707
+  i_mag_calc: false
+  j_mag: 7.195
+  k_mag: 6.362
+  notes: ''
+  r_mag: 10.235
+  r_mag_calc: false
+  ra: '12:47:56.6249'
+  simbad_id: Wolf 437
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Wolf+437"
+    target="_blank">Wolf 437</a>
+  twomass_id: 12475664+0945050
+  v_mag: 11.395
   v_mag_calc: false
 GJ9827:
   dec: '-01:17:10.585'
@@ -405,9 +587,9 @@ GJ9827:
   r_mag: 10.09
   r_mag_calc: false
   ra: '23:27:04.8376'
-  simbad_id: BD-02  5958
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-02++5958"
-    target="_blank">BD-02  5958</a>
+  simbad_id: BD-02 5958
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-02+5958"
+    target="_blank">BD-02 5958</a>
   twomass_id: 23270480-0117108
   v_mag: 10.1
   v_mag_calc: false
@@ -431,9 +613,9 @@ HAT-P-1:
   r_mag: 10.02
   r_mag_calc: false
   ra: '22:57:46.8443'
-  simbad_id: BD+37  4734B
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%37++4734B"
-    target="_blank">BD+37  4734B</a>
+  simbad_id: BD+37 4734B
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B37+4734B"
+    target="_blank">BD+37 4734B</a>
   twomass_id: 22574684+3840302
   v_mag: 9.87
   v_mag_calc: false
@@ -457,9 +639,9 @@ HAT-P-11:
   r_mag: 8.8
   r_mag_calc: false
   ra: '19:50:50.2474'
-  simbad_id: BD+47  2936
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%47++2936"
-    target="_blank">BD+47  2936</a>
+  simbad_id: BD+47 2936
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B47+2936"
+    target="_blank">BD+47 2936</a>
   twomass_id: 19505021+4804508
   v_mag: 9.461
   v_mag_calc: true
@@ -535,9 +717,9 @@ HAT-P-14:
   r_mag: 9.689
   r_mag_calc: true
   ra: '17:20:27.8782'
-  simbad_id: BD+38  2917
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%38++2917"
-    target="_blank">BD+38  2917</a>
+  simbad_id: BD+38 2917
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B38+2917"
+    target="_blank">BD+38 2917</a>
   twomass_id: 17202788+3814317
   v_mag: 9.99
   v_mag_calc: false
@@ -670,6 +852,32 @@ HAT-P-19:
     target="_blank">HAT-P-19</a>
   twomass_id: 00380401+3442416
   v_mag: 12.901
+  v_mag_calc: false
+HAT-P-2:
+  dec: '+41:02:53.109'
+  gaia_bp_mag: 8.851
+  gaia_dec: 41.047960133783775
+  gaia_g_mag: 8.598
+  gaia_id: '1380825667768742144'
+  gaia_parallax: 7.797
+  gaia_pm_dec: -29.198
+  gaia_pm_ra: -10.312
+  gaia_ra: 245.15143243837096
+  gaia_rp_mag: 8.238
+  h_mag: 7.652
+  i_mag: 8.16
+  i_mag_calc: true
+  j_mag: 7.796
+  k_mag: 7.603
+  notes: ''
+  r_mag: 8.417
+  r_mag_calc: true
+  ra: '16:20:36.3579'
+  simbad_id: HD 147506
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+147506"
+    target="_blank">HD 147506</a>
+  twomass_id: 16203635+4102531
+  v_mag: 8.69
   v_mag_calc: false
 HAT-P-20:
   dec: '+24:20:11.518'
@@ -976,9 +1184,9 @@ HAT-P-30:
   r_mag: 10.104
   r_mag_calc: true
   ra: '08:15:47.9805'
-  simbad_id: BD+06  1909
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%06++1909"
-    target="_blank">BD+06  1909</a>
+  simbad_id: BD+06 1909
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B06+1909"
+    target="_blank">BD+06 1909</a>
   twomass_id: 08154797+0550121
   v_mag: 10.35
   v_mag_calc: false
@@ -1085,6 +1293,32 @@ HAT-P-34:
     target="_blank">HD 351766</a>
   twomass_id: 20124688+1806175
   v_mag: 10.4
+  v_mag_calc: false
+HAT-P-35:
+  dec: '+04:47:13.417'
+  gaia_bp_mag: 12.563
+  gaia_dec: 4.787028763505111
+  gaia_g_mag: 12.28
+  gaia_id: '3094733088793018240'
+  gaia_parallax: 1.945
+  gaia_pm_dec: -7.348
+  gaia_pm_ra: -9.57
+  gaia_ra: 123.25070300809844
+  gaia_rp_mag: 11.841
+  h_mag: 11.072
+  i_mag: 12.314
+  i_mag_calc: false
+  j_mag: 11.358
+  k_mag: 11.03
+  notes: ''
+  r_mag: 12.38
+  r_mag_calc: false
+  ra: '08:13:00.1786'
+  simbad_id: HAT-P-35
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HAT-P-35"
+    target="_blank">HAT-P-35</a>
+  twomass_id: 08130018+0447132
+  v_mag: 11.59
   v_mag_calc: false
 HAT-P-36:
   dec: '+44:54:55.197'
@@ -1210,9 +1444,9 @@ HAT-P-4:
   r_mag: 10.848
   r_mag_calc: true
   ra: '15:19:57.9205'
-  simbad_id: BD+36  2593
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%36++2593"
-    target="_blank">BD+36  2593</a>
+  simbad_id: BD+36 2593
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B36+2593"
+    target="_blank">BD+36 2593</a>
   twomass_id: 15195792+3613467
   v_mag: 11.12
   v_mag_calc: false
@@ -1651,11 +1885,37 @@ HAT-P-57:
   r_mag: 10.248
   r_mag_calc: true
   ra: '18:18:58.4251'
-  simbad_id: BD+10  3472
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%10++3472"
-    target="_blank">BD+10  3472</a>
+  simbad_id: BD+10 3472
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B10+3472"
+    target="_blank">BD+10 3472</a>
   twomass_id: 18185842+1035502
   v_mag: 10.64
+  v_mag_calc: false
+HAT-P-58:
+  dec: '+56:52:05.584'
+  gaia_bp_mag: 13.142
+  gaia_dec: 56.86826906441423
+  gaia_g_mag: 12.72
+  gaia_id: '277493615044741376'
+  gaia_parallax: 1.912
+  gaia_pm_dec: 11.862
+  gaia_pm_ra: -10.883
+  gaia_ra: 68.84650930235352
+  gaia_rp_mag: 12.135
+  h_mag: 11.075
+  i_mag: 12.632
+  i_mag_calc: false
+  j_mag: 11.429
+  k_mag: 10.978
+  notes: ''
+  r_mag: 12.888
+  r_mag_calc: false
+  ra: '04:35:23.1828'
+  simbad_id: GSC 03740-01482
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=GSC+03740-01482"
+    target="_blank">GSC 03740-01482</a>
+  twomass_id: 04352318+5652055
+  v_mag: 12.925
   v_mag_calc: false
 HAT-P-6:
   dec: '+42:27:57.503'
@@ -1677,11 +1937,63 @@ HAT-P-6:
   r_mag: 10.129
   r_mag_calc: true
   ra: '23:39:05.8101'
-  simbad_id: BD+41  4831
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%41++4831"
-    target="_blank">BD+41  4831</a>
+  simbad_id: BD+41 4831
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B41+4831"
+    target="_blank">BD+41 4831</a>
   twomass_id: 23390581+4227575
   v_mag: 10.47
+  v_mag_calc: false
+HAT-P-62:
+  dec: '+48:18:03.756'
+  gaia_bp_mag: 12.893
+  gaia_dec: 48.30085512191138
+  gaia_g_mag: 12.436
+  gaia_id: '255397142179844224'
+  gaia_parallax: 2.839
+  gaia_pm_dec: -43.776
+  gaia_pm_ra: 14.732
+  gaia_ra: 74.50438161710731
+  gaia_rp_mag: 11.84
+  h_mag: 10.803
+  i_mag: 11.626
+  i_mag_calc: true
+  j_mag: 11.144
+  k_mag: 10.701
+  notes: ''
+  r_mag: 12.185
+  r_mag_calc: true
+  ra: '04:58:01.0287'
+  simbad_id: GSC 03348-01101
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=GSC+03348-01101"
+    target="_blank">GSC 03348-01101</a>
+  twomass_id: 04580102+4818038
+  v_mag: 12.539
+  v_mag_calc: false
+HAT-P-64:
+  dec: '+02:25:52.643'
+  gaia_bp_mag: 12.986
+  gaia_dec: 2.431273202884624
+  gaia_g_mag: 12.622
+  gaia_id: '3279418602369232000'
+  gaia_parallax: 1.505
+  gaia_pm_dec: -3.863
+  gaia_pm_ra: 7.784
+  gaia_ra: 68.97439554966624
+  gaia_rp_mag: 12.095
+  h_mag: 11.225
+  i_mag: 12.086
+  i_mag_calc: true
+  j_mag: 11.485
+  k_mag: 11.123
+  notes: ''
+  r_mag: 12.39
+  r_mag_calc: true
+  ra: '04:35:53.8468'
+  simbad_id: GSC 00086-00341
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=GSC+00086-00341"
+    target="_blank">GSC 00086-00341</a>
+  twomass_id: 04355384+0225526
+  v_mag: 12.855
   v_mag_calc: false
 HAT-P-65:
   dec: '+11:59:21.818'
@@ -1755,11 +2067,63 @@ HAT-P-67:
   r_mag: 9.786
   r_mag_calc: true
   ra: '17:06:26.5609'
-  simbad_id: BD+44  2654
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%44++2654"
-    target="_blank">BD+44  2654</a>
+  simbad_id: BD+44 2654
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B44+2654"
+    target="_blank">BD+44 2654</a>
   twomass_id: 17062656+4446371
   v_mag: 10.11
+  v_mag_calc: false
+HAT-P-68:
+  dec: '+23:56:17.611'
+  gaia_bp_mag: 14.248
+  gaia_dec: 23.93821916494538
+  gaia_g_mag: 13.544
+  gaia_id: '675443053940533760'
+  gaia_parallax: 4.918
+  gaia_pm_dec: -1.467
+  gaia_pm_ra: -23.655
+  gaia_ra: 118.4831501414668
+  gaia_rp_mag: 12.743
+  h_mag: 11.21
+  i_mag: 13.278
+  i_mag_calc: false
+  j_mag: 11.75
+  k_mag: 11.019
+  notes: ''
+  r_mag: 13.678
+  r_mag_calc: false
+  ra: '07:53:55.9827'
+  simbad_id: GSC 01925-01046
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=GSC+01925-01046"
+    target="_blank">GSC 01925-01046</a>
+  twomass_id: 07535598+2356176
+  v_mag: 13.802
+  v_mag_calc: false
+HAT-P-69:
+  dec: '+03:42:38.022'
+  gaia_bp_mag: 9.9
+  gaia_dec: 3.7105661773808136
+  gaia_g_mag: 9.773
+  gaia_id: '3080104185367102592'
+  gaia_parallax: 2.902
+  gaia_pm_dec: 0.984
+  gaia_pm_ra: -2.856
+  gaia_ra: 130.5056384529278
+  gaia_rp_mag: 9.578
+  h_mag: 9.293
+  i_mag: 9.481
+  i_mag_calc: true
+  j_mag: 9.373
+  k_mag: 9.28
+  notes: ''
+  r_mag: 9.667
+  r_mag_calc: true
+  ra: '08:42:01.3561'
+  simbad_id: TYC 215-1594-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+215-1594-1"
+    target="_blank">TYC 215-1594-1</a>
+  twomass_id: 08420135+0342380
+  v_mag: 9.77
   v_mag_calc: false
 HAT-P-7:
   dec: '+47:58:10.216'
@@ -1781,11 +2145,37 @@ HAT-P-7:
   r_mag: 10.178
   r_mag_calc: true
   ra: '19:28:59.3538'
-  simbad_id: BD+47  2846
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%47++2846"
-    target="_blank">BD+47  2846</a>
+  simbad_id: BD+47 2846
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B47+2846"
+    target="_blank">BD+47 2846</a>
   twomass_id: 19285935+4758102
   v_mag: 10.48
+  v_mag_calc: false
+HAT-P-70:
+  dec: '+09:59:52.803'
+  gaia_bp_mag: 9.554
+  gaia_dec: 9.997979429174482
+  gaia_g_mag: 9.452
+  gaia_id: '3291455819447952768'
+  gaia_parallax: 2.996
+  gaia_pm_dec: -4.996
+  gaia_pm_ra: -2.657
+  gaia_ra: 74.55233315106537
+  gaia_rp_mag: 9.289
+  h_mag: 9.023
+  i_mag: 9.227
+  i_mag_calc: true
+  j_mag: 9.068
+  k_mag: 8.963
+  notes: ''
+  r_mag: 9.363
+  r_mag_calc: true
+  ra: '04:58:12.5627'
+  simbad_id: HD 287325
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+287325"
+    target="_blank">HD 287325</a>
+  twomass_id: 04581255+0959527
+  v_mag: 9.47
   v_mag_calc: false
 HAT-P-8:
   dec: '+35:26:49.606'
@@ -1807,9 +2197,9 @@ HAT-P-8:
   r_mag: 10.15
   r_mag_calc: false
   ra: '22:52:09.8635'
-  simbad_id: BD+34  4779
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%34++4779"
-    target="_blank">BD+34  4779</a>
+  simbad_id: BD+34 4779
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B34+4779"
+    target="_blank">BD+34 4779</a>
   twomass_id: 22520985+3526495
   v_mag: 10.36
   v_mag_calc: false
@@ -2038,6 +2428,31 @@ HATS-22:
   twomass_id: 11360233-2932359
   v_mag: 13.46
   v_mag_calc: false
+HATS-23:
+  dec: '-50:04:02.445'
+  gaia_bp_mag: 14.121
+  gaia_dec: -50.067349555037275
+  gaia_g_mag: 13.752
+  gaia_id: '6657994706683397504'
+  gaia_parallax: 1.536
+  gaia_pm_dec: -0.862
+  gaia_pm_ra: 7.314
+  gaia_ra: 286.3667500235466
+  gaia_rp_mag: 13.228
+  h_mag: 12.293
+  i_mag: 13.11
+  i_mag_calc: false
+  j_mag: 12.636
+  k_mag: 12.262
+  notes: ''
+  r_mag: 13.72
+  r_mag_calc: false
+  ra: '19:05:28.0082'
+  simbad_id: HATS-23
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-23" target="_blank">HATS-23</a>
+  twomass_id: 19052800-5004024
+  v_mag: 13.9
+  v_mag_calc: false
 HATS-24:
   dec: '-61:44:50.367'
   gaia_bp_mag: 12.996
@@ -2137,6 +2552,31 @@ HATS-27:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-27" target="_blank">HATS-27</a>
   twomass_id: 12541261-4635157
   v_mag: 12.77
+  v_mag_calc: false
+HATS-28:
+  dec: '-49:08:18.555'
+  gaia_bp_mag: 14.198
+  gaia_dec: -49.13851257193907
+  gaia_g_mag: 13.793
+  gaia_id: '6661242835829891584'
+  gaia_parallax: 1.839
+  gaia_pm_dec: -5.764
+  gaia_pm_ra: 11.096
+  gaia_ra: 284.39976155227384
+  gaia_rp_mag: 13.229
+  h_mag: 12.188
+  i_mag: 13.092
+  i_mag_calc: true
+  j_mag: 12.522
+  k_mag: 12.086
+  notes: ''
+  r_mag: 13.551
+  r_mag_calc: true
+  ra: '18:57:35.9252'
+  simbad_id: HATS-28
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-28" target="_blank">HATS-28</a>
+  twomass_id: 18573592-4908184
+  v_mag: 13.93
   v_mag_calc: false
 HATS-29:
   dec: '-54:53:35.450'
@@ -2263,6 +2703,31 @@ HATS-33:
   twomass_id: 19383207-5519483
   v_mag: 11.91
   v_mag_calc: false
+HATS-34:
+  dec: '-62:28:09.616'
+  gaia_bp_mag: 14.082
+  gaia_dec: -62.4693167050237
+  gaia_g_mag: 13.679
+  gaia_id: '4904523077718046720'
+  gaia_parallax: 1.936
+  gaia_pm_dec: 4.911
+  gaia_pm_ra: 2.894
+  gaia_ra: 0.7744865954307195
+  gaia_rp_mag: 13.129
+  h_mag: 12.139
+  i_mag: 13.026
+  i_mag_calc: true
+  j_mag: 12.513
+  k_mag: 12.095
+  notes: ''
+  r_mag: 13.77
+  r_mag_calc: false
+  ra: '00:03:05.8703'
+  simbad_id: HATS-34
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-34" target="_blank">HATS-34</a>
+  twomass_id: 00030587-6228096
+  v_mag: 13.85
+  v_mag_calc: false
 HATS-35:
   dec: '-63:33:56.137'
   gaia_bp_mag: 12.777
@@ -2287,6 +2752,57 @@ HATS-35:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-35" target="_blank">HATS-35</a>
   twomass_id: 19464518-6333561
   v_mag: 12.56
+  v_mag_calc: false
+HATS-37A:
+  dec: '-22:59:12.730'
+  gaia_bp_mag: 12.531
+  gaia_dec: -22.986843107614515
+  gaia_g_mag: 11.998
+  gaia_id: '6194574671813047424'
+  gaia_parallax: 4.692
+  gaia_pm_dec: 6.154
+  gaia_pm_ra: -21.784
+  gaia_ra: 199.80183002440415
+  gaia_rp_mag: 11.339
+  h_mag: 10.038
+  i_mag: 11.302
+  i_mag_calc: true
+  j_mag: 10.528
+  k_mag: 9.947
+  notes: ''
+  r_mag: 11.735
+  r_mag_calc: true
+  ra: '13:19:12.4636'
+  simbad_id: HATS-37
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-37" target="_blank">HATS-37</a>
+  twomass_id: 13191246-2259127
+  v_mag: 12.341
+  v_mag_calc: false
+HATS-38:
+  dec: '-25:16:34.556'
+  gaia_bp_mag: 12.649
+  gaia_dec: -25.276298249092697
+  gaia_g_mag: 12.278
+  gaia_id: '5472386851683941376'
+  gaia_parallax: 2.883
+  gaia_pm_dec: -7.54
+  gaia_pm_ra: -21.752
+  gaia_ra: 154.27106152601348
+  gaia_rp_mag: 11.761
+  h_mag: 10.85
+  i_mag: 11.203
+  i_mag_calc: true
+  j_mag: 11.184
+  k_mag: 10.768
+  notes: ''
+  r_mag: 12.047
+  r_mag_calc: true
+  ra: '10:17:05.0796'
+  simbad_id: TYC 6622-794-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+6622-794-1"
+    target="_blank">TYC 6622-794-1</a>
+  twomass_id: 10170509-2516345
+  v_mag: 11.97
   v_mag_calc: false
 HATS-39:
   dec: '-29:56:16.420'
@@ -2388,6 +2904,31 @@ HATS-41:
   twomass_id: 06540416-2703013
   v_mag: 12.68
   v_mag_calc: false
+HATS-42:
+  dec: '-33:26:14.401'
+  gaia_bp_mag: 13.881
+  gaia_dec: -33.4373462403056
+  gaia_g_mag: 13.563
+  gaia_id: '5603100779728361088'
+  gaia_parallax: 1.221
+  gaia_pm_dec: -2.879
+  gaia_pm_ra: 0.759
+  gaia_ra: 108.4523991249703
+  gaia_rp_mag: 13.089
+  h_mag: 12.281
+  i_mag: 12.937
+  i_mag_calc: true
+  j_mag: 12.543
+  k_mag: 12.245
+  notes: ''
+  r_mag: 13.61
+  r_mag_calc: false
+  ra: '07:13:48.5748'
+  simbad_id: HATS-42
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-42" target="_blank">HATS-42</a>
+  twomass_id: 07134857-3326143
+  v_mag: 13.62
+  v_mag_calc: false
 HATS-43:
   dec: '-30:58:15.011'
   gaia_bp_mag: 13.871
@@ -2462,6 +3003,56 @@ HATS-46:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-46" target="_blank">HATS-46</a>
   twomass_id: 00264858-5618580
   v_mag: 13.63
+  v_mag_calc: false
+HATS-47:
+  dec: '-49:39:53.868'
+  gaia_bp_mag: 15.086
+  gaia_dec: -49.664942444665556
+  gaia_g_mag: 14.4
+  gaia_id: '6658373007402886400'
+  gaia_parallax: 3.298
+  gaia_pm_dec: 4.878
+  gaia_pm_ra: 3.827
+  gaia_ra: 287.4844020873557
+  gaia_rp_mag: 13.611
+  h_mag: 12.026
+  i_mag: 13.296
+  i_mag_calc: true
+  j_mag: 12.653
+  k_mag: 11.926
+  notes: ''
+  r_mag: 14.13
+  r_mag_calc: true
+  ra: '19:09:56.2503'
+  simbad_id: HATS-47
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-47" target="_blank">HATS-47</a>
+  twomass_id: 19095625-4939538
+  v_mag: 14.602
+  v_mag_calc: false
+HATS-48A:
+  dec: '-59:34:45.757'
+  gaia_bp_mag: 14.58
+  gaia_dec: -59.579350495182354
+  gaia_g_mag: 13.895
+  gaia_id: '6638412919991750912'
+  gaia_parallax: 3.765
+  gaia_pm_dec: 6.146
+  gaia_pm_ra: 3.125
+  gaia_ra: 288.67200476384136
+  gaia_rp_mag: 13.113
+  h_mag: 11.591
+  i_mag: 13.052
+  i_mag_calc: true
+  j_mag: 12.16
+  k_mag: 11.427
+  notes: ''
+  r_mag: 14.05
+  r_mag_calc: false
+  ra: '19:14:41.2747'
+  simbad_id: HATS-48
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-48" target="_blank">HATS-48</a>
+  twomass_id: 19144126-5934458
+  v_mag: 14.35
   v_mag_calc: false
 HATS-5:
   dec: '-21:28:55.062'
@@ -2538,6 +3129,107 @@ HATS-52:
   twomass_id: 09202105-3116095
   v_mag: 13.669
   v_mag_calc: false
+HATS-53:
+  dec: '-33:51:36.203'
+  gaia_bp_mag: 14.05
+  gaia_dec: -33.86007636950431
+  gaia_g_mag: 13.656
+  gaia_id: '3465357945752055040'
+  gaia_parallax: 1.679
+  gaia_pm_dec: -4.597
+  gaia_pm_ra: -35.023
+  gaia_ra: 176.6283230476915
+  gaia_rp_mag: 13.108
+  h_mag: 12.088
+  i_mag: 13.13
+  i_mag_calc: true
+  j_mag: 12.458
+  k_mag: 12.046
+  notes: ''
+  r_mag: 13.418
+  r_mag_calc: true
+  ra: '11:46:30.8411'
+  simbad_id: HATS-53
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-53" target="_blank">HATS-53</a>
+  twomass_id: 11463084-3351361
+  v_mag: 13.944
+  v_mag_calc: false
+HATS-56:
+  dec: '-45:47:57.995'
+  gaia_bp_mag: 11.764
+  gaia_dec: -45.799455883187726
+  gaia_g_mag: 11.488
+  gaia_id: '6144125887172751232'
+  gaia_parallax: 1.744
+  gaia_pm_dec: -2.95
+  gaia_pm_ra: -8.604
+  gaia_ra: 180.16507197166786
+  gaia_rp_mag: 11.052
+  h_mag: 10.325
+  i_mag: 10.866
+  i_mag_calc: true
+  j_mag: 10.514
+  k_mag: 10.251
+  notes: ''
+  r_mag: 11.287
+  r_mag_calc: true
+  ra: '12:00:39.6300'
+  simbad_id: HATS-56
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-56" target="_blank">HATS-56</a>
+  twomass_id: 12003962-4547579
+  v_mag: 11.48
+  v_mag_calc: false
+HATS-57:
+  dec: '-19:03:24.326'
+  gaia_bp_mag: 12.562
+  gaia_dec: -19.05681819847645
+  gaia_g_mag: 12.182
+  gaia_id: '5094406193214399616'
+  gaia_parallax: 3.55
+  gaia_pm_dec: -14.115
+  gaia_pm_ra: -12.664
+  gaia_ra: 60.94827785896221
+  gaia_rp_mag: 11.654
+  h_mag: 10.738
+  i_mag: 10.806
+  i_mag_calc: true
+  j_mag: 11.071
+  k_mag: 10.707
+  notes: ''
+  r_mag: 11.948
+  r_mag_calc: true
+  ra: '04:03:47.6005'
+  simbad_id: HATS-57
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-57" target="_blank">HATS-57</a>
+  twomass_id: 04034760-1903242
+  v_mag: 11.59
+  v_mag_calc: false
+HATS-58A:
+  dec: '-48:58:42.227'
+  gaia_bp_mag: 11.725
+  gaia_dec: -48.97841053913089
+  gaia_g_mag: 11.768
+  gaia_id: '6128363666439822208'
+  gaia_parallax: 2.348
+  gaia_pm_dec: -3.232
+  gaia_pm_ra: -12.7
+  gaia_ra: 186.78730360930243
+  gaia_rp_mag: 11.029
+  h_mag: 10.358
+  i_mag: 10.971
+  i_mag_calc: true
+  j_mag: 10.584
+  k_mag: 10.289
+  notes: Companion not resolved in 2MASS
+  r_mag: 11.57
+  r_mag_calc: true
+  ra: '12:27:08.9728'
+  simbad_id: HATS-58A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-58A"
+    target="_blank">HATS-58A</a>
+  twomass_id: 12270898-4858423
+  v_mag: 11.572
+  v_mag_calc: false
 HATS-6:
   dec: '-19:01:53.970'
   gaia_bp_mag: 15.384
@@ -2612,6 +3304,31 @@ HATS-61:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-61" target="_blank">HATS-61</a>
   twomass_id: 04063786-2520589
   v_mag: 13.233
+  v_mag_calc: false
+HATS-62:
+  dec: '-24:18:12.496'
+  gaia_bp_mag: 14.261
+  gaia_dec: -24.303506023333313
+  gaia_g_mag: 13.832
+  gaia_id: '6806639397331208320'
+  gaia_parallax: 1.884
+  gaia_pm_dec: -8.074
+  gaia_pm_ra: 0.489
+  gaia_ra: 312.44930787306913
+  gaia_rp_mag: 13.256
+  h_mag: 12.196
+  i_mag: 13.301
+  i_mag_calc: true
+  j_mag: 12.573
+  k_mag: 12.109
+  notes: ''
+  r_mag: 13.586
+  r_mag_calc: true
+  ra: '20:49:47.8333'
+  simbad_id: HATS-62
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-62" target="_blank">HATS-62</a>
+  twomass_id: 20494783-2418124
+  v_mag: 14.171
   v_mag_calc: false
 HATS-64:
   dec: '-29:48:01.574'
@@ -2739,6 +3456,82 @@ HATS-7:
   twomass_id: 13552567-2112276
   v_mag: 13.34
   v_mag_calc: false
+HATS-71:
+  dec: '-61:45:21.659'
+  gaia_bp_mag: 16.743
+  gaia_dec: -61.75613329235439
+  gaia_g_mag: 15.351
+  gaia_id: '4710594412266148352'
+  gaia_parallax: 7.103
+  gaia_pm_dec: -27.095
+  gaia_pm_ra: 78.858
+  gaia_ra: 15.551889278751307
+  gaia_rp_mag: 14.187
+  h_mag: 11.972
+  i_mag: 14.01
+  i_mag_calc: false
+  j_mag: 12.605
+  k_mag: 11.727
+  notes: ''
+  r_mag: 15.18
+  r_mag_calc: false
+  ra: '01:02:12.2812'
+  simbad_id: DENIS J010212.2-614521
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=DENIS+J010212.2-614521"
+    target="_blank">DENIS J010212.2-614521</a>
+  twomass_id: 01021226-6145216
+  v_mag: 16.437
+  v_mag_calc: false
+HATS-72:
+  dec: '-16:59:59.788'
+  gaia_bp_mag: 12.708
+  gaia_dec: -17.00030461663022
+  gaia_g_mag: 12.073
+  gaia_id: '2594869603582993792'
+  gaia_parallax: 7.809
+  gaia_pm_dec: -84.412
+  gaia_pm_ra: -108.621
+  gaia_ra: 339.02584007941084
+  gaia_rp_mag: 11.334
+  h_mag: 9.907
+  i_mag: 11.26
+  i_mag_calc: true
+  j_mag: 10.424
+  k_mag: 9.764
+  notes: ''
+  r_mag: 12.147
+  r_mag_calc: false
+  ra: '22:36:06.3189'
+  simbad_id: HATS-72
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-72" target="_blank">HATS-72</a>
+  twomass_id: 22360631-1659597
+  v_mag: 12.469
+  v_mag_calc: false
+HATS-8:
+  dec: '-25:44:54.009'
+  gaia_bp_mag: 14.755
+  gaia_dec: -25.74836553495487
+  gaia_g_mag: 14.337
+  gaia_id: '6767008363999712512'
+  gaia_parallax: 1.231
+  gaia_pm_dec: -6.886
+  gaia_pm_ra: -6.469
+  gaia_ra: 294.9416886941043
+  gaia_rp_mag: 13.762
+  h_mag: 12.779
+  i_mag: 13.171
+  i_mag_calc: true
+  j_mag: 13.098
+  k_mag: 12.661
+  notes: ''
+  r_mag: 14.092
+  r_mag_calc: true
+  ra: '19:39:46.0127'
+  simbad_id: HATS-8
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HATS-8" target="_blank">HATS-8</a>
+  twomass_id: 19394601-2544539
+  v_mag: 14.03
+  v_mag_calc: false
 HATS-9:
   dec: '-20:09:58.849'
   gaia_bp_mag: 13.519
@@ -2790,6 +3583,84 @@ HD106315:
   twomass_id: 12135339-0023365
   v_mag: 8.951
   v_mag_calc: false
+HD108236:
+  dec: '-51:21:46.214'
+  gaia_bp_mag: 9.436
+  gaia_dec: -51.363051948371485
+  gaia_g_mag: 9.087
+  gaia_id: '6125644402384918784'
+  gaia_parallax: 15.452
+  gaia_pm_dec: -49.865
+  gaia_pm_ra: -70.434
+  gaia_ra: 186.57406267108885
+  gaia_rp_mag: 8.606
+  h_mag: 7.703
+  i_mag: 8.524
+  i_mag_calc: true
+  j_mag: 8.046
+  k_mag: 7.637
+  notes: ''
+  r_mag: 8.865
+  r_mag_calc: true
+  ra: '12:26:17.8916'
+  simbad_id: HD 108236
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+108236"
+    target="_blank">HD 108236</a>
+  twomass_id: 12261789-5121462
+  v_mag: 9.24
+  v_mag_calc: false
+HD110082:
+  dec: '-88:07:15.718'
+  gaia_bp_mag: 9.4
+  gaia_dec: -88.12111069928518
+  gaia_g_mag: 9.115
+  gaia_id: '5765748511163751936'
+  gaia_parallax: 9.486
+  gaia_pm_dec: -18.086
+  gaia_pm_ra: -18.776
+  gaia_ra: 192.58928548343454
+  gaia_rp_mag: 8.721
+  h_mag: 8.014
+  i_mag: 8.644
+  i_mag_calc: true
+  j_mag: 8.272
+  k_mag: 8.002
+  notes: ''
+  r_mag: 8.92
+  r_mag_calc: true
+  ra: '12:50:22.0202'
+  simbad_id: HD 110082
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+110082"
+    target="_blank">HD 110082</a>
+  twomass_id: 12502212-8807158
+  v_mag: 9.23
+  v_mag_calc: false
+HD136352:
+  dec: '-48:19:03.462'
+  gaia_bp_mag: 5.833
+  gaia_dec: -48.31881738215658
+  gaia_g_mag: 5.462
+  gaia_id: '5902750168276592256'
+  gaia_parallax: 68.082
+  gaia_pm_dec: -276.024
+  gaia_pm_ra: -1624.047
+  gaia_ra: 230.44011474118648
+  gaia_rp_mag: 5.003
+  h_mag: 3.898
+  i_mag: 4.934
+  i_mag_calc: true
+  j_mag: 4.308
+  k_mag: 4.159
+  notes: ''
+  r_mag: 5.24
+  r_mag_calc: true
+  ra: '15:21:48.1511'
+  simbad_id: '* nu.02 Lup'
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=*+nu.02+Lup"
+    target="_blank">* nu.02 Lup</a>
+  twomass_id: 15214824-4819032
+  v_mag: 5.65
+  v_mag_calc: false
 HD1397:
   dec: '-66:21:32.064'
   gaia_bp_mag: 8.008
@@ -2810,9 +3681,9 @@ HD1397:
   r_mag: 7.355
   r_mag_calc: true
   ra: '00:17:47.1522'
-  simbad_id: HD   1397
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+++1397"
-    target="_blank">HD   1397</a>
+  simbad_id: HD 1397
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+1397" target="_blank">HD
+    1397</a>
   twomass_id: 00174714-6621323
   v_mag: 7.78
   v_mag_calc: false
@@ -2862,11 +3733,37 @@ HD17156:
   r_mag: 7.824
   r_mag_calc: true
   ra: '02:49:44.4866'
-  simbad_id: HD  17156
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++17156"
-    target="_blank">HD  17156</a>
+  simbad_id: HD 17156
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+17156"
+    target="_blank">HD 17156</a>
   twomass_id: 02494447+7145115
   v_mag: 8.16
+  v_mag_calc: false
+HD183579:
+  dec: '-54:31:56.541'
+  gaia_bp_mag: 8.86
+  gaia_dec: -54.53272835766933
+  gaia_g_mag: 8.515
+  gaia_id: '6641996571978861440'
+  gaia_parallax: 17.434
+  gaia_pm_dec: -82.632
+  gaia_pm_ra: 108.439
+  gaia_ra: 293.28661472370754
+  gaia_rp_mag: 8.047
+  h_mag: 7.231
+  i_mag: 7.979
+  i_mag_calc: true
+  j_mag: 7.518
+  k_mag: 7.15
+  notes: ''
+  r_mag: 8.296
+  r_mag_calc: true
+  ra: '19:33:08.5944'
+  simbad_id: HD 183579
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+183579"
+    target="_blank">HD 183579</a>
+  twomass_id: 19330857-5431564
+  v_mag: 8.68
   v_mag_calc: false
 HD189733:
   dec: '+22:42:39.071'
@@ -2893,6 +3790,32 @@ HD189733:
     target="_blank">HD 189733</a>
   twomass_id: 20004370+2242391
   v_mag: 7.648
+  v_mag_calc: false
+HD191939:
+  dec: '+66:51:02.075'
+  gaia_bp_mag: 9.173
+  gaia_dec: 66.85030138278934
+  gaia_g_mag: 8.775
+  gaia_id: '2248126315275354496'
+  gaia_parallax: 18.625
+  gaia_pm_dec: -63.909
+  gaia_pm_ra: 150.256
+  gaia_ra: 302.0256246617754
+  gaia_rp_mag: 8.248
+  h_mag: 7.215
+  i_mag: 8.171
+  i_mag_calc: true
+  j_mag: 7.597
+  k_mag: 7.18
+  notes: ''
+  r_mag: 8.5
+  r_mag_calc: false
+  ra: '20:08:05.7549'
+  simbad_id: HD 191939
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+191939"
+    target="_blank">HD 191939</a>
+  twomass_id: 20080574+6651019
+  v_mag: 8.97
   v_mag_calc: false
 HD202772A:
   dec: '-26:36:58.051'
@@ -2998,6 +3921,32 @@ HD219666:
   twomass_id: 23181364-5654139
   v_mag: 9.81
   v_mag_calc: false
+HD221416:
+  dec: '-21:48:05.116'
+  gaia_bp_mag: 8.387
+  gaia_dec: -21.801200720715094
+  gaia_g_mag: 7.908
+  gaia_id: '2388463203438164096'
+  gaia_parallax: 10.438
+  gaia_pm_dec: 51.24
+  gaia_pm_ra: -96.775
+  gaia_ra: 353.03318625549963
+  gaia_rp_mag: 7.315
+  h_mag: 6.149
+  i_mag: 7.22
+  i_mag_calc: true
+  j_mag: 6.568
+  k_mag: 6.043
+  notes: ''
+  r_mag: 7.655
+  r_mag_calc: true
+  ra: '23:32:08.0724'
+  simbad_id: HD 221416
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+221416"
+    target="_blank">HD 221416</a>
+  twomass_id: 23320808-2148050
+  v_mag: 8.15
+  v_mag_calc: false
 HD23472:
   dec: '-62:46:01.479'
   gaia_bp_mag: 9.959
@@ -3018,11 +3967,37 @@ HD23472:
   r_mag: 9.119
   r_mag_calc: true
   ra: '03:41:50.3991'
-  simbad_id: HD  23472
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++23472"
-    target="_blank">HD  23472</a>
+  simbad_id: HD 23472
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+23472"
+    target="_blank">HD 23472</a>
   twomass_id: 03415036-6246014
   v_mag: 9.72
+  v_mag_calc: false
+HD2685:
+  dec: '-76:18:14.623'
+  gaia_bp_mag: 9.752
+  gaia_dec: -76.30403204401085
+  gaia_g_mag: 9.52
+  gaia_id: '4684205720883329920'
+  gaia_parallax: 5.051
+  gaia_pm_dec: 6.961
+  gaia_pm_ra: -2.97
+  gaia_ra: 7.328915635900614
+  gaia_rp_mag: 9.18
+  h_mag: 8.651
+  i_mag: 9.094
+  i_mag_calc: true
+  j_mag: 8.825
+  k_mag: 8.595
+  notes: ''
+  r_mag: 9.348
+  r_mag_calc: true
+  ra: '00:29:18.9527'
+  simbad_id: HD 2685
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+2685" target="_blank">HD
+    2685</a>
+  twomass_id: 00291894-7618146
+  v_mag: 9.59
   v_mag_calc: false
 HD3167:
   dec: '+04:22:53.283'
@@ -3044,11 +4019,115 @@ HD3167:
   r_mag: 8.4
   r_mag_calc: false
   ra: '00:34:57.5243'
-  simbad_id: HD   3167
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+++3167"
-    target="_blank">HD   3167</a>
+  simbad_id: HD 3167
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+3167" target="_blank">HD
+    3167</a>
   twomass_id: 00345752+0422531
   v_mag: 8.94
+  v_mag_calc: false
+HD332231:
+  dec: '+33:44:40.024'
+  gaia_bp_mag: 8.715
+  gaia_dec: 33.744388219777605
+  gaia_g_mag: 8.418
+  gaia_id: '2056007995732413312'
+  gaia_parallax: 12.368
+  gaia_pm_dec: -14.651
+  gaia_pm_ra: -36.869
+  gaia_ra: 306.7411340383131
+  gaia_rp_mag: 8.0
+  h_mag: 7.3
+  i_mag: 7.943
+  i_mag_calc: true
+  j_mag: 7.509
+  k_mag: 7.242
+  notes: ''
+  r_mag: 8.216
+  r_mag_calc: true
+  ra: '20:26:57.9179'
+  simbad_id: HD 332231
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+332231"
+    target="_blank">HD 332231</a>
+  twomass_id: 20265791+3344401
+  v_mag: 8.56
+  v_mag_calc: false
+HD5278:
+  dec: '-83:44:38.033'
+  gaia_bp_mag: 8.096
+  gaia_dec: -83.74376709748616
+  gaia_g_mag: 7.804
+  gaia_id: '4617759514501503616'
+  gaia_parallax: 17.337
+  gaia_pm_dec: 30.476
+  gaia_pm_ra: 139.424
+  gaia_ra: 12.546778484443342
+  gaia_rp_mag: 7.401
+  h_mag: 6.673
+  i_mag: 7.35
+  i_mag_calc: true
+  j_mag: 6.949
+  k_mag: 6.605
+  notes: ''
+  r_mag: 7.606
+  r_mag_calc: true
+  ra: '00:50:09.9047'
+  simbad_id: HD 5278
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+5278" target="_blank">HD
+    5278</a>
+  twomass_id: 00500988-8344382
+  v_mag: 7.95
+  v_mag_calc: false
+HD63433:
+  dec: '+27:21:47.458'
+  gaia_bp_mag: 7.092
+  gaia_dec: 27.363134229785587
+  gaia_g_mag: 6.718
+  gaia_id: '875071278432954240'
+  gaia_parallax: 44.607
+  gaia_pm_dec: -11.314
+  gaia_pm_ra: -10.027
+  gaia_ra: 117.47936985963258
+  gaia_rp_mag: 6.232
+  h_mag: 5.359
+  i_mag: 6.168
+  i_mag_calc: true
+  j_mag: 5.624
+  k_mag: 5.258
+  notes: ''
+  r_mag: 6.491
+  r_mag_calc: true
+  ra: '07:49:55.0604'
+  simbad_id: HD 63433
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+63433"
+    target="_blank">HD 63433</a>
+  twomass_id: 07495506+2721473
+  v_mag: 6.91
+  v_mag_calc: false
+HD63935:
+  dec: '+09:23:09.793'
+  gaia_bp_mag: 8.78
+  gaia_dec: 9.385241214356435
+  gaia_g_mag: 8.394
+  gaia_id: '3145754895088191744'
+  gaia_parallax: 20.39
+  gaia_pm_dec: -188.706
+  gaia_pm_ra: -78.797
+  gaia_ra: 117.92464170182838
+  gaia_rp_mag: 7.884
+  h_mag: 6.964
+  i_mag: 7.806
+  i_mag_calc: true
+  j_mag: 7.304
+  k_mag: 6.881
+  notes: ''
+  r_mag: 8.1
+  r_mag_calc: false
+  ra: '07:51:41.9965'
+  simbad_id: HD 63935
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+63935"
+    target="_blank">HD 63935</a>
+  twomass_id: 07514199+0923097
+  v_mag: 8.58
   v_mag_calc: false
 HD80606:
   dec: '+50:36:13.434'
@@ -3070,11 +4149,37 @@ HD80606:
   r_mag: 8.586
   r_mag_calc: true
   ra: '09:22:37.5769'
-  simbad_id: HD  80606
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++80606"
-    target="_blank">HD  80606</a>
+  simbad_id: HD 80606
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+80606"
+    target="_blank">HD 80606</a>
   twomass_id: 09223756+5036134
   v_mag: 9.0
+  v_mag_calc: false
+HD86226:
+  dec: '-24:05:57.795'
+  gaia_bp_mag: 8.108
+  gaia_dec: -24.099185935204023
+  gaia_g_mag: 7.771
+  gaia_id: '5660492297395345408'
+  gaia_parallax: 21.861
+  gaia_pm_dec: 46.867
+  gaia_pm_ra: -177.111
+  gaia_ra: 149.1235153560955
+  gaia_rp_mag: 7.333
+  h_mag: 6.577
+  i_mag: 7.262
+  i_mag_calc: true
+  j_mag: 6.839
+  k_mag: 6.463
+  notes: ''
+  r_mag: 7.71
+  r_mag_calc: false
+  ra: '09:56:29.8441'
+  simbad_id: HD 86226
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+86226"
+    target="_blank">HD 86226</a>
+  twomass_id: 09562984-2405576
+  v_mag: 7.93
   v_mag_calc: false
 HD89345:
   dec: '+10:07:44.504'
@@ -3096,9 +4201,9 @@ HD89345:
   r_mag: 8.984
   r_mag_calc: true
   ra: '10:18:41.0578'
-  simbad_id: HD  89345
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++89345"
-    target="_blank">HD  89345</a>
+  simbad_id: HD 89345
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+89345"
+    target="_blank">HD 89345</a>
   twomass_id: 10184106+1007445
   v_mag: 9.38
   v_mag_calc: false
@@ -3122,9 +4227,9 @@ HD97658:
   r_mag: 7.259
   r_mag_calc: false
   ra: '11:14:33.1613'
-  simbad_id: HD  97658
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++97658"
-    target="_blank">HD  97658</a>
+  simbad_id: HD 97658
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+97658"
+    target="_blank">HD 97658</a>
   twomass_id: 11143316+2542374
   v_mag: 7.714
   v_mag_calc: false
@@ -3148,11 +4253,89 @@ HIP41378:
   r_mag: 8.62
   r_mag_calc: true
   ra: '08:26:27.8492'
-  simbad_id: BD+10  1799
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%10++1799"
-    target="_blank">BD+10  1799</a>
+  simbad_id: BD+10 1799
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B10+1799"
+    target="_blank">BD+10 1799</a>
   twomass_id: 08262784+1004493
   v_mag: 8.92
+  v_mag_calc: false
+HIP65A:
+  dec: '-54:49:49.853'
+  gaia_bp_mag: 11.235
+  gaia_dec: -54.83082284544631
+  gaia_g_mag: 10.59
+  gaia_id: '4923860051276772608'
+  gaia_parallax: 16.156
+  gaia_pm_dec: -71.518
+  gaia_pm_ra: -202.815
+  gaia_ra: 0.1856062907588
+  gaia_rp_mag: 9.849
+  h_mag: 8.4
+  i_mag: 9.91
+  i_mag_calc: true
+  j_mag: 8.922
+  k_mag: 8.29
+  notes: ''
+  r_mag: 10.32
+  r_mag_calc: true
+  ra: '00:00:44.9093'
+  simbad_id: CD-55 9423
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-55+9423"
+    target="_blank">CD-55 9423</a>
+  twomass_id: 00004490-5449498
+  v_mag: 11.13
+  v_mag_calc: false
+HIP67522:
+  dec: '-40:50:08.878'
+  gaia_bp_mag: 9.986
+  gaia_dec: -40.83589606749982
+  gaia_g_mag: 9.633
+  gaia_id: '6113920619134019456'
+  gaia_parallax: 7.829
+  gaia_pm_dec: -22.425
+  gaia_pm_ra: -28.843
+  gaia_ra: 207.5260009746233
+  gaia_rp_mag: 9.136
+  h_mag: 8.287
+  i_mag: 9.067
+  i_mag_calc: true
+  j_mag: 8.587
+  k_mag: 8.164
+  notes: ''
+  r_mag: 9.408
+  r_mag_calc: true
+  ra: '13:50:06.2796'
+  simbad_id: HD 120411
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+120411"
+    target="_blank">HD 120411</a>
+  twomass_id: 13500627-4050090
+  v_mag: 9.8
+  v_mag_calc: false
+HR858:
+  dec: '-30:48:52.259'
+  gaia_bp_mag: 6.523
+  gaia_dec: -30.81406093365788
+  gaia_g_mag: 6.248
+  gaia_id: '5064574720469473792'
+  gaia_parallax: 31.257
+  gaia_pm_dec: 105.788
+  gaia_pm_ra: 123.229
+  gaia_ra: 42.98497787139148
+  gaia_rp_mag: 5.866
+  h_mag: 5.225
+  i_mag: 5.815
+  i_mag_calc: true
+  j_mag: 5.473
+  k_mag: 5.149
+  notes: ''
+  r_mag: 6.057
+  r_mag_calc: true
+  ra: '02:51:56.2464'
+  simbad_id: HD 17926
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+17926"
+    target="_blank">HD 17926</a>
+  twomass_id: 02515623-3048524
+  v_mag: 6.382
   v_mag_calc: false
 K2-100:
   dec: '+20:06:21.828'
@@ -3254,6 +4437,32 @@ K2-115:
   twomass_id: 08261282+1216550
   v_mag: 13.362
   v_mag_calc: false
+K2-116:
+  dec: '-11:34:43.285'
+  gaia_bp_mag: 11.039
+  gaia_dec: -11.579318090311144
+  gaia_g_mag: 10.328
+  gaia_id: '2602406721431348096'
+  gaia_parallax: 20.22
+  gaia_pm_dec: -145.762
+  gaia_pm_ra: 168.973
+  gaia_ra: 336.152336266611
+  gaia_rp_mag: 9.549
+  h_mag: 8.02
+  i_mag: 9.438
+  i_mag_calc: true
+  j_mag: 8.597
+  k_mag: 7.875
+  notes: ''
+  r_mag: 10.48
+  r_mag_calc: false
+  ra: '22:24:36.3824'
+  simbad_id: BD-12 6259
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-12+6259"
+    target="_blank">BD-12 6259</a>
+  twomass_id: 22243636-1134428
+  v_mag: 10.758
+  v_mag_calc: false
 K2-121:
   dec: '+17:34:45.804'
   gaia_bp_mag: 13.552
@@ -3299,9 +4508,9 @@ K2-129:
   r_mag: 13.387
   r_mag_calc: false
   ra: '19:16:35.5928'
-  simbad_id: LP  868-19
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP++868-19"
-    target="_blank">LP  868-19</a>
+  simbad_id: LP 868-19
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+868-19"
+    target="_blank">LP 868-19</a>
   twomass_id: 19163558-2538417
   v_mag: 13.63
   v_mag_calc: false
@@ -3354,6 +4563,31 @@ K2-136:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-136" target="_blank">K2-136</a>
   twomass_id: 04293897+2252579
   v_mag: 11.2
+  v_mag_calc: false
+K2-138:
+  dec: '-10:50:58.897'
+  gaia_bp_mag: 12.463
+  gaia_dec: -10.849739110044945
+  gaia_g_mag: 12.025
+  gaia_id: '2413596935442139520'
+  gaia_parallax: 4.908
+  gaia_pm_dec: -10.522
+  gaia_pm_ra: -1.018
+  gaia_ra: 348.9490310994506
+  gaia_rp_mag: 11.452
+  h_mag: 10.384
+  i_mag: 11.4
+  i_mag_calc: false
+  j_mag: 10.756
+  k_mag: 10.305
+  notes: ''
+  r_mag: 12.12
+  r_mag_calc: false
+  ra: '23:15:47.7685'
+  simbad_id: K2-138
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-138" target="_blank">K2-138</a>
+  twomass_id: 23154776-1050590
+  v_mag: 12.21
   v_mag_calc: false
 K2-139:
   dec: '-17:54:38.410'
@@ -3451,9 +4685,9 @@ K2-155:
   r_mag: 12.46
   r_mag_calc: false
   ra: '04:21:52.4847'
-  simbad_id: LP  415-17
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP++415-17"
-    target="_blank">LP  415-17</a>
+  simbad_id: LP 415-17
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+415-17"
+    target="_blank">LP 415-17</a>
   twomass_id: 04215245+2121131
   v_mag: 12.806
   v_mag_calc: false
@@ -3603,9 +4837,9 @@ K2-233:
   r_mag: 10.156
   r_mag_calc: true
   ra: '15:21:55.1981'
-  simbad_id: BD-19  4086
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-19++4086"
-    target="_blank">BD-19  4086</a>
+  simbad_id: BD-19 4086
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-19+4086"
+    target="_blank">BD-19 4086</a>
   twomass_id: 15215519-2013539
   v_mag: 10.88
   v_mag_calc: false
@@ -3658,6 +4892,31 @@ K2-238:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-238" target="_blank">K2-238</a>
   twomass_id: 23104905-0751270
   v_mag: 13.75
+  v_mag_calc: false
+K2-239:
+  dec: '+04:26:28.888'
+  gaia_bp_mag: 14.787
+  gaia_dec: 4.441375088392304
+  gaia_g_mag: 13.437
+  gaia_id: '3857872051994269824'
+  gaia_parallax: 32.141
+  gaia_pm_dec: 3.976
+  gaia_pm_ra: -42.265
+  gaia_ra: 160.59412654306945
+  gaia_rp_mag: 12.292
+  h_mag: 10.192
+  i_mag: 16.068
+  i_mag_calc: false
+  j_mag: 10.781
+  k_mag: 9.971
+  notes: ''
+  r_mag: 14.14
+  r_mag_calc: false
+  ra: '10:42:22.6341'
+  simbad_id: K2-239
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-239" target="_blank">K2-239</a>
+  twomass_id: 10422263+0426287
+  v_mag: 14.55
   v_mag_calc: false
 K2-24:
   dec: '-24:59:25.258'
@@ -3755,9 +5014,9 @@ K2-261:
   r_mag: 10.52
   r_mag_calc: false
   ra: '10:52:07.7793'
-  simbad_id: BD+01  2494
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%01++2494"
-    target="_blank">BD+01  2494</a>
+  simbad_id: BD+01 2494
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B01+2494"
+    target="_blank">BD+01 2494</a>
   twomass_id: 10520778+0029359
   v_mag: 10.64
   v_mag_calc: false
@@ -3786,6 +5045,32 @@ K2-266:
   twomass_id: 10314450+0056152
   v_mag: 11.808
   v_mag_calc: false
+K2-28:
+  dec: '-07:57:19.853'
+  gaia_bp_mag: 16.321
+  gaia_dec: -7.956352523980566
+  gaia_g_mag: 14.68
+  gaia_id: '2622296783699476864'
+  gaia_parallax: 15.846
+  gaia_pm_dec: -194.551
+  gaia_pm_ra: -254.655
+  gaia_ra: 335.62331451150186
+  gaia_rp_mag: 13.433
+  h_mag: 11.028
+  i_mag: 13.909
+  i_mag_calc: false
+  j_mag: 11.695
+  k_mag: 10.746
+  notes: ''
+  r_mag: 15.449
+  r_mag_calc: false
+  ra: '22:22:29.8611'
+  simbad_id: LP 700-6
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+700-6"
+    target="_blank">LP 700-6</a>
+  twomass_id: 22222988-0757195
+  v_mag: 15.81
+  v_mag_calc: false
 K2-280:
   dec: '-22:14:51.551'
   gaia_bp_mag: 12.766
@@ -3810,6 +5095,31 @@ K2-280:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-280" target="_blank">K2-280</a>
   twomass_id: 19262288-2214514
   v_mag: 12.54
+  v_mag_calc: false
+K2-284:
+  dec: '+20:15:18.364'
+  gaia_bp_mag: 13.694
+  gaia_dec: 20.25490344135051
+  gaia_g_mag: 12.86
+  gaia_id: '3413793491812093824'
+  gaia_parallax: 9.293
+  gaia_pm_dec: -45.938
+  gaia_pm_ra: 25.0
+  gaia_ra: 79.14079714087474
+  gaia_rp_mag: 11.986
+  h_mag: 10.206
+  i_mag: 11.787
+  i_mag_calc: true
+  j_mag: 10.868
+  k_mag: 10.058
+  notes: ''
+  r_mag: 12.601
+  r_mag_calc: true
+  ra: '05:16:33.7637'
+  simbad_id: K2-284
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-284" target="_blank">K2-284</a>
+  twomass_id: 05163376+2015184
+  v_mag: 13.322
   v_mag_calc: false
 K2-287:
   dec: '-22:21:29.763'
@@ -3886,6 +5196,31 @@ K2-29:
     target="_blank">WASP-152</a>
   twomass_id: 04104086+2424061
   v_mag: 12.56
+  v_mag_calc: false
+K2-295:
+  dec: '+06:49:00.761'
+  gaia_bp_mag: 14.175
+  gaia_dec: 6.816727680969813
+  gaia_g_mag: 13.518
+  gaia_id: '2564784633279953536'
+  gaia_parallax: 4.267
+  gaia_pm_dec: -34.965
+  gaia_pm_ra: 54.983
+  gaia_ra: 19.610141712315876
+  gaia_rp_mag: 12.757
+  h_mag: 11.259
+  i_mag: 13.054
+  i_mag_calc: false
+  j_mag: 11.807
+  k_mag: 11.135
+  notes: ''
+  r_mag: 13.64
+  r_mag_calc: false
+  ra: '01:18:26.3767'
+  simbad_id: K2-295
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-295" target="_blank">K2-295</a>
+  twomass_id: 01182635+0649004
+  v_mag: 13.95
   v_mag_calc: false
 K2-3:
   dec: '-01:27:17.279'
@@ -3988,6 +5323,31 @@ K2-32:
   twomass_id: 16494226-1932340
   v_mag: 12.31
   v_mag_calc: false
+K2-329:
+  dec: '-05:09:50.730'
+  gaia_bp_mag: 12.902
+  gaia_dec: -5.164145135184617
+  gaia_g_mag: 12.446
+  gaia_id: '2632880927441296640'
+  gaia_parallax: 4.259
+  gaia_pm_dec: -12.389
+  gaia_pm_ra: 14.169
+  gaia_ra: 351.1353784908161
+  gaia_rp_mag: 11.854
+  h_mag: 10.798
+  i_mag: 12.34
+  i_mag_calc: false
+  j_mag: 11.174
+  k_mag: 10.668
+  notes: ''
+  r_mag: 12.528
+  r_mag_calc: false
+  ra: '23:24:32.4761'
+  simbad_id: K2-329
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-329" target="_blank">K2-329</a>
+  twomass_id: 23243247-0509507
+  v_mag: 12.697
+  v_mag_calc: false
 K2-33:
   dec: '-19:19:09.407'
   gaia_bp_mag: 15.745
@@ -4037,6 +5397,82 @@ K2-34:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-34" target="_blank">K2-34</a>
   twomass_id: 08301891+2214092
   v_mag: 11.45
+  v_mag_calc: false
+K2-36:
+  dec: '+03:51:59.007'
+  gaia_bp_mag: 12.074
+  gaia_dec: 3.866503816312192
+  gaia_g_mag: 11.527
+  gaia_id: '3811989156889528320'
+  gaia_parallax: 9.083
+  gaia_pm_dec: 26.194
+  gaia_pm_ra: -20.521
+  gaia_ra: 169.44901017660018
+  gaia_rp_mag: 10.864
+  h_mag: 9.549
+  i_mag: 10.674
+  i_mag_calc: true
+  j_mag: 10.034
+  k_mag: 9.454
+  notes: ''
+  r_mag: 11.48
+  r_mag_calc: false
+  ra: '11:17:47.7836'
+  simbad_id: K2-36
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-36" target="_blank">K2-36</a>
+  twomass_id: 11174778+0351590
+  v_mag: 11.73
+  v_mag_calc: false
+K2-39:
+  dec: '-09:01:21.977'
+  gaia_bp_mag: 11.149
+  gaia_dec: -9.02294052012499
+  gaia_g_mag: 10.596
+  gaia_id: '2609222216055014144'
+  gaia_parallax: 3.224
+  gaia_pm_dec: -39.274
+  gaia_pm_ra: -40.948
+  gaia_ra: 338.36820948918137
+  gaia_rp_mag: 9.926
+  h_mag: 8.594
+  i_mag: 10.05
+  i_mag_calc: false
+  j_mag: 9.082
+  k_mag: 8.516
+  notes: ''
+  r_mag: 10.7
+  r_mag_calc: false
+  ra: '22:33:28.4131'
+  simbad_id: BD-09 6003
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-09+6003"
+    target="_blank">BD-09 6003</a>
+  twomass_id: 22332842-0901219
+  v_mag: 10.872
+  v_mag_calc: false
+K2-43:
+  dec: '-03:58:31.556'
+  gaia_bp_mag: 15.885
+  gaia_dec: -3.9754405055467448
+  gaia_g_mag: 14.821
+  gaia_id: '3789847707126025600'
+  gaia_parallax: 5.45
+  gaia_pm_dec: -1.886
+  gaia_pm_ra: -29.087
+  gaia_ra: 169.11702804800282
+  gaia_rp_mag: 13.795
+  h_mag: 11.712
+  i_mag: 13.666
+  i_mag_calc: true
+  j_mag: 12.422
+  k_mag: 11.577
+  notes: ''
+  r_mag: 15.51
+  r_mag_calc: false
+  ra: '11:16:28.1168'
+  simbad_id: K2-43
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=K2-43" target="_blank">K2-43</a>
+  twomass_id: 11162811-0358315
+  v_mag: 15.6
   v_mag_calc: false
 K2-52:
   dec: '-24:58:11.818'
@@ -4108,9 +5544,9 @@ K2-99:
   r_mag: 10.741
   r_mag_calc: true
   ra: '13:55:05.7033'
-  simbad_id: BD-04  3588
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-04++3588"
-    target="_blank">BD-04  3588</a>
+  simbad_id: BD-04 3588
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-04+3588"
+    target="_blank">BD-04 3588</a>
   twomass_id: 13550570-0526330
   v_mag: 11.15
   v_mag_calc: false
@@ -4185,9 +5621,9 @@ KELT-11:
   r_mag: 7.587
   r_mag_calc: true
   ra: '10:46:49.7401'
-  simbad_id: HD  93396
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++93396"
-    target="_blank">HD  93396</a>
+  simbad_id: HD 93396
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+93396"
+    target="_blank">HD 93396</a>
   twomass_id: 10464974-0923563
   v_mag: 8.04
   v_mag_calc: false
@@ -4211,9 +5647,9 @@ KELT-12:
   r_mag: 10.287
   r_mag_calc: true
   ra: '17:50:33.7179'
-  simbad_id: BD+36  2955
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%36++2955"
-    target="_blank">BD+36  2955</a>
+  simbad_id: BD+36 2955
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B36+2955"
+    target="_blank">BD+36 2955</a>
   twomass_id: 17503372+3634128
   v_mag: 10.59
   v_mag_calc: false
@@ -4237,9 +5673,9 @@ KELT-14:
   r_mag: 10.611
   r_mag_calc: true
   ra: '07:13:12.3539'
-  simbad_id: CD-42  3043
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-42++3043"
-    target="_blank">CD-42  3043</a>
+  simbad_id: CD-42 3043
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-42+3043"
+    target="_blank">CD-42 3043</a>
   twomass_id: 07131235-4224350
   v_mag: 11.0
   v_mag_calc: false
@@ -4263,9 +5699,9 @@ KELT-15:
   r_mag: 10.862
   r_mag_calc: true
   ra: '07:49:39.6019'
-  simbad_id: CD-51  2720
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-51++2720"
-    target="_blank">CD-51  2720</a>
+  simbad_id: CD-51 2720
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-51+2720"
+    target="_blank">CD-51 2720</a>
   twomass_id: 07493960-5207136
   v_mag: 11.39
   v_mag_calc: false
@@ -4294,6 +5730,32 @@ KELT-16:
   twomass_id: 20570443+3139397
   v_mag: 11.72
   v_mag_calc: false
+KELT-17:
+  dec: '+13:44:07.144'
+  gaia_bp_mag: 9.358
+  gaia_dec: 13.735309253901148
+  gaia_g_mag: 9.209
+  gaia_id: '651935220461650560'
+  gaia_parallax: 4.387
+  gaia_pm_dec: -2.014
+  gaia_pm_ra: -25.428
+  gaia_ra: 125.61740699489033
+  gaia_rp_mag: 8.989
+  h_mag: 8.697
+  i_mag: 8.948
+  i_mag_calc: false
+  j_mag: 8.745
+  k_mag: 8.646
+  notes: ''
+  r_mag: 9.089
+  r_mag_calc: true
+  ra: '08:22:28.2047'
+  simbad_id: BD+14 1881
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B14+1881"
+    target="_blank">BD+14 1881</a>
+  twomass_id: 08222820+1344071
+  v_mag: 9.23
+  v_mag_calc: false
 KELT-18:
   dec: '+59:26:39.288'
   gaia_bp_mag: 10.317
@@ -4314,11 +5776,141 @@ KELT-18:
   r_mag: 9.941
   r_mag_calc: true
   ra: '14:26:05.7574'
-  simbad_id: BD+60  1538
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%60++1538"
-    target="_blank">BD+60  1538</a>
+  simbad_id: BD+60 1538
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B60+1538"
+    target="_blank">BD+60 1538</a>
   twomass_id: 14260576+5926393
   v_mag: 10.16
+  v_mag_calc: false
+KELT-19A:
+  dec: '+07:36:56.814'
+  gaia_bp_mag: 10.004
+  gaia_dec: 7.615775872772644
+  gaia_g_mag: 9.863
+  gaia_id: '3142847477107193344'
+  gaia_parallax: 3.302
+  gaia_pm_dec: -1.371
+  gaia_pm_ra: -2.85
+  gaia_ra: 111.50952930498367
+  gaia_rp_mag: 9.599
+  h_mag: 9.237
+  i_mag: 9.503
+  i_mag_calc: true
+  j_mag: 9.343
+  k_mag: 9.196
+  notes: ''
+  r_mag: 9.733
+  r_mag_calc: true
+  ra: '07:26:02.2900'
+  simbad_id: BD+07 1721
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B07+1721"
+    target="_blank">BD+07 1721</a>
+  twomass_id: 07260228+0736569
+  v_mag: 9.86
+  v_mag_calc: false
+KELT-20:
+  dec: '+31:13:09.215'
+  gaia_bp_mag: 7.625
+  gaia_dec: 31.21920007309373
+  gaia_g_mag: 7.575
+  gaia_id: '2033123654092592384'
+  gaia_parallax: 7.301
+  gaia_pm_dec: -6.157
+  gaia_pm_ra: 3.096
+  gaia_ra: 294.6614126147449
+  gaia_rp_mag: 7.534
+  h_mag: 7.446
+  i_mag: 7.476
+  i_mag_calc: true
+  j_mag: 7.424
+  k_mag: 7.415
+  notes: ''
+  r_mag: 7.544
+  r_mag_calc: true
+  ra: '19:38:38.7352'
+  simbad_id: HD 185603
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+185603"
+    target="_blank">HD 185603</a>
+  twomass_id: 19383872+3113091
+  v_mag: 7.58
+  v_mag_calc: false
+KELT-21:
+  dec: '+32:34:51.762'
+  gaia_bp_mag: 10.642
+  gaia_dec: 32.581044645186616
+  gaia_g_mag: 10.541
+  gaia_id: '2054523105274216704'
+  gaia_parallax: 2.095
+  gaia_pm_dec: -0.113
+  gaia_pm_ra: 2.239
+  gaia_ra: 304.8000321700606
+  gaia_rp_mag: 10.381
+  h_mag: 10.121
+  i_mag: 10.24
+  i_mag_calc: true
+  j_mag: 10.149
+  k_mag: 10.09
+  notes: ''
+  r_mag: 10.453
+  r_mag_calc: true
+  ra: '20:19:12.0049'
+  simbad_id: HD 332124
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+332124"
+    target="_blank">HD 332124</a>
+  twomass_id: 20191200+3234517
+  v_mag: 10.48
+  v_mag_calc: false
+KELT-23A:
+  dec: '+66:21:31.544'
+  gaia_bp_mag: 10.512
+  gaia_dec: 66.3587096721382
+  gaia_g_mag: 10.182
+  gaia_id: '1644692064543192704'
+  gaia_parallax: 7.891
+  gaia_pm_dec: -12.217
+  gaia_pm_ra: 0.434
+  gaia_ra: 232.14664059529727
+  gaia_rp_mag: 9.722
+  h_mag: 8.951
+  i_mag: 9.629
+  i_mag_calc: true
+  j_mag: 9.208
+  k_mag: 8.904
+  notes: ''
+  r_mag: 10.24
+  r_mag_calc: false
+  ra: '15:28:35.1926'
+  simbad_id: BD+66 911
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B66+911"
+    target="_blank">BD+66 911</a>
+  twomass_id: 15283520+6621314
+  v_mag: 10.31
+  v_mag_calc: false
+KELT-24:
+  dec: '+71:39:21.156'
+  gaia_bp_mag: 8.484
+  gaia_dec: 71.65572700307207
+  gaia_g_mag: 8.238
+  gaia_id: '1076970406751899008'
+  gaia_parallax: 10.332
+  gaia_pm_dec: -34.808
+  gaia_pm_ra: -56.184
+  gaia_ra: 161.90902725095455
+  gaia_rp_mag: 7.879
+  h_mag: 7.2
+  i_mag: 7.807
+  i_mag_calc: true
+  j_mag: 7.408
+  k_mag: 7.154
+  notes: ''
+  r_mag: 8.059
+  r_mag_calc: true
+  ra: '10:47:38.3510'
+  simbad_id: HD 93148
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+93148"
+    target="_blank">HD 93148</a>
+  twomass_id: 10473836+7139211
+  v_mag: 8.33
   v_mag_calc: false
 KELT-2A:
   dec: '+30:57:25.717'
@@ -4340,9 +5932,9 @@ KELT-2A:
   r_mag: 8.388
   r_mag_calc: true
   ra: '06:10:39.3452'
-  simbad_id: HD  42176
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++42176"
-    target="_blank">HD  42176</a>
+  simbad_id: HD 42176
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+42176"
+    target="_blank">HD 42176</a>
   twomass_id: 06103935+3057258
   v_mag: 8.71
   v_mag_calc: false
@@ -4366,9 +5958,9 @@ KELT-3:
   r_mag: 9.579
   r_mag_calc: true
   ra: '09:54:34.3870'
-  simbad_id: BD+41  2024
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%41++2024"
-    target="_blank">BD+41  2024</a>
+  simbad_id: BD+41 2024
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B41+2024"
+    target="_blank">BD+41 2024</a>
   twomass_id: 09543439+4023170
   v_mag: 9.82
   v_mag_calc: false
@@ -4392,9 +5984,9 @@ KELT-4A:
   r_mag: 9.9
   r_mag_calc: false
   ra: '10:28:15.0111'
-  simbad_id: BD+26  2091
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%26++2091"
-    target="_blank">BD+26  2091</a>
+  simbad_id: BD+26 2091
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B26+2091"
+    target="_blank">BD+26 2091</a>
   twomass_id: 10281500+2534236
   v_mag: 9.98
   v_mag_calc: false
@@ -4418,9 +6010,9 @@ KELT-6:
   r_mag: 10.002
   r_mag_calc: true
   ra: '13:03:55.6468'
-  simbad_id: BD+31  2447
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%31++2447"
-    target="_blank">BD+31  2447</a>
+  simbad_id: BD+31 2447
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B31+2447"
+    target="_blank">BD+31 2447</a>
   twomass_id: 13035564+3038241
   v_mag: 10.337
   v_mag_calc: false
@@ -4444,9 +6036,9 @@ KELT-7:
   r_mag: 8.279
   r_mag_calc: true
   ra: '05:13:10.9287'
-  simbad_id: HD  33643
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++33643"
-    target="_blank">HD  33643</a>
+  simbad_id: HD 33643
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+33643"
+    target="_blank">HD 33643</a>
   twomass_id: 05131092+3319054
   v_mag: 8.54
   v_mag_calc: false
@@ -4475,6 +6067,32 @@ KELT-8:
     target="_blank">HD 343246</a>
   twomass_id: 18531332+2407385
   v_mag: 10.84
+  v_mag_calc: false
+KELT-9:
+  dec: '+39:56:19.765'
+  gaia_bp_mag: 7.611
+  gaia_dec: 39.938916128219084
+  gaia_g_mag: 7.577
+  gaia_id: '2064327278651198336'
+  gaia_parallax: 4.863
+  gaia_pm_dec: 21.478
+  gaia_pm_ra: 16.728
+  gaia_ra: 307.85989978395855
+  gaia_rp_mag: 7.563
+  h_mag: 7.492
+  i_mag: 7.49
+  i_mag_calc: true
+  j_mag: 7.458
+  k_mag: 7.482
+  notes: ''
+  r_mag: 7.562
+  r_mag_calc: true
+  ra: '20:31:26.3534'
+  simbad_id: HD 195689
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+195689"
+    target="_blank">HD 195689</a>
+  twomass_id: 20312634+3956196
+  v_mag: 7.56
   v_mag_calc: false
 KOI-12:
   dec: '+41:00:39.627'
@@ -4553,6 +6171,32 @@ KPS-1:
     target="_blank">NAME KPS-1</a>
   twomass_id: 11004017+6457504
   v_mag: 13.033
+  v_mag_calc: false
+Kepler-105:
+  dec: '+46:16:34.384'
+  gaia_bp_mag: 13.11
+  gaia_dec: 46.27612243193635
+  gaia_g_mag: 12.802
+  gaia_id: '2130368310704421120'
+  gaia_parallax: 2.149
+  gaia_pm_dec: -22.206
+  gaia_pm_ra: -9.641
+  gaia_ra: 287.8872376158347
+  gaia_rp_mag: 12.347
+  h_mag: 11.555
+  i_mag: 12.262
+  i_mag_calc: true
+  j_mag: 11.811
+  k_mag: 11.503
+  notes: ''
+  r_mag: 12.89
+  r_mag_calc: false
+  ra: '19:11:32.9514'
+  simbad_id: Kepler-105
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-105"
+    target="_blank">Kepler-105</a>
+  twomass_id: 19113295+4616344
+  v_mag: 12.92
   v_mag_calc: false
 Kepler-12:
   dec: '+50:02:25.271'
@@ -4710,6 +6354,32 @@ Kepler-396:
   twomass_id: 19443187+4858386
   v_mag: 12.26
   v_mag_calc: false
+Kepler-41:
+  dec: '+45:58:53.876'
+  gaia_bp_mag: 14.815
+  gaia_dec: 45.98164527977764
+  gaia_g_mag: 14.413
+  gaia_id: '2080061942886335744'
+  gaia_parallax: 0.886
+  gaia_pm_dec: 2.999
+  gaia_pm_ra: 3.037
+  gaia_ra: 294.51324646791977
+  gaia_rp_mag: 13.864
+  h_mag: 12.938
+  i_mag: 13.687
+  i_mag_calc: true
+  j_mag: 13.262
+  k_mag: 12.892
+  notes: ''
+  r_mag: 14.173
+  r_mag_calc: true
+  ra: '19:38:03.1746'
+  simbad_id: Kepler-41
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-41"
+    target="_blank">Kepler-41</a>
+  twomass_id: 19380317+4558539
+  v_mag: 14.509
+  v_mag_calc: false
 Kepler-422:
   dec: '+46:19:23.993'
   gaia_bp_mag: 13.757
@@ -4736,6 +6406,136 @@ Kepler-422:
   twomass_id: 18503111+4619240
   v_mag: 13.562
   v_mag_calc: true
+Kepler-423:
+  dec: '+46:23:28.219'
+  gaia_bp_mag: 14.648
+  gaia_dec: 46.39118829177163
+  gaia_g_mag: 14.28
+  gaia_id: '2128273225659492608'
+  gaia_parallax: 1.289
+  gaia_pm_dec: 3.755
+  gaia_pm_ra: -2.007
+  gaia_ra: 292.8557189393283
+  gaia_rp_mag: 13.757
+  h_mag: 12.847
+  i_mag: 13.693
+  i_mag_calc: true
+  j_mag: 13.142
+  k_mag: 12.779
+  notes: ''
+  r_mag: 14.048
+  r_mag_calc: true
+  ra: '19:31:25.3755'
+  simbad_id: Kepler-423
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-423"
+    target="_blank">Kepler-423</a>
+  twomass_id: 19312537+4623282
+  v_mag: 14.462
+  v_mag_calc: false
+Kepler-425:
+  dec: '+40:34:03.854'
+  gaia_bp_mag: 15.23
+  gaia_dec: 40.56769653375788
+  gaia_g_mag: 14.73
+  gaia_id: '2101184111011462144'
+  gaia_parallax: 1.518
+  gaia_pm_dec: -9.51
+  gaia_pm_ra: -4.449
+  gaia_ra: 290.3579781018146
+  gaia_rp_mag: 14.095
+  h_mag: 12.931
+  i_mag: 14.605
+  i_mag_calc: false
+  j_mag: 13.376
+  k_mag: 12.806
+  notes: ''
+  r_mag: 14.73
+  r_mag_calc: false
+  ra: '19:21:25.9207'
+  simbad_id: Kepler-425
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-425"
+    target="_blank">Kepler-425</a>
+  twomass_id: 19212592+4034038
+  v_mag: 14.97
+  v_mag_calc: false
+Kepler-426:
+  dec: '+49:28:24.305'
+  gaia_bp_mag: 15.188
+  gaia_dec: 49.47345496598282
+  gaia_g_mag: 14.807
+  gaia_id: '2132623993168462464'
+  gaia_parallax: 1.157
+  gaia_pm_dec: 8.565
+  gaia_pm_ra: 0.166
+  gaia_ra: 289.43466684072723
+  gaia_rp_mag: 14.266
+  h_mag: 13.23
+  i_mag: 14.735
+  i_mag_calc: false
+  j_mag: 13.624
+  k_mag: 13.212
+  notes: ''
+  r_mag: 14.863
+  r_mag_calc: false
+  ra: '19:17:44.3197'
+  simbad_id: Kepler-426
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-426"
+    target="_blank">Kepler-426</a>
+  twomass_id: 19174431+4928242
+  v_mag: 15.073
+  v_mag_calc: false
+Kepler-427:
+  dec: '+43:42:17.522'
+  gaia_bp_mag: 14.538
+  gaia_dec: 43.704837897597294
+  gaia_g_mag: 14.196
+  gaia_id: '2103014626070505344'
+  gaia_parallax: 0.954
+  gaia_pm_dec: -6.83
+  gaia_pm_ra: 2.391
+  gaia_ra: 288.25458077640627
+  gaia_rp_mag: 13.699
+  h_mag: 12.814
+  i_mag: 14.013
+  i_mag_calc: false
+  j_mag: 13.161
+  k_mag: 12.777
+  notes: ''
+  r_mag: 14.31
+  r_mag_calc: false
+  ra: '19:13:01.0959'
+  simbad_id: Kepler-427
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-427"
+    target="_blank">Kepler-427</a>
+  twomass_id: 19130109+4342175
+  v_mag: 14.42
+  v_mag_calc: false
+Kepler-435:
+  dec: '+43:11:50.160'
+  gaia_bp_mag: 13.911
+  gaia_dec: 43.19725418328951
+  gaia_g_mag: 13.604
+  gaia_id: '2125913531966017408'
+  gaia_parallax: 0.676
+  gaia_pm_dec: -2.917
+  gaia_pm_ra: 2.265
+  gaia_ra: 292.2873011917743
+  gaia_rp_mag: 13.139
+  h_mag: 12.345
+  i_mag: 12.92
+  i_mag_calc: false
+  j_mag: 12.593
+  k_mag: 12.291
+  notes: ''
+  r_mag: 13.94
+  r_mag_calc: false
+  ra: '19:29:08.9490'
+  simbad_id: Kepler-435
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-435"
+    target="_blank">Kepler-435</a>
+  twomass_id: 19290895+4311502
+  v_mag: 13.91
+  v_mag_calc: false
 Kepler-444:
   dec: '+41:38:04.581'
   gaia_bp_mag: 9.088
@@ -4756,9 +6556,9 @@ Kepler-444:
   r_mag: 8.18
   r_mag_calc: false
   ra: '19:19:00.5488'
-  simbad_id: BD+41  3306
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%41++3306"
-    target="_blank">BD+41  3306</a>
+  simbad_id: BD+41 3306
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B41+3306"
+    target="_blank">BD+41 3306</a>
   twomass_id: 19190052+4138043
   v_mag: 8.86
   v_mag_calc: false
@@ -4892,6 +6692,32 @@ Kepler-76:
   twomass_id: 19364610+3937084
   v_mag: 13.39
   v_mag_calc: true
+Kepler-8:
+  dec: '+42:27:03.891'
+  gaia_bp_mag: 13.818
+  gaia_dec: 42.45109751530347
+  gaia_g_mag: 13.53
+  gaia_id: '2116730994965905280'
+  gaia_parallax: 0.95
+  gaia_pm_dec: 3.841
+  gaia_pm_ra: 2.196
+  gaia_ra: 281.28813353034366
+  gaia_rp_mag: 13.086
+  h_mag: 12.324
+  i_mag: 12.967
+  i_mag_calc: true
+  j_mag: 12.576
+  k_mag: 12.293
+  notes: ''
+  r_mag: 13.325
+  r_mag_calc: true
+  ra: '18:45:09.1489'
+  simbad_id: Kepler-8
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Kepler-8"
+    target="_blank">Kepler-8</a>
+  twomass_id: 18450914+4227038
+  v_mag: 13.598
+  v_mag_calc: false
 Kepler-854:
   dec: '+43:08:04.832'
   gaia_bp_mag: 13.799
@@ -4944,6 +6770,32 @@ Kepler-91:
   twomass_id: 19024148+4407002
   v_mag: 12.82
   v_mag_calc: true
+L98-59:
+  dec: '-68:18:46.799'
+  gaia_bp_mag: 11.977
+  gaia_dec: -68.31446578866786
+  gaia_g_mag: 10.598
+  gaia_id: '5271055243163629056'
+  gaia_parallax: 94.138
+  gaia_pm_dec: -340.47
+  gaia_pm_ra: 94.767
+  gaia_ra: 124.53286044991903
+  gaia_rp_mag: 9.472
+  h_mag: 7.359
+  i_mag: 9.276
+  i_mag_calc: true
+  j_mag: 7.933
+  k_mag: 7.101
+  notes: ''
+  r_mag: 11.294
+  r_mag_calc: false
+  ra: '08:18:07.6215'
+  simbad_id: L 98-59
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+98-59" target="_blank">L
+    98-59</a>
+  twomass_id: 08180763-6818468
+  v_mag: 11.685
+  v_mag_calc: false
 LHS1140:
   dec: '-15:16:17.543'
   gaia_bp_mag: 14.435
@@ -4970,6 +6822,32 @@ LHS1140:
   twomass_id: 00445930-1516166
   v_mag: 14.15
   v_mag_calc: false
+LHS1478:
+  dec: '+76:33:11.250'
+  gaia_bp_mag: 13.649
+  gaia_dec: 76.5514045392306
+  gaia_g_mag: 12.26
+  gaia_id: '549007291282705024'
+  gaia_parallax: 54.833
+  gaia_pm_dec: -399.685
+  gaia_pm_ra: 691.036
+  gaia_ra: 44.338874255324946
+  gaia_rp_mag: 11.116
+  h_mag: 9.028
+  i_mag: 14.855
+  i_mag_calc: false
+  j_mag: 9.615
+  k_mag: 8.767
+  notes: ''
+  r_mag: 12.5
+  r_mag_calc: false
+  ra: '02:57:18.2591'
+  simbad_id: G 245-61
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=G+245-61"
+    target="_blank">G 245-61</a>
+  twomass_id: 02571820+7633113
+  v_mag: 13.304
+  v_mag_calc: false
 LHS3844:
   dec: '-69:10:08.320'
   gaia_bp_mag: 15.451
@@ -4990,11 +6868,296 @@ LHS3844:
   r_mag: 13.74
   r_mag_calc: false
   ra: '22:41:58.1173'
-  simbad_id: LHS  3844
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LHS++3844"
-    target="_blank">LHS  3844</a>
+  simbad_id: LHS 3844
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LHS+3844"
+    target="_blank">LHS 3844</a>
   twomass_id: 22415815-6910089
   v_mag: 15.26
+  v_mag_calc: false
+LP714-47:
+  dec: '-12:05:02.454'
+  gaia_bp_mag: 12.742
+  gaia_dec: -12.084864293358281
+  gaia_g_mag: 11.728
+  gaia_id: '3189306030970782208'
+  gaia_parallax: 18.977
+  gaia_pm_dec: -197.253
+  gaia_pm_ra: 49.766
+  gaia_ra: 64.19022120988309
+  gaia_rp_mag: 10.751
+  h_mag: 8.829
+  i_mag: 10.664
+  i_mag_calc: true
+  j_mag: 9.493
+  k_mag: 8.626
+  notes: ''
+  r_mag: 12.104
+  r_mag_calc: false
+  ra: '04:16:45.6005'
+  simbad_id: G 160-62
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=G+160-62"
+    target="_blank">G 160-62</a>
+  twomass_id: 04164560-1205023
+  v_mag: 12.492
+  v_mag_calc: false
+LP791-18:
+  dec: '-16:24:22.285'
+  gaia_bp_mag: 17.238
+  gaia_dec: -16.406444499029252
+  gaia_g_mag: 15.072
+  gaia_id: '3562427951852172288'
+  gaia_parallax: 37.718
+  gaia_pm_dec: -58.999
+  gaia_pm_ra: -221.078
+  gaia_ra: 165.69048434679303
+  gaia_rp_mag: 13.695
+  h_mag: 10.993
+  i_mag: 14.314
+  i_mag_calc: false
+  j_mag: 11.559
+  k_mag: 10.644
+  notes: ''
+  r_mag: 16.267
+  r_mag_calc: false
+  ra: '11:02:45.9543'
+  simbad_id: LP 791-18
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+791-18"
+    target="_blank">LP 791-18</a>
+  twomass_id: 11024596-1624222
+  v_mag: 16.91
+  v_mag_calc: false
+LTT1445A:
+  dec: '-16:35:36.022'
+  gaia_bp_mag: 11.501
+  gaia_dec: -16.594495614724412
+  gaia_g_mag: 10.047
+  gaia_id: '5153091836072107136'
+  gaia_parallax: 145.547
+  gaia_pm_dec: -268.51
+  gaia_pm_ra: -369.196
+  gaia_ra: 45.46247805566359
+  gaia_rp_mag: 8.91
+  h_mag: 6.774
+  i_mag: 7.887
+  i_mag_calc: false
+  j_mag: 7.294
+  k_mag: 6.496
+  notes: ''
+  r_mag: 9.364
+  r_mag_calc: false
+  ra: '03:01:51.3928'
+  simbad_id: BD-17 588A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-17+588A"
+    target="_blank">BD-17 588A</a>
+  twomass_id: 03015142-1635356
+  v_mag: 10.529
+  v_mag_calc: false
+LTT3780:
+  dec: '-11:43:00.241'
+  gaia_bp_mag: 13.352
+  gaia_dec: -11.717800995137953
+  gaia_g_mag: 11.846
+  gaia_id: '3767281845873242112'
+  gaia_parallax: 45.464
+  gaia_pm_dec: -247.87
+  gaia_pm_ra: -341.409
+  gaia_ra: 154.64490332294528
+  gaia_rp_mag: 10.658
+  h_mag: 8.439
+  i_mag: 10.496
+  i_mag_calc: true
+  j_mag: 9.007
+  k_mag: 8.204
+  notes: ''
+  r_mag: 12.84
+  r_mag_calc: false
+  ra: '10:18:35.1370'
+  simbad_id: G 162-44
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=G+162-44"
+    target="_blank">G 162-44</a>
+  twomass_id: 10183516-1142599
+  v_mag: 13.14
+  v_mag_calc: false
+LTT9779:
+  dec: '-37:37:40.523'
+  gaia_bp_mag: 10.015
+  gaia_dec: -37.628223736417716
+  gaia_g_mag: 9.6
+  gaia_id: '2307504062045842688'
+  gaia_parallax: 12.403
+  gaia_pm_dec: -69.801
+  gaia_pm_ra: 247.615
+  gaia_ra: 358.6688766756469
+  gaia_rp_mag: 9.058
+  h_mag: 8.153
+  i_mag: 8.933
+  i_mag_calc: true
+  j_mag: 8.446
+  k_mag: 8.016
+  notes: ''
+  r_mag: 9.36
+  r_mag_calc: true
+  ra: '23:54:40.2073'
+  simbad_id: CD-38 15670
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38+15670"
+    target="_blank">CD-38 15670</a>
+  twomass_id: 23544020-3737408
+  v_mag: 9.76
+  v_mag_calc: false
+MASCARA-1:
+  dec: '+10:44:19.944'
+  gaia_bp_mag: 8.367
+  gaia_dec: 10.738896694044655
+  gaia_g_mag: 8.242
+  gaia_id: '1744911763437512064'
+  gaia_parallax: 5.458
+  gaia_pm_dec: 5.379
+  gaia_pm_ra: -5.719
+  gaia_ra: 317.55152638378735
+  gaia_rp_mag: 8.052
+  h_mag: 7.749
+  i_mag: 7.986
+  i_mag_calc: true
+  j_mag: 7.819
+  k_mag: 7.74
+  notes: ''
+  r_mag: 8.138
+  r_mag_calc: true
+  ra: '21:10:12.3723'
+  simbad_id: HD 201585
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+201585"
+    target="_blank">HD 201585</a>
+  twomass_id: 21101237+1044197
+  v_mag: 8.27
+  v_mag_calc: false
+MASCARA-4:
+  dec: '-66:06:49.892'
+  gaia_bp_mag: 8.283
+  gaia_dec: -66.11392534233887
+  gaia_g_mag: 8.174
+  gaia_id: '5245968236116294016'
+  gaia_parallax: 5.83
+  gaia_pm_dec: -15.398
+  gaia_pm_ra: 6.051
+  gaia_ra: 147.58006673040285
+  gaia_rp_mag: 8.028
+  h_mag: 7.785
+  i_mag: 7.955
+  i_mag_calc: true
+  j_mag: 7.837
+  k_mag: 7.75
+  notes: ''
+  r_mag: 8.088
+  r_mag_calc: true
+  ra: '09:50:19.2005'
+  simbad_id: HD 85628
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+85628"
+    target="_blank">HD 85628</a>
+  twomass_id: 09501920-6606500
+  v_mag: 8.19
+  v_mag_calc: false
+NGTS-1:
+  dec: '-36:37:50.896'
+  gaia_bp_mag: 15.781
+  gaia_dec: -36.630981237125134
+  gaia_g_mag: 14.866
+  gaia_id: '4821739369794767744'
+  gaia_parallax: 4.556
+  gaia_pm_dec: -41.025
+  gaia_pm_ra: -31.902
+  gaia_ra: 82.71421336928302
+  gaia_rp_mag: 13.921
+  h_mag: 12.058
+  i_mag: 13.97
+  i_mag_calc: false
+  j_mag: 12.702
+  k_mag: 11.936
+  notes: ''
+  r_mag: 15.36
+  r_mag_calc: false
+  ra: '05:30:51.4522'
+  simbad_id: NGTS-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=NGTS-1" target="_blank">NGTS-1</a>
+  twomass_id: 05305145-3637508
+  v_mag: 15.57
+  v_mag_calc: false
+NGTS-11:
+  dec: '-14:25:09.155'
+  gaia_bp_mag: 12.673
+  gaia_dec: -14.419149279641722
+  gaia_g_mag: 12.189
+  gaia_id: '2453680078509741056'
+  gaia_parallax: 5.223
+  gaia_pm_dec: 14.047
+  gaia_pm_ra: 11.168
+  gaia_ra: 23.521449655437703
+  gaia_rp_mag: 11.571
+  h_mag: 10.401
+  i_mag: 11.48
+  i_mag_calc: false
+  j_mag: 10.855
+  k_mag: 10.315
+  notes: ''
+  r_mag: 12.18
+  r_mag_calc: false
+  ra: '01:34:05.1360'
+  simbad_id: UCAC2 26590993
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC2+26590993"
+    target="_blank">UCAC2 26590993</a>
+  twomass_id: 01340514-1425090
+  v_mag: 12.41
+  v_mag_calc: false
+NGTS-12:
+  dec: '-35:38:26.137'
+  gaia_bp_mag: 12.495
+  gaia_dec: -35.64056296479273
+  gaia_g_mag: 12.128
+  gaia_id: '3464620139089832960'
+  gaia_parallax: 2.212
+  gaia_pm_dec: 7.138
+  gaia_pm_ra: -18.414
+  gaia_ra: 176.2499418365948
+  gaia_rp_mag: 11.607
+  h_mag: 10.692
+  i_mag: 11.503
+  i_mag_calc: true
+  j_mag: 10.992
+  k_mag: 10.588
+  notes: ''
+  r_mag: 12.25
+  r_mag_calc: false
+  ra: '11:45:00.0094'
+  simbad_id: UCAC4 272-059216
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+272-059216"
+    target="_blank">UCAC4 272-059216</a>
+  twomass_id: 11450000-3538261
+  v_mag: 12.27
+  v_mag_calc: false
+NGTS-13:
+  dec: '-38:08:22.961'
+  gaia_bp_mag: 12.93
+  gaia_dec: -38.13971579671387
+  gaia_g_mag: 12.569
+  gaia_id: '5385076140853434752'
+  gaia_parallax: 1.516
+  gaia_pm_dec: -0.988
+  gaia_pm_ra: -21.126
+  gaia_ra: 176.24023262606232
+  gaia_rp_mag: 12.06
+  h_mag: 11.244
+  i_mag: 11.993
+  i_mag_calc: true
+  j_mag: 11.481
+  k_mag: 11.141
+  notes: ''
+  r_mag: 12.341
+  r_mag_calc: true
+  ra: '11:44:57.6835'
+  simbad_id: 2MASS J11445767-3808229
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MASS+J11445767-3808229"
+    target="_blank">2MASS J11445767-3808229</a>
+  twomass_id: 11445767-3808229
+  v_mag: 12.744
   v_mag_calc: false
 NGTS-2:
   dec: '-31:12:07.437'
@@ -5021,6 +7184,81 @@ NGTS-2:
     target="_blank">CD-30 11338</a>
   twomass_id: 14202949-3112074
   v_mag: 10.961
+  v_mag_calc: false
+NGTS-5:
+  dec: '+05:36:19.417'
+  gaia_bp_mag: 14.024
+  gaia_dec: 5.605373482929235
+  gaia_g_mag: 13.526
+  gaia_id: '1159042833731813760'
+  gaia_parallax: 3.231
+  gaia_pm_dec: -4.688
+  gaia_pm_ra: 13.65
+  gaia_ra: 221.05826921987418
+  gaia_rp_mag: 12.893
+  h_mag: 11.708
+  i_mag: 13.334
+  i_mag_calc: false
+  j_mag: 12.117
+  k_mag: 11.612
+  notes: ''
+  r_mag: 13.6
+  r_mag_calc: false
+  ra: '14:44:13.9704'
+  simbad_id: NGTS-5
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=NGTS-5" target="_blank">NGTS-5</a>
+  twomass_id: 14441396+0536195
+  v_mag: 13.77
+  v_mag_calc: false
+NGTS-6:
+  dec: '-30:23:57.719'
+  gaia_bp_mag: 14.401
+  gaia_dec: -30.39946115563143
+  gaia_g_mag: 13.818
+  gaia_id: '4875693023844840448'
+  gaia_parallax: 3.215
+  gaia_pm_dec: -21.995
+  gaia_pm_ra: -9.339
+  gaia_ra: 75.79538203322976
+  gaia_rp_mag: 13.113
+  h_mag: 11.767
+  i_mag: 12.992
+  i_mag_calc: true
+  j_mag: 12.222
+  k_mag: 11.65
+  notes: ''
+  r_mag: 13.98
+  r_mag_calc: false
+  ra: '05:03:10.9028'
+  simbad_id: NGTS-6
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=NGTS-6" target="_blank">NGTS-6</a>
+  twomass_id: 05031090-3023576
+  v_mag: 14.12
+  v_mag_calc: false
+NGTS-8:
+  dec: '-14:04:06.225'
+  gaia_bp_mag: 13.961
+  gaia_dec: -14.068439897746122
+  gaia_g_mag: 13.495
+  gaia_id: '6840435777723109888'
+  gaia_parallax: 2.303
+  gaia_pm_dec: -10.194
+  gaia_pm_ra: 21.363
+  gaia_ra: 328.9759205882969
+  gaia_rp_mag: 12.878
+  h_mag: 11.751
+  i_mag: 12.78
+  i_mag_calc: true
+  j_mag: 12.14
+  k_mag: 11.642
+  notes: ''
+  r_mag: 13.53
+  r_mag_calc: false
+  ra: '21:55:54.1981'
+  simbad_id: NGTS-8
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=NGTS-8" target="_blank">NGTS-8</a>
+  twomass_id: 21555419-1404062
+  v_mag: 13.72
   v_mag_calc: false
 PH2:
   dec: '+51:57:45.410'
@@ -5073,6 +7311,32 @@ Qatar-1:
     1</a>
   twomass_id: 20133160+6509433
   v_mag: 12.84
+  v_mag_calc: false
+Qatar-10:
+  dec: '+69:34:15.066'
+  gaia_bp_mag: 13.017
+  gaia_dec: 69.57083734277235
+  gaia_g_mag: 12.698
+  gaia_id: '2262322556576778752'
+  gaia_parallax: 1.76
+  gaia_pm_dec: -3.373
+  gaia_pm_ra: -5.575
+  gaia_ra: 284.44390522144386
+  gaia_rp_mag: 12.233
+  h_mag: 11.474
+  i_mag: 12.192
+  i_mag_calc: true
+  j_mag: 11.754
+  k_mag: 11.382
+  notes: ''
+  r_mag: 12.483
+  r_mag_calc: true
+  ra: '18:57:46.5537'
+  simbad_id: Qatar 10
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Qatar+10"
+    target="_blank">Qatar 10</a>
+  twomass_id: 18574655+6934151
+  v_mag: 12.868
   v_mag_calc: false
 Qatar-2:
   dec: '-06:48:14.419'
@@ -5178,7 +7442,604 @@ Qatar-5:
   twomass_id: 00281293+4203407
   v_mag: 12.82
   v_mag_calc: false
-TOI172:
+Qatar-6:
+  dec: '+22:09:09.160'
+  gaia_bp_mag: 11.656
+  gaia_dec: 22.15261362725909
+  gaia_g_mag: 11.125
+  gaia_id: '1265513389372846848'
+  gaia_parallax: 9.887
+  gaia_pm_dec: 16.02
+  gaia_pm_ra: -51.908
+  gaia_ra: 222.2100773326844
+  gaia_rp_mag: 10.494
+  h_mag: 9.307
+  i_mag: 10.903
+  i_mag_calc: false
+  j_mag: 9.712
+  k_mag: 9.226
+  notes: ''
+  r_mag: 11.161
+  r_mag_calc: false
+  ra: '14:48:50.4764'
+  simbad_id: Qatar 6
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Qatar+6" target="_blank">Qatar
+    6</a>
+  twomass_id: 14485047+2209093
+  v_mag: 11.5
+  v_mag_calc: false
+Qatar-7:
+  dec: '+37:01:18.584'
+  gaia_bp_mag: 13.267
+  gaia_dec: 37.02182424385755
+  gaia_g_mag: 12.927
+  gaia_id: '2878923523472328704'
+  gaia_parallax: 1.388
+  gaia_pm_dec: -1.129
+  gaia_pm_ra: -5.189
+  gaia_ra: 358.5151343578245
+  gaia_rp_mag: 12.43
+  h_mag: 11.599
+  i_mag: 12.878
+  i_mag_calc: false
+  j_mag: 11.859
+  k_mag: 11.561
+  notes: ''
+  r_mag: 13.02
+  r_mag_calc: false
+  ra: '23:54:03.6389'
+  simbad_id: Qatar 7
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Qatar+7" target="_blank">Qatar
+    7</a>
+  twomass_id: 23540364+3701185
+  v_mag: 13.03
+  v_mag_calc: false
+Qatar-8:
+  dec: '+70:31:37.649'
+  gaia_bp_mag: 11.698
+  gaia_dec: 70.52708346072295
+  gaia_g_mag: 11.349
+  gaia_id: '1076515002779544960'
+  gaia_parallax: 3.524
+  gaia_pm_dec: -9.597
+  gaia_pm_ra: -46.527
+  gaia_ra: 157.4123405390643
+  gaia_rp_mag: 10.861
+  h_mag: 10.005
+  i_mag: 10.988
+  i_mag_calc: true
+  j_mag: 10.296
+  k_mag: 9.937
+  notes: ''
+  r_mag: 11.126
+  r_mag_calc: true
+  ra: '10:29:39.1059'
+  simbad_id: Qatar 8
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Qatar+8" target="_blank">Qatar
+    8</a>
+  twomass_id: 10293910+7031378
+  v_mag: 11.71
+  v_mag_calc: false
+Qatar-9:
+  dec: '+60:57:51.159'
+  gaia_bp_mag: 14.439
+  gaia_dec: 60.96411936210351
+  gaia_g_mag: 13.687
+  gaia_id: '1048109222955337600'
+  gaia_parallax: 4.649
+  gaia_pm_dec: -21.274
+  gaia_pm_ra: -23.741
+  gaia_ra: 160.748094969636
+  gaia_rp_mag: 12.859
+  h_mag: 11.235
+  i_mag: 13.496
+  i_mag_calc: false
+  j_mag: 11.835
+  k_mag: 11.104
+  notes: ''
+  r_mag: 13.84
+  r_mag_calc: false
+  ra: '10:42:59.5933'
+  simbad_id: Qatar 9
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Qatar+9" target="_blank">Qatar
+    9</a>
+  twomass_id: 10425960+6057510
+  v_mag: 14.023
+  v_mag_calc: false
+TIC257060897:
+  dec: '+72:42:37.247'
+  gaia_bp_mag: 11.977
+  gaia_dec: 72.71031279827915
+  gaia_g_mag: 11.666
+  gaia_id: '1697129530714536320'
+  gaia_parallax: 1.949
+  gaia_pm_dec: -7.813
+  gaia_pm_ra: 13.268
+  gaia_ra: 227.53215272891774
+  gaia_rp_mag: 11.212
+  h_mag: 10.446
+  i_mag: 11.15
+  i_mag_calc: true
+  j_mag: 10.696
+  k_mag: 10.387
+  notes: ''
+  r_mag: 11.455
+  r_mag_calc: true
+  ra: '15:10:07.6705'
+  simbad_id: TYC 4417-1588-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+4417-1588-1"
+    target="_blank">TYC 4417-1588-1</a>
+  twomass_id: 15100767+7242372
+  v_mag: 11.81
+  v_mag_calc: false
+TOI-1130:
+  dec: '-41:26:15.082'
+  gaia_bp_mag: 11.653
+  gaia_dec: -41.43763988362012
+  gaia_g_mag: 10.903
+  gaia_id: '6715688452614516736'
+  gaia_parallax: 17.135
+  gaia_pm_dec: -27.18
+  gaia_pm_ra: 12.538
+  gaia_ra: 286.37600367356754
+  gaia_rp_mag: 10.092
+  h_mag: 8.493
+  i_mag: 10.201
+  i_mag_calc: true
+  j_mag: 9.055
+  k_mag: 8.351
+  notes: ''
+  r_mag: 10.636
+  r_mag_calc: true
+  ra: '19:05:30.2235'
+  simbad_id: TOI-1130
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TOI-1130"
+    target="_blank">TOI-1130</a>
+  twomass_id: 19053021-4126151
+  v_mag: 11.59
+  v_mag_calc: false
+TOI-1201:
+  dec: '-14:32:14.943'
+  gaia_bp_mag: 13.365
+  gaia_dec: -14.53728348938562
+  gaia_g_mag: 12.097
+  gaia_id: '5157183324996790272'
+  gaia_parallax: 26.365
+  gaia_pm_dec: 46.626
+  gaia_pm_ra: 164.059
+  gaia_ra: 42.247699912786764
+  gaia_rp_mag: 10.995
+  h_mag: 8.876
+  i_mag: 10.72
+  i_mag_calc: false
+  j_mag: 9.528
+  k_mag: 8.646
+  notes: ''
+  r_mag: 12.68
+  r_mag_calc: false
+  ra: '02:48:59.2728'
+  simbad_id: UCAC3 151-6986
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC3+151-6986"
+    target="_blank">UCAC3 151-6986</a>
+  twomass_id: 02485926-1432152
+  v_mag: 12.26
+  v_mag_calc: false
+TOI-122:
+  dec: '-58:56:42.251'
+  gaia_bp_mag: 15.797
+  gaia_dec: -58.94608502258675
+  gaia_g_mag: 14.336
+  gaia_id: '6411096106487783296'
+  gaia_parallax: 16.07
+  gaia_pm_dec: -235.81
+  gaia_pm_ra: 138.138
+  gaia_ra: 332.94823550675875
+  gaia_rp_mag: 13.152
+  h_mag: 11.02
+  i_mag: 12.944
+  i_mag_calc: true
+  j_mag: 11.531
+  k_mag: 10.771
+  notes: ''
+  r_mag: 14.266
+  r_mag_calc: true
+  ra: '22:11:47.2998'
+  simbad_id: WT 880
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WT+880" target="_blank">WT
+    880</a>
+  twomass_id: 22114728-5856422
+  v_mag: 15.526
+  v_mag_calc: false
+TOI-1231:
+  dec: '-52:28:09.945'
+  gaia_bp_mag: 12.568
+  gaia_dec: -52.46787236293456
+  gaia_g_mag: 11.36
+  gaia_id: '5357465071715078016'
+  gaia_parallax: 36.173
+  gaia_pm_dec: 361.603
+  gaia_pm_ra: -89.046
+  gaia_ra: 156.74725995694283
+  gaia_rp_mag: 10.297
+  h_mag: 8.285
+  i_mag: 10.167
+  i_mag_calc: true
+  j_mag: 8.876
+  k_mag: 8.069
+  notes: ''
+  r_mag: 11.903
+  r_mag_calc: false
+  ra: '10:26:59.4934'
+  simbad_id: L 248-27
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+248-27"
+    target="_blank">L 248-27</a>
+  twomass_id: 10265947-5228099
+  v_mag: 12.302
+  v_mag_calc: false
+TOI-125:
+  dec: '-66:40:32.952'
+  gaia_bp_mag: 11.153
+  gaia_dec: -66.67634946049294
+  gaia_g_mag: 10.718
+  gaia_id: '4698692744355471616'
+  gaia_parallax: 8.975
+  gaia_pm_dec: -122.953
+  gaia_pm_ra: -119.8
+  gaia_ra: 23.593425333042333
+  gaia_rp_mag: 10.15
+  h_mag: 9.112
+  i_mag: 10.152
+  i_mag_calc: true
+  j_mag: 9.466
+  k_mag: 8.995
+  notes: ''
+  r_mag: 10.472
+  r_mag_calc: true
+  ra: '01:34:22.7347'
+  simbad_id: TOI-125
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TOI-125" target="_blank">TOI-125</a>
+  twomass_id: 01342273-6640328
+  v_mag: 11.02
+  v_mag_calc: false
+TOI-1266:
+  dec: '+65:50:01.703'
+  gaia_bp_mag: 13.271
+  gaia_dec: 65.83369731061653
+  gaia_g_mag: 12.122
+  gaia_id: '1678074272650459008'
+  gaia_parallax: 27.74
+  gaia_pm_dec: -25.368
+  gaia_pm_ra: -150.652
+  gaia_ra: 197.99658325344265
+  gaia_rp_mag: 11.075
+  h_mag: 9.065
+  i_mag: 11.6
+  i_mag_calc: false
+  j_mag: 9.706
+  k_mag: 8.84
+  notes: ''
+  r_mag: 12.582
+  r_mag_calc: false
+  ra: '13:11:59.5602'
+  simbad_id: UCAC4 780-025091
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+780-025091"
+    target="_blank">UCAC4 780-025091</a>
+  twomass_id: 13115955+6550017
+  v_mag: 12.951
+  v_mag_calc: false
+TOI-1296:
+  dec: '+70:14:18.635'
+  gaia_bp_mag: 11.69
+  gaia_dec: 70.23848062183446
+  gaia_g_mag: 11.291
+  gaia_id: '1650851223740149504'
+  gaia_parallax: 3.065
+  gaia_pm_dec: -6.793
+  gaia_pm_ra: -21.245
+  gaia_ra: 256.77063917686263
+  gaia_rp_mag: 10.754
+  h_mag: 9.837
+  i_mag: 10.561
+  i_mag_calc: true
+  j_mag: 10.15
+  k_mag: 9.742
+  notes: ''
+  r_mag: 11.053
+  r_mag_calc: true
+  ra: '17:07:05.0183'
+  simbad_id: TYC 4424-736-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+4424-736-1"
+    target="_blank">TYC 4424-736-1</a>
+  twomass_id: 17070502+7014186
+  v_mag: 11.37
+  v_mag_calc: false
+TOI-1298:
+  dec: '+70:11:23.461'
+  gaia_bp_mag: 11.76
+  gaia_dec: 70.1900396928716
+  gaia_g_mag: 11.404
+  gaia_id: '1647136729864424576'
+  gaia_parallax: 3.106
+  gaia_pm_dec: 43.934
+  gaia_pm_ra: -36.41
+  gaia_ra: 241.32290116137443
+  gaia_rp_mag: 10.911
+  h_mag: 10.105
+  i_mag: 11.157
+  i_mag_calc: true
+  j_mag: 10.385
+  k_mag: 10.012
+  notes: ''
+  r_mag: 11.179
+  r_mag_calc: true
+  ra: '16:05:17.6072'
+  simbad_id: TYC 4422-2181-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+4422-2181-1"
+    target="_blank">TYC 4422-2181-1</a>
+  twomass_id: 16051761+7011235
+  v_mag: 11.89
+  v_mag_calc: false
+TOI-1333:
+  dec: '+48:24:24.525'
+  gaia_bp_mag: 9.593
+  gaia_dec: 48.4067674018421
+  gaia_g_mag: 9.35
+  gaia_id: '1978027916667478656'
+  gaia_parallax: 4.959
+  gaia_pm_dec: -10.501
+  gaia_pm_ra: -9.81
+  gaia_ra: 325.0145362791214
+  gaia_rp_mag: 8.993
+  h_mag: 8.397
+  i_mag: 8.918
+  i_mag_calc: true
+  j_mag: 8.485
+  k_mag: 8.272
+  notes: ''
+  r_mag: 9.44
+  r_mag_calc: false
+  ra: '21:40:03.5039'
+  simbad_id: BD+47 3521A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B47+3521A"
+    target="_blank">BD+47 3521A</a>
+  twomass_id: 21400351+4824243
+  v_mag: 9.437
+  v_mag_calc: false
+TOI-1431:
+  dec: '+55:35:16.509'
+  gaia_bp_mag: 8.123
+  gaia_dec: 55.588022053060655
+  gaia_g_mag: 7.976
+  gaia_id: '2188906825165621120'
+  gaia_parallax: 6.686
+  gaia_pm_dec: 23.869
+  gaia_pm_ra: 11.737
+  gaia_ra: 316.20369224080963
+  gaia_rp_mag: 7.772
+  h_mag: 7.452
+  i_mag: 7.707
+  i_mag_calc: true
+  j_mag: 7.541
+  k_mag: 7.439
+  notes: ''
+  r_mag: 7.861
+  r_mag_calc: true
+  ra: '21:04:48.8646'
+  simbad_id: HD 201033
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+201033"
+    target="_blank">HD 201033</a>
+  twomass_id: 21044887+5535166
+  v_mag: 8.02
+  v_mag_calc: false
+TOI-1478:
+  dec: '-13:33:35.427'
+  gaia_bp_mag: 11.032
+  gaia_dec: -13.559548458319593
+  gaia_g_mag: 10.662
+  gaia_id: '5723638723350902400'
+  gaia_parallax: 6.512
+  gaia_pm_dec: 67.943
+  gaia_pm_ra: -8.277
+  gaia_ra: 126.43374282588938
+  gaia_rp_mag: 10.156
+  h_mag: 9.255
+  i_mag: 9.964
+  i_mag_calc: true
+  j_mag: 9.59
+  k_mag: 9.201
+  notes: ''
+  r_mag: 10.433
+  r_mag_calc: true
+  ra: '08:25:44.1070'
+  simbad_id: TYC 5440-1407-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+5440-1407-1"
+    target="_blank">TYC 5440-1407-1</a>
+  twomass_id: 08254410-1333356
+  v_mag: 10.72
+  v_mag_calc: false
+TOI-1518:
+  dec: '+67:02:05.377'
+  gaia_bp_mag: 9.038
+  gaia_dec: 67.03480615027794
+  gaia_g_mag: 8.895
+  gaia_id: '2210596444367488384'
+  gaia_parallax: 4.398
+  gaia_pm_dec: -4.884
+  gaia_pm_ra: -7.443
+  gaia_ra: 352.26752074430163
+  gaia_rp_mag: 8.685
+  h_mag: 8.384
+  i_mag: 8.635
+  i_mag_calc: true
+  j_mag: 8.429
+  k_mag: 8.325
+  notes: ''
+  r_mag: 8.78
+  r_mag_calc: true
+  ra: '23:29:04.2246'
+  simbad_id: BD+66 1610
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B66+1610"
+    target="_blank">BD+66 1610</a>
+  twomass_id: 23290422+6702052
+  v_mag: 8.95
+  v_mag_calc: false
+TOI-157:
+  dec: '-76:40:49.888'
+  gaia_bp_mag: 12.917
+  gaia_dec: -76.68060607194131
+  gaia_g_mag: 12.514
+  gaia_id: '4624979393181971328'
+  gaia_parallax: 2.783
+  gaia_pm_dec: -18.922
+  gaia_pm_ra: 11.712
+  gaia_ra: 73.70143977590952
+  gaia_rp_mag: 11.963
+  h_mag: 10.99
+  i_mag: 11.9
+  i_mag_calc: true
+  j_mag: 11.371
+  k_mag: 10.892
+  notes: ''
+  r_mag: 12.274
+  r_mag_calc: true
+  ra: '04:54:48.2930'
+  simbad_id: 2MASS J04544830-7640498
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MASS+J04544830-7640498"
+    target="_blank">2MASS J04544830-7640498</a>
+  twomass_id: 04544830-7640498
+  v_mag: 12.725
+  v_mag_calc: false
+TOI-1601:
+  dec: '+41:00:48.368'
+  gaia_bp_mag: 10.864
+  gaia_dec: 41.01343205036208
+  gaia_g_mag: 10.528
+  gaia_id: '338382713564401920'
+  gaia_parallax: 2.944
+  gaia_pm_dec: -0.874
+  gaia_pm_ra: 21.708
+  gaia_ra: 38.36156898554277
+  gaia_rp_mag: 10.057
+  h_mag: 9.266
+  i_mag: 9.964
+  i_mag_calc: true
+  j_mag: 9.505
+  k_mag: 9.191
+  notes: ''
+  r_mag: 10.309
+  r_mag_calc: true
+  ra: '02:33:26.7468'
+  simbad_id: Cl* NGC 1039 W 3
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Cl*+NGC+1039+W+3"
+    target="_blank">Cl* NGC 1039 W 3</a>
+  twomass_id: 02332674+4100483
+  v_mag: 10.66
+  v_mag_calc: false
+TOI-163:
+  dec: '-71:53:44.150'
+  gaia_bp_mag: 11.486
+  gaia_dec: -71.89552685589918
+  gaia_g_mag: 11.219
+  gaia_id: '4651366259202463104'
+  gaia_parallax: 2.401
+  gaia_pm_dec: 16.374
+  gaia_pm_ra: 7.14
+  gaia_ra: 79.7682532086581
+  gaia_rp_mag: 10.823
+  h_mag: 10.153
+  i_mag: 10.78
+  i_mag_calc: false
+  j_mag: 10.404
+  k_mag: 10.124
+  notes: ''
+  r_mag: 11.11
+  r_mag_calc: false
+  ra: '05:19:04.3570'
+  simbad_id: HD 271181
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+271181"
+    target="_blank">HD 271181</a>
+  twomass_id: 05190435-7153441
+  v_mag: 11.47
+  v_mag_calc: false
+TOI-1634:
+  dec: '+37:06:44.000'
+  gaia_bp_mag: 13.528
+  gaia_dec: 37.112280309146854
+  gaia_g_mag: 12.196
+  gaia_id: '223158499179138432'
+  gaia_parallax: 28.321
+  gaia_pm_dec: 13.486
+  gaia_pm_ra: 81.643
+  gaia_ra: 56.390609586701075
+  gaia_rp_mag: 11.069
+  h_mag: 8.847
+  i_mag: 10.863
+  i_mag_calc: true
+  j_mag: 9.484
+  k_mag: 8.6
+  notes: ''
+  r_mag: 12.935
+  r_mag_calc: false
+  ra: '03:45:33.6405'
+  simbad_id: UCAC4 636-014493
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+636-014493"
+    target="_blank">UCAC4 636-014493</a>
+  twomass_id: 03453363+3706438
+  v_mag: 13.217
+  v_mag_calc: false
+TOI-1685:
+  dec: '+43:02:14.689'
+  gaia_bp_mag: 13.621
+  gaia_dec: 43.037039545918645
+  gaia_g_mag: 12.296
+  gaia_id: '252366608956186240'
+  gaia_parallax: 26.556
+  gaia_pm_dec: -86.911
+  gaia_pm_ra: 37.818
+  gaia_ra: 68.59395291252402
+  gaia_rp_mag: 11.166
+  h_mag: 9.005
+  i_mag: 11.029
+  i_mag_calc: true
+  j_mag: 9.616
+  k_mag: 8.758
+  notes: ''
+  r_mag: 13.017
+  r_mag_calc: false
+  ra: '04:34:22.4952'
+  simbad_id: UCAC4 666-026266
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+666-026266"
+    target="_blank">UCAC4 666-026266</a>
+  twomass_id: 04342248+4302148
+  v_mag: 13.378
+  v_mag_calc: false
+TOI-169:
+  dec: '-75:11:55.960'
+  gaia_bp_mag: 12.596
+  gaia_dec: -75.19894516714068
+  gaia_g_mag: 12.238
+  gaia_id: '4684513614202233728'
+  gaia_parallax: 2.423
+  gaia_pm_dec: -15.607
+  gaia_pm_ra: 20.225
+  gaia_ra: 16.77868789527306
+  gaia_rp_mag: 11.737
+  h_mag: 10.896
+  i_mag: 11.614
+  i_mag_calc: true
+  j_mag: 11.181
+  k_mag: 10.815
+  notes: ''
+  r_mag: 12.011
+  r_mag_calc: true
+  ra: '01:07:06.8032'
+  simbad_id: 2MASS J01070679-7511559
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MASS+J01070679-7511559"
+    target="_blank">2MASS J01070679-7511559</a>
+  twomass_id: 01070679-7511559
+  v_mag: 12.355
+  v_mag_calc: false
+TOI-172:
   dec: '-26:41:33.474'
   gaia_bp_mag: 11.551
   gaia_dec: -26.692865438624032
@@ -5203,6 +8064,734 @@ TOI172:
     target="_blank">CD-27 15244</a>
   twomass_id: 21063165-2641333
   v_mag: 11.3
+  v_mag_calc: false
+TOI-1728:
+  dec: '+64:47:48.931'
+  gaia_bp_mag: 12.656
+  gaia_dec: 64.79715314560994
+  gaia_g_mag: 11.729
+  gaia_id: '1094545653447816064'
+  gaia_parallax: 16.419
+  gaia_pm_dec: 52.919
+  gaia_pm_ra: 104.078
+  gaia_ra: 120.61167867358256
+  gaia_rp_mag: 10.8
+  h_mag: 8.953
+  i_mag: 10.711
+  i_mag_calc: true
+  j_mag: 9.642
+  k_mag: 8.803
+  notes: ''
+  r_mag: 11.915
+  r_mag_calc: false
+  ra: '08:02:26.5503'
+  simbad_id: UCAC4 774-029023
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+774-029023"
+    target="_blank">UCAC4 774-029023</a>
+  twomass_id: 08022653+6447489
+  v_mag: 12.397
+  v_mag_calc: false
+TOI-178:
+  dec: '-30:27:13.464'
+  gaia_bp_mag: 11.866
+  gaia_dec: -30.454115932330396
+  gaia_g_mag: 11.152
+  gaia_id: '2318295979126499200'
+  gaia_parallax: 15.921
+  gaia_pm_dec: -87.253
+  gaia_pm_ra: 149.953
+  gaia_ra: 7.302011483474083
+  gaia_rp_mag: 10.374
+  h_mag: 8.761
+  i_mag: 10.628
+  i_mag_calc: true
+  j_mag: 9.372
+  k_mag: 8.656
+  notes: ''
+  r_mag: 10.883
+  r_mag_calc: true
+  ra: '00:29:12.3030'
+  simbad_id: WT 2353
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WT+2353" target="_blank">WT
+    2353</a>
+  twomass_id: 00291228-3027133
+  v_mag: 11.95
+  v_mag_calc: false
+TOI-1789:
+  dec: '+26:32:24.595'
+  gaia_bp_mag: 9.905
+  gaia_dec: 26.539995130833145
+  gaia_g_mag: 9.584
+  gaia_id: '646125297938578944'
+  gaia_parallax: 4.337
+  gaia_pm_dec: -39.545
+  gaia_pm_ra: -7.999
+  gaia_ra: 142.743406020159
+  gaia_rp_mag: 9.141
+  h_mag: 8.41
+  i_mag: 9.061
+  i_mag_calc: true
+  j_mag: 8.672
+  k_mag: 8.345
+  notes: ''
+  r_mag: 9.373
+  r_mag_calc: true
+  ra: '09:30:58.4266'
+  simbad_id: HD 82139
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+82139"
+    target="_blank">HD 82139</a>
+  twomass_id: 09305841+2632246
+  v_mag: 9.72
+  v_mag_calc: false
+TOI-1807:
+  dec: '+38:55:20.946'
+  gaia_bp_mag: 10.255
+  gaia_dec: 38.922367140999015
+  gaia_g_mag: 9.675
+  gaia_id: '1476485996883837184'
+  gaia_parallax: 23.458
+  gaia_pm_dec: -27.377
+  gaia_pm_ra: -124.713
+  gaia_ra: 201.28262591762203
+  gaia_rp_mag: 8.987
+  h_mag: 7.605
+  i_mag: 8.86
+  i_mag_calc: true
+  j_mag: 8.103
+  k_mag: 7.568
+  notes: ''
+  r_mag: 9.408
+  r_mag_calc: true
+  ra: '13:25:07.9958'
+  simbad_id: BD+39 2643
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B39+2643"
+    target="_blank">BD+39 2643</a>
+  twomass_id: 13250800+3855210
+  v_mag: 9.97
+  v_mag_calc: false
+TOI-1899:
+  dec: '+40:08:35.754'
+  gaia_bp_mag: 14.503
+  gaia_dec: 40.14334624695837
+  gaia_g_mag: 13.555
+  gaia_id: '2073530190996615424'
+  gaia_parallax: 7.757
+  gaia_pm_dec: 18.828
+  gaia_pm_ra: 35.427
+  gaia_ra: 299.42684716721396
+  gaia_rp_mag: 12.594
+  h_mag: 10.666
+  i_mag: 13.139
+  i_mag_calc: true
+  j_mag: 11.342
+  k_mag: 10.509
+  notes: ''
+  r_mag: 13.317
+  r_mag_calc: true
+  ra: '19:57:42.3954'
+  simbad_id: 2MASS J19574239+4008357
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=2MASS+J19574239%2B4008357"
+    target="_blank">2MASS J19574239+4008357</a>
+  twomass_id: 19574239+4008357
+  v_mag: 14.88
+  v_mag_calc: false
+TOI-2076:
+  dec: '+39:47:25.544'
+  gaia_bp_mag: 9.366
+  gaia_dec: 39.79039914276253
+  gaia_g_mag: 8.91
+  gaia_id: '1490845584382687232'
+  gaia_parallax: 23.832
+  gaia_pm_dec: -6.973
+  gaia_pm_ra: -118.228
+  gaia_ra: 217.39201591534362
+  gaia_rp_mag: 8.328
+  h_mag: 7.188
+  i_mag: 8.24
+  i_mag_calc: true
+  j_mag: 7.613
+  k_mag: 7.115
+  notes: ''
+  r_mag: 8.66
+  r_mag_calc: true
+  ra: '14:29:34.2428'
+  simbad_id: BD+40 2790
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B40+2790"
+    target="_blank">BD+40 2790</a>
+  twomass_id: 14293425+3947255
+  v_mag: 9.14
+  v_mag_calc: false
+TOI-237:
+  dec: '-29:24:54.188'
+  gaia_bp_mag: 16.445
+  gaia_dec: -29.416487033919058
+  gaia_g_mag: 14.754
+  gaia_id: '2329387852426700800'
+  gaia_parallax: 26.237
+  gaia_pm_dec: -333.194
+  gaia_pm_ra: 151.047
+  gaia_ra: 353.24353813659707
+  gaia_rp_mag: 13.502
+  h_mag: 11.19
+  i_mag: 13.396
+  i_mag_calc: true
+  j_mag: 11.74
+  k_mag: 10.896
+  notes: ''
+  r_mag: 14.794
+  r_mag_calc: true
+  ra: '23:32:58.2699'
+  simbad_id: LEHPM 5926
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LEHPM+5926"
+    target="_blank">LEHPM 5926</a>
+  twomass_id: 23325824-2924540
+  v_mag: 16.37
+  v_mag_calc: false
+TOI-2406:
+  dec: '-03:22:14.287'
+  gaia_bp_mag: 17.452
+  gaia_dec: -3.3720832990353697
+  gaia_g_mag: 15.696
+  gaia_id: '2528453161326406016'
+  gaia_parallax: 18.016
+  gaia_pm_dec: -336.273
+  gaia_pm_ra: 225.752
+  gaia_ra: 8.80605442147594
+  gaia_rp_mag: 14.409
+  h_mag: 12.129
+  i_mag: 13.544
+  i_mag_calc: true
+  j_mag: 12.633
+  k_mag: 11.894
+  notes: ''
+  r_mag: 15.778
+  r_mag_calc: true
+  ra: '00:35:13.2193'
+  simbad_id: LP 645-50
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+645-50"
+    target="_blank">LP 645-50</a>
+  twomass_id: 00351318-0322140
+  v_mag: 16.66
+  v_mag_calc: false
+TOI-257:
+  dec: '-50:49:56.580'
+  gaia_bp_mag: 7.73
+  gaia_dec: -50.83226320445764
+  gaia_g_mag: 7.417
+  gaia_id: '4747624104168195072'
+  gaia_parallax: 12.975
+  gaia_pm_dec: 27.911
+  gaia_pm_ra: 97.912
+  gaia_ra: 47.51726076917858
+  gaia_rp_mag: 6.994
+  h_mag: 6.325
+  i_mag: 6.905
+  i_mag_calc: true
+  j_mag: 6.504
+  k_mag: 6.256
+  notes: ''
+  r_mag: 7.211
+  r_mag_calc: true
+  ra: '03:10:03.9823'
+  simbad_id: HD 19916
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+19916"
+    target="_blank">HD 19916</a>
+  twomass_id: 03100397-5049567
+  v_mag: 7.54
+  v_mag_calc: false
+TOI-269:
+  dec: '-54:10:37.925'
+  gaia_bp_mag: 14.643
+  gaia_dec: -54.17772128720233
+  gaia_g_mag: 13.426
+  gaia_id: '4770828304936109056'
+  gaia_parallax: 17.508
+  gaia_pm_dec: -120.75
+  gaia_pm_ra: 26.472
+  gaia_ra: 75.8462827438132
+  gaia_rp_mag: 12.338
+  h_mag: 10.304
+  i_mag: 12.236
+  i_mag_calc: true
+  j_mag: 10.909
+  k_mag: 10.1
+  notes: ''
+  r_mag: 13.92
+  r_mag_calc: false
+  ra: '05:03:23.0611'
+  simbad_id: UCAC4 180-005252
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+180-005252"
+    target="_blank">UCAC4 180-005252</a>
+  twomass_id: 05032306-5410378
+  v_mag: 14.41
+  v_mag_calc: false
+TOI-270:
+  dec: '-51:57:22.436'
+  gaia_bp_mag: 12.87
+  gaia_dec: -51.95739373989078
+  gaia_g_mag: 11.631
+  gaia_id: '4781196115469953024'
+  gaia_parallax: 44.456
+  gaia_pm_dec: -269.755
+  gaia_pm_ra: 82.944
+  gaia_ra: 68.41608043384254
+  gaia_rp_mag: 10.543
+  h_mag: 8.531
+  i_mag: 10.418
+  i_mag_calc: true
+  j_mag: 9.099
+  k_mag: 8.251
+  notes: ''
+  r_mag: 12.147
+  r_mag_calc: false
+  ra: '04:33:39.7202'
+  simbad_id: L 231-32
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=L+231-32"
+    target="_blank">L 231-32</a>
+  twomass_id: 04333970-5157222
+  v_mag: 12.617
+  v_mag_calc: false
+TOI-421:
+  dec: '-14:16:37.047'
+  gaia_bp_mag: 10.203
+  gaia_dec: -14.276740377635894
+  gaia_g_mag: 9.778
+  gaia_id: '2984582227215748864'
+  gaia_parallax: 13.341
+  gaia_pm_dec: 50.45
+  gaia_pm_ra: -35.687
+  gaia_ra: 81.85328235994844
+  gaia_rp_mag: 9.227
+  h_mag: 8.219
+  i_mag: 9.086
+  i_mag_calc: true
+  j_mag: 8.547
+  k_mag: 8.071
+  notes: ''
+  r_mag: 9.535
+  r_mag_calc: true
+  ra: '05:27:24.8258'
+  simbad_id: BD-14 1137
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-14+1137"
+    target="_blank">BD-14 1137</a>
+  twomass_id: 05272482-1416370
+  v_mag: 9.93
+  v_mag_calc: false
+TOI-431:
+  dec: '-26:43:28.268'
+  gaia_bp_mag: 9.356
+  gaia_dec: -26.723869833724212
+  gaia_g_mag: 8.792
+  gaia_id: '2908664557091200768'
+  gaia_parallax: 30.675
+  gaia_pm_dec: 150.766
+  gaia_pm_ra: 16.804
+  gaia_ra: 83.26925021733659
+  gaia_rp_mag: 8.128
+  h_mag: 6.846
+  i_mag: 8.057
+  i_mag_calc: true
+  j_mag: 7.305
+  k_mag: 6.723
+  notes: ''
+  r_mag: 8.527
+  r_mag_calc: true
+  ra: '05:33:04.6006'
+  simbad_id: CD-26 2288
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-26+2288"
+    target="_blank">CD-26 2288</a>
+  twomass_id: 05330459-2643286
+  v_mag: 9.13
+  v_mag_calc: false
+TOI-451:
+  dec: '-37:56:23.219'
+  gaia_bp_mag: 11.147
+  gaia_dec: -37.939729958335946
+  gaia_g_mag: 10.75
+  gaia_id: '4844691297067063424'
+  gaia_parallax: 8.053
+  gaia_pm_dec: 12.374
+  gaia_pm_ra: -11.167
+  gaia_ra: 62.96638495427847
+  gaia_rp_mag: 10.22
+  h_mag: 9.287
+  i_mag: 10.139
+  i_mag_calc: true
+  j_mag: 9.636
+  k_mag: 9.19
+  notes: ''
+  r_mag: 10.513
+  r_mag_calc: true
+  ra: '04:11:51.9470'
+  simbad_id: CD-38 1467
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38+1467"
+    target="_blank">CD-38 1467</a>
+  twomass_id: 04115194-3756232
+  v_mag: 10.94
+  v_mag_calc: false
+TOI-481:
+  dec: '-57:23:05.599'
+  gaia_bp_mag: 10.219
+  gaia_dec: -57.38499803551589
+  gaia_g_mag: 9.847
+  gaia_id: '5486322710592888064'
+  gaia_parallax: 5.547
+  gaia_pm_dec: -25.387
+  gaia_pm_ra: 25.676
+  gaia_ra: 110.51268609912493
+  gaia_rp_mag: 9.354
+  h_mag: 8.482
+  i_mag: 9.223
+  i_mag_calc: true
+  j_mag: 8.803
+  k_mag: 8.443
+  notes: ''
+  r_mag: 9.619
+  r_mag_calc: true
+  ra: '07:22:02.9954'
+  simbad_id: CD-57 1712
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-57+1712"
+    target="_blank">CD-57 1712</a>
+  twomass_id: 07220299-5723054
+  v_mag: 9.97
+  v_mag_calc: false
+TOI-540:
+  dec: '-47:56:15.529'
+  gaia_bp_mag: 14.723
+  gaia_dec: -47.9375390730047
+  gaia_g_mag: 12.894
+  gaia_id: '4785886941312921344'
+  gaia_parallax: 71.389
+  gaia_pm_dec: 25.077
+  gaia_pm_ra: -66.085
+  gaia_ra: 76.3096948610475
+  gaia_rp_mag: 11.61
+  h_mag: 9.17
+  i_mag: 11.147
+  i_mag_calc: true
+  j_mag: 9.755
+  k_mag: 8.9
+  notes: ''
+  r_mag: 13.007
+  r_mag_calc: true
+  ra: '05:05:14.4286'
+  simbad_id: UCAC4 211-005570
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+211-005570"
+    target="_blank">UCAC4 211-005570</a>
+  twomass_id: 05051443-4756154
+  v_mag: 14.365
+  v_mag_calc: false
+TOI-561:
+  dec: '+06:12:58.924'
+  gaia_bp_mag: 10.412
+  gaia_dec: 6.216103030888849
+  gaia_g_mag: 10.013
+  gaia_id: '3850421005290172416'
+  gaia_parallax: 11.627
+  gaia_pm_dec: -61.511
+  gaia_pm_ra: -108.432
+  gaia_ra: 148.18515159124192
+  gaia_rp_mag: 9.479
+  h_mag: 8.504
+  i_mag: 9.444
+  i_mag_calc: true
+  j_mag: 8.879
+  k_mag: 8.394
+  notes: ''
+  r_mag: 9.776
+  r_mag_calc: true
+  ra: '09:52:44.5490'
+  simbad_id: TYC 243-1528-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+243-1528-1"
+    target="_blank">TYC 243-1528-1</a>
+  twomass_id: 09524454+0612589
+  v_mag: 10.25
+  v_mag_calc: false
+TOI-564:
+  dec: '-16:02:10.607'
+  gaia_bp_mag: 11.527
+  gaia_dec: -16.03632746450811
+  gaia_g_mag: 11.142
+  gaia_id: '5710154317045164416'
+  gaia_parallax: 4.982
+  gaia_pm_dec: -11.025
+  gaia_pm_ra: -2.508
+  gaia_ra: 130.29515351450218
+  gaia_rp_mag: 10.622
+  h_mag: 9.71
+  i_mag: 10.526
+  i_mag_calc: true
+  j_mag: 10.044
+  k_mag: 9.604
+  notes: ''
+  r_mag: 10.67
+  r_mag_calc: false
+  ra: '08:41:10.8395'
+  simbad_id: TYC 6012-1100-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+6012-1100-1"
+    target="_blank">TYC 6012-1100-1</a>
+  twomass_id: 08411084-1602105
+  v_mag: 11.308
+  v_mag_calc: false
+TOI-628:
+  dec: '+01:46:03.195'
+  gaia_bp_mag: 10.378
+  gaia_dec: 1.7675496549993133
+  gaia_g_mag: 10.058
+  gaia_id: '3126717023051258112'
+  gaia_parallax: 5.57
+  gaia_pm_dec: -1.082
+  gaia_pm_ra: -1.437
+  gaia_ra: 99.26306075088908
+  gaia_rp_mag: 9.615
+  h_mag: 8.895
+  i_mag: 9.452
+  i_mag_calc: true
+  j_mag: 9.17
+  k_mag: 8.811
+  notes: ''
+  r_mag: 9.847
+  r_mag_calc: true
+  ra: '06:37:03.1360'
+  simbad_id: HD 288842
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+288842"
+    target="_blank">HD 288842</a>
+  twomass_id: 06370314+0146031
+  v_mag: 10.11
+  v_mag_calc: false
+TOI-640:
+  dec: '-36:38:46.144'
+  gaia_bp_mag: 10.685
+  gaia_dec: -36.64612996802294
+  gaia_g_mag: 10.401
+  gaia_id: '5580554052549277056'
+  gaia_parallax: 2.895
+  gaia_pm_dec: 4.927
+  gaia_pm_ra: -3.872
+  gaia_ra: 99.73459350832813
+  gaia_rp_mag: 9.993
+  h_mag: 9.327
+  i_mag: 9.913
+  i_mag_calc: true
+  j_mag: 9.519
+  k_mag: 9.243
+  notes: ''
+  r_mag: 10.203
+  r_mag_calc: true
+  ra: '06:38:56.3074'
+  simbad_id: TYC 7099-846-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+7099-846-1"
+    target="_blank">TYC 7099-846-1</a>
+  twomass_id: 06385630-3638462
+  v_mag: 10.51
+  v_mag_calc: false
+TOI-677:
+  dec: '-50:27:47.793'
+  gaia_bp_mag: 9.968
+  gaia_dec: -50.46309333786793
+  gaia_g_mag: 9.661
+  gaia_id: '5313031504751276032'
+  gaia_parallax: 7.023
+  gaia_pm_dec: 42.417
+  gaia_pm_ra: -24.817
+  gaia_ra: 144.11935935812366
+  gaia_rp_mag: 9.229
+  h_mag: 8.47
+  i_mag: 9.183
+  i_mag_calc: true
+  j_mag: 8.722
+  k_mag: 8.429
+  notes: ''
+  r_mag: 9.454
+  r_mag_calc: true
+  ra: '09:36:28.6865'
+  simbad_id: HD 297549
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+297549"
+    target="_blank">HD 297549</a>
+  twomass_id: 09362869-5027478
+  v_mag: 9.82
+  v_mag_calc: false
+TOI-700:
+  dec: '-65:34:45.521'
+  gaia_bp_mag: 13.35
+  gaia_dec: -65.57861489153228
+  gaia_g_mag: 12.066
+  gaia_id: '5284517766615492736'
+  gaia_parallax: 32.098
+  gaia_pm_dec: 161.805
+  gaia_pm_ra: -102.75
+  gaia_ra: 97.09571653643896
+  gaia_rp_mag: 10.96
+  h_mag: 8.893
+  i_mag: 10.7
+  i_mag_calc: false
+  j_mag: 9.469
+  k_mag: 8.634
+  notes: ''
+  r_mag: 12.66
+  r_mag_calc: false
+  ra: '06:28:23.2287'
+  simbad_id: UCAC3 49-21611
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC3+49-21611"
+    target="_blank">UCAC3 49-21611</a>
+  twomass_id: 06282325-6534456
+  v_mag: 13.08
+  v_mag_calc: false
+TOI-776:
+  dec: '-37:33:09.836'
+  gaia_bp_mag: 11.785
+  gaia_dec: -37.553356837009446
+  gaia_g_mag: 10.741
+  gaia_id: '3460438662009633408'
+  gaia_parallax: 36.776
+  gaia_pm_dec: -145.059
+  gaia_pm_ra: 251.112
+  gaia_ra: 178.5779970281921
+  gaia_rp_mag: 9.758
+  h_mag: 7.877
+  i_mag: 9.67
+  i_mag_calc: true
+  j_mag: 8.483
+  k_mag: 7.615
+  notes: ''
+  r_mag: 11.104
+  r_mag_calc: false
+  ra: '11:54:18.3919'
+  simbad_id: LP 961-53
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+961-53"
+    target="_blank">LP 961-53</a>
+  twomass_id: 11541839-3733097
+  v_mag: 11.536
+  v_mag_calc: false
+TOI-824:
+  dec: '-57:35:17.557'
+  gaia_bp_mag: 11.406
+  gaia_dec: -57.58886661195928
+  gaia_g_mag: 10.762
+  gaia_id: '5880886001621564928'
+  gaia_parallax: 15.614
+  gaia_pm_dec: -152.392
+  gaia_pm_ra: -51.604
+  gaia_ra: 222.1654704502616
+  gaia_rp_mag: 10.021
+  h_mag: 8.557
+  i_mag: 9.92
+  i_mag_calc: false
+  j_mag: 9.145
+  k_mag: 8.432
+  notes: ''
+  r_mag: 10.47
+  r_mag_calc: false
+  ra: '14:48:39.8123'
+  simbad_id: TYC 8688-915-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+8688-915-1"
+    target="_blank">TYC 8688-915-1</a>
+  twomass_id: 14483982-5735175
+  v_mag: 11.31
+  v_mag_calc: false
+TOI-837:
+  dec: '-64:30:18.933'
+  gaia_bp_mag: 10.695
+  gaia_dec: -64.50521068147057
+  gaia_g_mag: 10.356
+  gaia_id: '5251470948229949568'
+  gaia_parallax: 6.989
+  gaia_pm_dec: 11.307
+  gaia_pm_ra: -18.017
+  gaia_ra: 157.03728055645016
+  gaia_rp_mag: 9.887
+  h_mag: 9.108
+  i_mag: 9.943
+  i_mag_calc: true
+  j_mag: 9.392
+  k_mag: 8.933
+  notes: ''
+  r_mag: 10.137
+  r_mag_calc: true
+  ra: '10:28:08.9905'
+  simbad_id: CPD-63 1435
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-63+1435"
+    target="_blank">CPD-63 1435</a>
+  twomass_id: 10280898-6430189
+  v_mag: 10.64
+  v_mag_calc: false
+TOI-892:
+  dec: '-11:14:07.316'
+  gaia_bp_mag: 11.643
+  gaia_dec: -11.235340051114589
+  gaia_g_mag: 11.343
+  gaia_id: '3010759262610139776'
+  gaia_parallax: 2.908
+  gaia_pm_dec: 5.967
+  gaia_pm_ra: -0.143
+  gaia_ra: 86.73822801227703
+  gaia_rp_mag: 10.907
+  h_mag: 10.188
+  i_mag: 10.795
+  i_mag_calc: true
+  j_mag: 10.455
+  k_mag: 10.106
+  notes: ''
+  r_mag: 11.137
+  r_mag_calc: true
+  ra: '05:46:57.1748'
+  simbad_id: TYC 5351-283-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+5351-283-1"
+    target="_blank">TYC 5351-283-1</a>
+  twomass_id: 05465717-1114073
+  v_mag: 11.43
+  v_mag_calc: false
+TOI-905:
+  dec: '-71:21:41.236'
+  gaia_bp_mag: 11.509
+  gaia_dec: -71.36163162829078
+  gaia_g_mag: 11.081
+  gaia_id: '5795534040654879744'
+  gaia_parallax: 6.274
+  gaia_pm_dec: -41.15
+  gaia_pm_ra: -25.839
+  gaia_ra: 227.65867537803734
+  gaia_rp_mag: 10.528
+  h_mag: 9.51
+  i_mag: 10.231
+  i_mag_calc: true
+  j_mag: 9.89
+  k_mag: 9.448
+  notes: ''
+  r_mag: 10.838
+  r_mag_calc: true
+  ra: '15:10:38.1656'
+  simbad_id: TYC 9266-362-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+9266-362-1"
+    target="_blank">TYC 9266-362-1</a>
+  twomass_id: 15103816-7121411
+  v_mag: 11.08
+  v_mag_calc: false
+TOI-954:
+  dec: '-25:12:31.231'
+  gaia_bp_mag: 10.598
+  gaia_dec: -25.208802841795965
+  gaia_g_mag: 10.232
+  gaia_id: '4890874702443960832'
+  gaia_parallax: 4.16
+  gaia_pm_dec: -29.623
+  gaia_pm_ra: -5.787
+  gaia_ra: 61.9410586907642
+  gaia_rp_mag: 9.733
+  h_mag: 8.891
+  i_mag: 9.633
+  i_mag_calc: true
+  j_mag: 9.18
+  k_mag: 8.779
+  notes: ''
+  r_mag: 10.36
+  r_mag_calc: false
+  ra: '04:07:45.8606'
+  simbad_id: CD-25 1737
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-25+1737"
+    target="_blank">CD-25 1737</a>
+  twomass_id: 04074585-2512312
+  v_mag: 10.38
   v_mag_calc: false
 TRAPPIST-1:
   dec: '-05:02:29.031'
@@ -5303,7 +8892,7 @@ TrES-3:
   r_mag_calc: false
   ra: '17:52:07.0185'
   simbad_id: 1SWASP J175207.01+373246.3
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=1SWASP+J175207.01%373246.3"
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=1SWASP+J175207.01%2B373246.3"
     target="_blank">1SWASP J175207.01+373246.3</a>
   twomass_id: 17520702+3732461
   v_mag: 12.402
@@ -5359,6 +8948,32 @@ TrES-5:
     target="_blank">GSC 03949-00967</a>
   twomass_id: 20205324+5926556
   v_mag: 13.58
+  v_mag_calc: false
+V1298Tau:
+  dec: '+20:09:25.563'
+  gaia_bp_mag: 10.571
+  gaia_dec: 20.157031761994073
+  gaia_g_mag: 10.07
+  gaia_id: '51886335968692480'
+  gaia_parallax: 9.214
+  gaia_pm_dec: -16.077
+  gaia_pm_ra: 5.228
+  gaia_ra: 61.331654034962376
+  gaia_rp_mag: 9.444
+  h_mag: 8.191
+  i_mag: 13.883
+  i_mag_calc: false
+  j_mag: 8.687
+  k_mag: 8.094
+  notes: ''
+  r_mag: 9.57
+  r_mag_calc: false
+  ra: '04:05:19.5912'
+  simbad_id: V* V1298 Tau
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=V*+V1298+Tau"
+    target="_blank">V* V1298 Tau</a>
+  twomass_id: 04051959+2009256
+  v_mag: 10.12
   v_mag_calc: false
 WASP-1:
   dec: '+31:59:23.953'
@@ -5430,9 +9045,9 @@ WASP-100:
   r_mag: 10.444
   r_mag_calc: true
   ra: '04:35:50.3302'
-  simbad_id: CPD-64   356
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-64+++356"
-    target="_blank">CPD-64   356</a>
+  simbad_id: CPD-64 356
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-64+356"
+    target="_blank">CPD-64 356</a>
   twomass_id: 04355033-6401373
   v_mag: 10.8
   v_mag_calc: false
@@ -5456,9 +9071,9 @@ WASP-101:
   r_mag: 9.947
   r_mag_calc: true
   ra: '06:33:24.2672'
-  simbad_id: CPD-23  1329
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-23++1329"
-    target="_blank">CPD-23  1329</a>
+  simbad_id: CPD-23 1329
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-23+1329"
+    target="_blank">CPD-23 1329</a>
   twomass_id: 06332426-2329103
   v_mag: 10.34
   v_mag_calc: false
@@ -5513,6 +9128,32 @@ WASP-104:
     target="_blank">WASP-104</a>
   twomass_id: 10422458+0726060
   v_mag: 11.12
+  v_mag_calc: false
+WASP-105:
+  dec: '-50:39:33.184'
+  gaia_bp_mag: 12.326
+  gaia_dec: -50.659307970560455
+  gaia_g_mag: 11.845
+  gaia_id: '4917441922731087488'
+  gaia_parallax: 3.96
+  gaia_pm_dec: -20.928
+  gaia_pm_ra: -39.282
+  gaia_ra: 24.16786863234127
+  gaia_rp_mag: 11.224
+  h_mag: 10.041
+  i_mag: 11.083
+  i_mag_calc: true
+  j_mag: 10.456
+  k_mag: 9.935
+  notes: ''
+  r_mag: 11.89
+  r_mag_calc: false
+  ra: '01:36:40.3525'
+  simbad_id: WASP-105
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-105"
+    target="_blank">WASP-105</a>
+  twomass_id: 01364035-5039330
+  v_mag: 12.04
   v_mag_calc: false
 WASP-106:
   dec: '-05:04:45.941'
@@ -5591,6 +9232,32 @@ WASP-11:
   twomass_id: 03092855+3040249
   v_mag: 11.57
   v_mag_calc: false
+WASP-110:
+  dec: '-44:03:30.509'
+  gaia_bp_mag: 12.959
+  gaia_dec: -44.058700097564106
+  gaia_g_mag: 12.552
+  gaia_id: '6678937478314860160'
+  gaia_parallax: 3.609
+  gaia_pm_dec: -52.291
+  gaia_pm_ra: -40.976
+  gaia_ra: 305.87243659132577
+  gaia_rp_mag: 11.993
+  h_mag: 10.945
+  i_mag: 11.755
+  i_mag_calc: true
+  j_mag: 11.326
+  k_mag: 10.871
+  notes: ''
+  r_mag: 12.64
+  r_mag_calc: false
+  ra: '20:23:29.4437'
+  simbad_id: UCAC4 230-186354
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=UCAC4+230-186354"
+    target="_blank">UCAC4 230-186354</a>
+  twomass_id: 20232944-4403306
+  v_mag: 12.59
+  v_mag_calc: false
 WASP-113:
   dec: '+46:57:36.480'
   gaia_bp_mag: 11.928
@@ -5663,9 +9330,9 @@ WASP-117:
   r_mag: 9.822
   r_mag_calc: true
   ra: '02:27:06.0977'
-  simbad_id: CD-50   714
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-50+++714"
-    target="_blank">CD-50   714</a>
+  simbad_id: CD-50 714
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-50+714"
+    target="_blank">CD-50 714</a>
   twomass_id: 02270610-5017042
   v_mag: 10.14
   v_mag_calc: false
@@ -5766,9 +9433,9 @@ WASP-120:
   r_mag: 10.721
   r_mag_calc: true
   ra: '04:10:27.8559'
-  simbad_id: CD-46  1323
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-46++1323"
-    target="_blank">CD-46  1323</a>
+  simbad_id: CD-46 1323
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-46+1323"
+    target="_blank">CD-46 1323</a>
   twomass_id: 04102785-4553535
   v_mag: 10.96
   v_mag_calc: false
@@ -5792,9 +9459,9 @@ WASP-121:
   r_mag: 10.195
   r_mag_calc: true
   ra: '07:10:24.0606'
-  simbad_id: CD-38  3220
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38++3220"
-    target="_blank">CD-38  3220</a>
+  simbad_id: CD-38 3220
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38+3220"
+    target="_blank">CD-38 3220</a>
   twomass_id: 07102406-3905506
   v_mag: 10.51
   v_mag_calc: false
@@ -5896,9 +9563,9 @@ WASP-127:
   r_mag: 9.74
   r_mag_calc: false
   ra: '10:42:14.0835'
-  simbad_id: BD-03  2978
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-03++2978"
-    target="_blank">BD-03  2978</a>
+  simbad_id: BD-03 2978
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-03+2978"
+    target="_blank">BD-03 2978</a>
   twomass_id: 10421407-0350062
   v_mag: 10.172
   v_mag_calc: false
@@ -5948,9 +9615,9 @@ WASP-13:
   r_mag: 10.17
   r_mag_calc: true
   ra: '09:20:24.7143'
-  simbad_id: BD+34  1976
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%34++1976"
-    target="_blank">BD+34  1976</a>
+  simbad_id: BD+34 1976
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B34+1976"
+    target="_blank">BD+34 1976</a>
   twomass_id: 09202471+3352567
   v_mag: 10.42
   v_mag_calc: false
@@ -5974,9 +9641,9 @@ WASP-130:
   r_mag: 10.736
   r_mag_calc: true
   ra: '13:32:25.4360'
-  simbad_id: CD-41  7923
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-41++7923"
-    target="_blank">CD-41  7923</a>
+  simbad_id: CD-41 7923
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-41+7923"
+    target="_blank">CD-41 7923</a>
   twomass_id: 13322543-4228309
   v_mag: 11.1
   v_mag_calc: false
@@ -6182,9 +9849,9 @@ WASP-14:
   r_mag: 9.465
   r_mag_calc: true
   ra: '14:33:06.3573'
-  simbad_id: BD+22  2716
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%22++2716"
-    target="_blank">BD+22  2716</a>
+  simbad_id: BD+22 2716
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B22+2716"
+    target="_blank">BD+22 2716</a>
   twomass_id: 14330635+2153409
   v_mag: 9.745
   v_mag_calc: false
@@ -6208,9 +9875,9 @@ WASP-140:
   r_mag: 10.576
   r_mag_calc: true
   ra: '04:01:32.5498'
-  simbad_id: BD-20   761
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-20+++761"
-    target="_blank">BD-20   761</a>
+  simbad_id: BD-20 761
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-20+761"
+    target="_blank">BD-20 761</a>
   twomass_id: 04013254-2027039
   v_mag: 11.12
   v_mag_calc: false
@@ -6312,9 +9979,9 @@ WASP-145A:
   r_mag: 11.43
   r_mag_calc: false
   ra: '21:29:00.6895'
-  simbad_id: CD-59  7727A
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-59++7727A"
-    target="_blank">CD-59  7727A</a>
+  simbad_id: CD-59 7727A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-59+7727A"
+    target="_blank">CD-59 7727A</a>
   twomass_id: 21290068-5850102
   v_mag: 11.59
   v_mag_calc: false
@@ -6344,6 +10011,32 @@ WASP-147:
   twomass_id: 23564597-2209113
   v_mag: 12.68
   v_mag_calc: false
+WASP-148:
+  dec: '+44:18:09.549'
+  gaia_bp_mag: 12.489
+  gaia_dec: 44.302536133004
+  gaia_g_mag: 12.085
+  gaia_id: '1358355738906114816'
+  gaia_parallax: 4.03
+  gaia_pm_dec: -27.061
+  gaia_pm_ra: -13.477
+  gaia_ra: 254.13050217111467
+  gaia_rp_mag: 11.54
+  h_mag: 10.585
+  i_mag: 11.22
+  i_mag_calc: true
+  j_mag: 10.938
+  k_mag: 10.506
+  notes: ''
+  r_mag: 11.846
+  r_mag_calc: true
+  ra: '16:56:31.3399'
+  simbad_id: TYC 3083-295-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+3083-295-1"
+    target="_blank">TYC 3083-295-1</a>
+  twomass_id: 16563135+4418095
+  v_mag: 12.04
+  v_mag_calc: false
 WASP-15:
   dec: '-32:09:34.615'
   gaia_bp_mag: 11.064
@@ -6369,6 +10062,32 @@ WASP-15:
     target="_blank">CD-31 10766</a>
   twomass_id: 13554270-3209345
   v_mag: 10.91
+  v_mag_calc: false
+WASP-150:
+  dec: '+53:01:16.481'
+  gaia_bp_mag: 12.199
+  gaia_dec: 53.0212750885175
+  gaia_g_mag: 11.915
+  gaia_id: '1416731285125373184'
+  gaia_parallax: 1.865
+  gaia_pm_dec: 7.0
+  gaia_pm_ra: -4.289
+  gaia_ra: 264.2630196612319
+  gaia_rp_mag: 11.492
+  h_mag: 10.789
+  i_mag: 14.373
+  i_mag_calc: false
+  j_mag: 11.058
+  k_mag: 10.747
+  notes: ''
+  r_mag: 14.755
+  r_mag_calc: false
+  ra: '17:37:03.1320'
+  simbad_id: WASP-150
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-150"
+    target="_blank">WASP-150</a>
+  twomass_id: 17370314+5301165
+  v_mag: 12.03
   v_mag_calc: false
 WASP-151:
   dec: '+00:18:24.245'
@@ -6578,6 +10297,32 @@ WASP-160B:
   twomass_id: 05504305-2737233
   v_mag: 13.09
   v_mag_calc: false
+WASP-161:
+  dec: '-11:30:03.551'
+  gaia_bp_mag: 11.159
+  gaia_dec: -11.500988920068957
+  gaia_g_mag: 10.899
+  gaia_id: '5751177095877066496'
+  gaia_parallax: 2.886
+  gaia_pm_dec: -0.587
+  gaia_pm_ra: -5.388
+  gaia_ra: 126.33782484096542
+  gaia_rp_mag: 10.513
+  h_mag: 9.906
+  i_mag: 10.522
+  i_mag_calc: true
+  j_mag: 10.09
+  k_mag: 9.837
+  notes: ''
+  r_mag: 10.711
+  r_mag_calc: true
+  ra: '08:25:21.0836'
+  simbad_id: BD-11 2350
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-11+2350"
+    target="_blank">BD-11 2350</a>
+  twomass_id: 08252108-1130035
+  v_mag: 11.08
+  v_mag_calc: false
 WASP-162:
   dec: '-17:39:27.885'
   gaia_bp_mag: 12.47
@@ -6603,6 +10348,32 @@ WASP-162:
     target="_blank">WASP-162</a>
   twomass_id: 11131028-1739280
   v_mag: 12.21
+  v_mag_calc: false
+WASP-163:
+  dec: '-10:24:46.742'
+  gaia_bp_mag: 12.799
+  gaia_dec: -10.413007140874205
+  gaia_g_mag: 12.251
+  gaia_id: '4334991786994866304'
+  gaia_parallax: 3.798
+  gaia_pm_dec: -5.36
+  gaia_pm_ra: 0.021
+  gaia_ra: 256.53755485547424
+  gaia_rp_mag: 11.561
+  h_mag: 10.288
+  i_mag: 11.975
+  i_mag_calc: false
+  j_mag: 10.673
+  k_mag: 10.147
+  notes: ''
+  r_mag: 12.276
+  r_mag_calc: false
+  ra: '17:06:09.0131'
+  simbad_id: WASP-163
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-163"
+    target="_blank">WASP-163</a>
+  twomass_id: 17060901-1024467
+  v_mag: 12.663
   v_mag_calc: false
 WASP-164:
   dec: '-60:26:52.115'
@@ -6656,6 +10427,32 @@ WASP-165:
   twomass_id: 23501932-1704392
   v_mag: 12.683
   v_mag_calc: false
+WASP-166:
+  dec: '-20:58:56.877'
+  gaia_bp_mag: 9.564
+  gaia_dec: -20.98241905353288
+  gaia_g_mag: 9.257
+  gaia_id: '5664957444179338240'
+  gaia_parallax: 8.73
+  gaia_pm_dec: 10.927
+  gaia_pm_ra: -55.082
+  gaia_ra: 144.87510469762634
+  gaia_rp_mag: 8.827
+  h_mag: 8.135
+  i_mag: 8.714
+  i_mag_calc: true
+  j_mag: 8.35
+  k_mag: 8.032
+  notes: ''
+  r_mag: 9.051
+  r_mag_calc: true
+  ra: '09:39:30.0860'
+  simbad_id: BD-20 2976
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-20+2976"
+    target="_blank">BD-20 2976</a>
+  twomass_id: 09393009-2058568
+  v_mag: 9.35
+  v_mag_calc: false
 WASP-167:
   dec: '-35:32:58.321'
   gaia_bp_mag: 10.773
@@ -6676,9 +10473,9 @@ WASP-167:
   r_mag: 10.424
   r_mag_calc: true
   ra: '13:04:10.5340'
-  simbad_id: CD-34  8618
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-34++8618"
-    target="_blank">CD-34  8618</a>
+  simbad_id: CD-34 8618
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-34+8618"
+    target="_blank">CD-34 8618</a>
   twomass_id: 13041053-3532582
   v_mag: 10.52
   v_mag_calc: false
@@ -6708,6 +10505,32 @@ WASP-168:
   twomass_id: 06265871-4649171
   v_mag: 12.12
   v_mag_calc: false
+WASP-169:
+  dec: '-12:56:41.106'
+  gaia_bp_mag: 12.018
+  gaia_dec: -12.94476831861753
+  gaia_g_mag: 11.721
+  gaia_id: '5723772524469252096'
+  gaia_parallax: 1.566
+  gaia_pm_dec: -3.821
+  gaia_pm_ra: -13.183
+  gaia_ra: 127.38722967381949
+  gaia_rp_mag: 11.276
+  h_mag: 10.552
+  i_mag: 11.53
+  i_mag_calc: true
+  j_mag: 10.8
+  k_mag: 10.483
+  notes: ''
+  r_mag: 11.514
+  r_mag_calc: true
+  ra: '08:29:32.9490'
+  simbad_id: WASP-169
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-169"
+    target="_blank">WASP-169</a>
+  twomass_id: 08293295-1256411
+  v_mag: 12.17
+  v_mag_calc: false
 WASP-17:
   dec: '-28:03:42.309'
   gaia_bp_mag: 11.652
@@ -6734,6 +10557,32 @@ WASP-17:
   twomass_id: 15595095-2803422
   v_mag: 11.59
   v_mag_calc: false
+WASP-170:
+  dec: '-20:43:13.344'
+  gaia_bp_mag: 12.904
+  gaia_dec: -20.720368633404316
+  gaia_g_mag: 12.469
+  gaia_id: '5656184406542140032'
+  gaia_parallax: 3.244
+  gaia_pm_dec: 1.128
+  gaia_pm_ra: -9.984
+  gaia_ra: 135.41630280145088
+  gaia_rp_mag: 11.885
+  h_mag: 10.84
+  i_mag: 11.73
+  i_mag_calc: true
+  j_mag: 11.133
+  k_mag: 10.724
+  notes: ''
+  r_mag: 12.221
+  r_mag_calc: true
+  ra: '09:01:39.9237'
+  simbad_id: WASP-170
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-170"
+    target="_blank">WASP-170</a>
+  twomass_id: 09013992-2043133
+  v_mag: 12.613
+  v_mag_calc: false
 WASP-172:
   dec: '-47:14:15.277'
   gaia_bp_mag: 11.219
@@ -6754,9 +10603,9 @@ WASP-172:
   r_mag: 10.846
   r_mag_calc: true
   ra: '13:17:44.1223'
-  simbad_id: CD-46  8537
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-46++8537"
-    target="_blank">CD-46  8537</a>
+  simbad_id: CD-46 8537
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-46+8537"
+    target="_blank">CD-46 8537</a>
   twomass_id: 13174412-4714152
   v_mag: 10.99
   v_mag_calc: false
@@ -6813,6 +10662,110 @@ WASP-174:
   twomass_id: 13031055-4123053
   v_mag: 11.79
   v_mag_calc: false
+WASP-175:
+  dec: '-34:07:21.976'
+  gaia_bp_mag: 13.011
+  gaia_dec: -34.12274528048494
+  gaia_g_mag: 12.707
+  gaia_id: '5401743332678544640'
+  gaia_parallax: 1.826
+  gaia_pm_dec: 6.033
+  gaia_pm_ra: -24.306
+  gaia_ra: 166.31879956052424
+  gaia_rp_mag: 12.252
+  h_mag: 11.525
+  i_mag: 12.304
+  i_mag_calc: true
+  j_mag: 11.765
+  k_mag: 11.471
+  notes: ''
+  r_mag: 12.497
+  r_mag_calc: true
+  ra: '11:05:16.5422'
+  simbad_id: WASP-175
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-175"
+    target="_blank">WASP-175</a>
+  twomass_id: 11051653-3407219
+  v_mag: 12.959
+  v_mag_calc: false
+WASP-176:
+  dec: '+09:10:44.724'
+  gaia_bp_mag: 12.251
+  gaia_dec: 9.1790687850231
+  gaia_g_mag: 11.939
+  gaia_id: '1750321012752775040'
+  gaia_parallax: 1.731
+  gaia_pm_dec: -4.954
+  gaia_pm_ra: -6.192
+  gaia_ra: 313.68729280668776
+  gaia_rp_mag: 11.483
+  h_mag: 10.689
+  i_mag: 11.348
+  i_mag_calc: true
+  j_mag: 10.991
+  k_mag: 10.648
+  notes: ''
+  r_mag: 11.727
+  r_mag_calc: true
+  ra: '20:54:44.9567'
+  simbad_id: WASP-176
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-176"
+    target="_blank">WASP-176</a>
+  twomass_id: 20544496+0910446
+  v_mag: 12.01
+  v_mag_calc: false
+WASP-177:
+  dec: '-01:50:03.079'
+  gaia_bp_mag: 12.584
+  gaia_dec: -1.8344300850179642
+  gaia_g_mag: 12.072
+  gaia_id: '2677447294810845824'
+  gaia_parallax: 5.628
+  gaia_pm_dec: -56.075
+  gaia_pm_ra: -57.586
+  gaia_ra: 334.79698852940254
+  gaia_rp_mag: 11.437
+  h_mag: 10.244
+  i_mag: 11.831
+  i_mag_calc: false
+  j_mag: 10.654
+  k_mag: 10.163
+  notes: ''
+  r_mag: 12.13
+  r_mag_calc: false
+  ra: '22:19:11.3367'
+  simbad_id: WASP-177
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-177"
+    target="_blank">WASP-177</a>
+  twomass_id: 22191134-0150031
+  v_mag: 12.46
+  v_mag_calc: false
+WASP-178:
+  dec: '-42:42:17.789'
+  gaia_bp_mag: 9.961
+  gaia_dec: -42.70496575635381
+  gaia_g_mag: 9.912
+  gaia_id: '6003809889735481856'
+  gaia_parallax: 2.312
+  gaia_pm_dec: -5.653
+  gaia_pm_ra: -10.011
+  gaia_ra: 227.27032903441415
+  gaia_rp_mag: 9.84
+  h_mag: 9.735
+  i_mag: 9.822
+  i_mag_calc: true
+  j_mag: 9.775
+  k_mag: 9.703
+  notes: ''
+  r_mag: 9.871
+  r_mag_calc: true
+  ra: '15:09:04.8930'
+  simbad_id: HD 134004
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+134004"
+    target="_blank">HD 134004</a>
+  twomass_id: 15090488-4242178
+  v_mag: 9.95
+  v_mag_calc: false
 WASP-18:
   dec: '-45:40:40.376'
   gaia_bp_mag: 9.427
@@ -6833,11 +10786,219 @@ WASP-18:
   r_mag: 8.979
   r_mag_calc: true
   ra: '01:37:25.0335'
-  simbad_id: HD  10069
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD++10069"
-    target="_blank">HD  10069</a>
+  simbad_id: HD 10069
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=HD+10069"
+    target="_blank">HD 10069</a>
   twomass_id: 01372503-4540404
   v_mag: 9.3
+  v_mag_calc: false
+WASP-180A:
+  dec: '-01:58:57.985'
+  gaia_bp_mag: 11.185
+  gaia_dec: -1.982787447860826
+  gaia_g_mag: 10.913
+  gaia_id: '3070964117005132416'
+  gaia_parallax: 3.909
+  gaia_pm_dec: -3.169
+  gaia_pm_ra: -14.052
+  gaia_ra: 123.39224649028236
+  gaia_rp_mag: 10.51
+  h_mag: 9.855
+  i_mag: 11.479
+  i_mag_calc: false
+  j_mag: 10.114
+  k_mag: 9.812
+  notes: ''
+  r_mag: 11.01
+  r_mag_calc: false
+  ra: '08:13:34.1536'
+  simbad_id: WASP-180A
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-180A"
+    target="_blank">WASP-180A</a>
+  twomass_id: 08133416-0158579
+  v_mag: 10.68
+  v_mag_calc: false
+WASP-181:
+  dec: '+03:07:58.897'
+  gaia_bp_mag: 13.116
+  gaia_dec: 3.1329324898614734
+  gaia_g_mag: 12.783
+  gaia_id: '2512413932376364288'
+  gaia_parallax: 2.257
+  gaia_pm_dec: -21.97
+  gaia_pm_ra: -5.343
+  gaia_ra: 26.79322532037729
+  gaia_rp_mag: 12.302
+  h_mag: 11.522
+  i_mag: 14.432
+  i_mag_calc: false
+  j_mag: 11.785
+  k_mag: 11.443
+  notes: ''
+  r_mag: 12.81
+  r_mag_calc: false
+  ra: '01:47:10.3796'
+  simbad_id: WASP-181
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-181"
+    target="_blank">WASP-181</a>
+  twomass_id: 01471037+0307587
+  v_mag: 12.91
+  v_mag_calc: false
+WASP-182:
+  dec: '-41:49:15.202'
+  gaia_bp_mag: 12.292
+  gaia_dec: -41.82098280965398
+  gaia_g_mag: 11.917
+  gaia_id: '6677909439240233472'
+  gaia_parallax: 3.024
+  gaia_pm_dec: -21.65
+  gaia_pm_ra: 30.957
+  gaia_ra: 311.67334498744134
+  gaia_rp_mag: 11.401
+  h_mag: 10.519
+  i_mag: 11.211
+  i_mag_calc: true
+  j_mag: 10.831
+  k_mag: 10.431
+  notes: ''
+  r_mag: 11.685
+  r_mag_calc: true
+  ra: '20:46:41.5598'
+  simbad_id: WASP-182
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-182"
+    target="_blank">WASP-182</a>
+  twomass_id: 20464156-4149151
+  v_mag: 11.98
+  v_mag_calc: false
+WASP-183:
+  dec: '-00:44:13.811'
+  gaia_bp_mag: 13.198
+  gaia_dec: -0.7370663075592934
+  gaia_g_mag: 12.815
+  gaia_id: '3803004978659671040'
+  gaia_parallax: 3.045
+  gaia_pm_dec: 24.033
+  gaia_pm_ra: -28.12
+  gaia_ra: 163.78885205774435
+  gaia_rp_mag: 12.279
+  h_mag: 11.268
+  i_mag: 12.758
+  i_mag_calc: false
+  j_mag: 11.639
+  k_mag: 11.207
+  notes: ''
+  r_mag: 12.94
+  r_mag_calc: false
+  ra: '10:55:09.3535'
+  simbad_id: WASP-183
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-183"
+    target="_blank">WASP-183</a>
+  twomass_id: 10550935-0044139
+  v_mag: 13.01
+  v_mag_calc: false
+WASP-184:
+  dec: '-30:20:53.271'
+  gaia_bp_mag: 12.883
+  gaia_dec: -30.348153004275755
+  gaia_g_mag: 12.567
+  gaia_id: '6173435259395017344'
+  gaia_parallax: 1.48
+  gaia_pm_dec: -5.087
+  gaia_pm_ra: -4.362
+  gaia_ra: 209.51701001300273
+  gaia_rp_mag: 12.103
+  h_mag: 11.319
+  i_mag: 12.01
+  i_mag_calc: false
+  j_mag: 11.59
+  k_mag: 11.262
+  notes: ''
+  r_mag: 12.7
+  r_mag_calc: false
+  ra: '13:58:04.0876'
+  simbad_id: WASP-184
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-184"
+    target="_blank">WASP-184</a>
+  twomass_id: 13580408-3020532
+  v_mag: 12.72
+  v_mag_calc: false
+WASP-185:
+  dec: '-19:32:32.208'
+  gaia_bp_mag: 11.228
+  gaia_dec: -19.542306213973006
+  gaia_g_mag: 10.895
+  gaia_id: '6284007337003799552'
+  gaia_parallax: 3.552
+  gaia_pm_dec: -6.06
+  gaia_pm_ra: -13.403
+  gaia_ra: 214.05957905353435
+  gaia_rp_mag: 10.424
+  h_mag: 9.601
+  i_mag: 10.858
+  i_mag_calc: false
+  j_mag: 9.873
+  k_mag: 9.505
+  notes: ''
+  r_mag: 14.489
+  r_mag_calc: false
+  ra: '14:16:14.3136'
+  simbad_id: WASP-185
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-185"
+    target="_blank">WASP-185</a>
+  twomass_id: 14161431-1932321
+  v_mag: 11.019
+  v_mag_calc: false
+WASP-186:
+  dec: '+21:37:01.006'
+  gaia_bp_mag: 10.917
+  gaia_dec: 21.61690645506794
+  gaia_g_mag: 10.651
+  gaia_id: '2790691147020786816'
+  gaia_parallax: 3.562
+  gaia_pm_dec: -9.221
+  gaia_pm_ra: 21.672
+  gaia_ra: 18.995312242737374
+  gaia_rp_mag: 10.252
+  h_mag: 9.613
+  i_mag: 10.236
+  i_mag_calc: true
+  j_mag: 9.781
+  k_mag: 9.532
+  notes: ''
+  r_mag: 10.459
+  r_mag_calc: true
+  ra: '01:15:58.8508'
+  simbad_id: TYC 1203-335-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+1203-335-1"
+    target="_blank">TYC 1203-335-1</a>
+  twomass_id: 01155884+2137010
+  v_mag: 10.81
+  v_mag_calc: false
+WASP-187:
+  dec: '+25:40:54.103'
+  gaia_bp_mag: 10.466
+  gaia_dec: 25.681649417284685
+  gaia_g_mag: 10.132
+  gaia_id: '306410392895767680'
+  gaia_parallax: 2.664
+  gaia_pm_dec: -10.702
+  gaia_pm_ra: -24.173
+  gaia_ra: 17.47474000431669
+  gaia_rp_mag: 9.666
+  h_mag: 8.906
+  i_mag: 9.6
+  i_mag_calc: true
+  j_mag: 9.117
+  k_mag: 8.79
+  notes: ''
+  r_mag: 9.915
+  r_mag_calc: true
+  ra: '01:09:53.9653'
+  simbad_id: TYC 1750-1336-1
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=TYC+1750-1336-1"
+    target="_blank">TYC 1750-1336-1</a>
+  twomass_id: 01095397+2540540
+  v_mag: 10.29
   v_mag_calc: false
 WASP-19:
   dec: '-45:39:33.055'
@@ -6863,6 +11024,58 @@ WASP-19:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-19" target="_blank">WASP-19</a>
   twomass_id: 09534008-4539330
   v_mag: 12.31
+  v_mag_calc: false
+WASP-190:
+  dec: '-40:34:24.319'
+  gaia_bp_mag: 11.865
+  gaia_dec: -40.573461330421466
+  gaia_g_mag: 11.633
+  gaia_id: '4994237247949280000'
+  gaia_parallax: 1.816
+  gaia_pm_dec: -9.135
+  gaia_pm_ra: 38.231
+  gaia_ra: 7.709529213369269
+  gaia_rp_mag: 11.262
+  h_mag: 10.694
+  i_mag: 11.128
+  i_mag_calc: true
+  j_mag: 10.859
+  k_mag: 10.65
+  notes: ''
+  r_mag: 11.454
+  r_mag_calc: true
+  ra: '00:30:50.2350'
+  simbad_id: WASP-190
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-190"
+    target="_blank">WASP-190</a>
+  twomass_id: 00305023-4034243
+  v_mag: 11.65
+  v_mag_calc: false
+WASP-192:
+  dec: '-38:44:40.344'
+  gaia_bp_mag: 12.873
+  gaia_dec: -38.74454686146525
+  gaia_g_mag: 12.535
+  gaia_id: '6198312362812872320'
+  gaia_parallax: 1.939
+  gaia_pm_dec: -1.53
+  gaia_pm_ra: 0.723
+  gaia_ra: 223.65871866974902
+  gaia_rp_mag: 12.047
+  h_mag: 11.193
+  i_mag: 11.91
+  i_mag_calc: false
+  j_mag: 11.493
+  k_mag: 11.137
+  notes: ''
+  r_mag: 12.59
+  r_mag_calc: false
+  ra: '14:54:38.0915'
+  simbad_id: WASP-192
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-192"
+    target="_blank">WASP-192</a>
+  twomass_id: 14543809-3844403
+  v_mag: 12.67
   v_mag_calc: false
 WASP-2:
   dec: '+06:25:46.338'
@@ -6909,9 +11122,9 @@ WASP-20:
   r_mag: 10.439
   r_mag_calc: true
   ra: '00:20:38.5321'
-  simbad_id: CD-24   102
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-24+++102"
-    target="_blank">CD-24   102</a>
+  simbad_id: CD-24 102
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-24+102"
+    target="_blank">CD-24 102</a>
   twomass_id: 00203853-2356086
   v_mag: 10.779
   v_mag_calc: false
@@ -7136,9 +11349,9 @@ WASP-3:
   r_mag: 10.52
   r_mag_calc: false
   ra: '18:34:31.6255'
-  simbad_id: BD+35  3293
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%35++3293"
-    target="_blank">BD+35  3293</a>
+  simbad_id: BD+35 3293
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B35+3293"
+    target="_blank">BD+35 3293</a>
   twomass_id: 18343163+3539415
   v_mag: 10.63
   v_mag_calc: false
@@ -7212,9 +11425,9 @@ WASP-34:
   r_mag: 10.21
   r_mag_calc: false
   ra: '11:01:35.8978'
-  simbad_id: CD-23  9677
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-23++9677"
-    target="_blank">CD-23  9677</a>
+  simbad_id: CD-23 9677
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-23+9677"
+    target="_blank">CD-23 9677</a>
   twomass_id: 11013589-2351382
   v_mag: 10.28
   v_mag_calc: false
@@ -7238,9 +11451,9 @@ WASP-35:
   r_mag: 10.638
   r_mag_calc: true
   ra: '05:04:19.6324'
-  simbad_id: BD-06  1077
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-06++1077"
-    target="_blank">BD-06  1077</a>
+  simbad_id: BD-06 1077
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-06+1077"
+    target="_blank">BD-06 1077</a>
   twomass_id: 05041962-0613473
   v_mag: 10.94
   v_mag_calc: false
@@ -7390,9 +11603,9 @@ WASP-41:
   r_mag: 11.39
   r_mag_calc: false
   ra: '12:42:28.4949'
-  simbad_id: CD-29  9873
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-29++9873"
-    target="_blank">CD-29  9873</a>
+  simbad_id: CD-29 9873
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-29+9873"
+    target="_blank">CD-29 9873</a>
   twomass_id: 12422849-3038235
   v_mag: 11.63
   v_mag_calc: false
@@ -7716,9 +11929,9 @@ WASP-54:
   r_mag: 10.0
   r_mag_calc: false
   ra: '13:41:49.0301'
-  simbad_id: BD+00  3088
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%00++3088"
-    target="_blank">BD+00  3088</a>
+  simbad_id: BD+00 3088
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B00+3088"
+    target="_blank">BD+00 3088</a>
   twomass_id: 13414903-0007410
   v_mag: 10.41
   v_mag_calc: false
@@ -7822,6 +12035,31 @@ WASP-58:
   twomass_id: 18184825+4510192
   v_mag: 11.66
   v_mag_calc: false
+WASP-59:
+  dec: '+24:53:21.436'
+  gaia_bp_mag: 13.047
+  gaia_dec: 24.88927703396501
+  gaia_g_mag: 12.314
+  gaia_id: '2841043011433969152'
+  gaia_parallax: 8.597
+  gaia_pm_dec: -2.522
+  gaia_pm_ra: -33.729
+  gaia_ra: 349.6229546614095
+  gaia_rp_mag: 11.497
+  h_mag: 9.878
+  i_mag: 11.944
+  i_mag_calc: false
+  j_mag: 10.44
+  k_mag: 9.723
+  notes: ''
+  r_mag: 12.37
+  r_mag_calc: false
+  ra: '23:18:29.5475'
+  simbad_id: WASP-59
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-59" target="_blank">WASP-59</a>
+  twomass_id: 23182955+2453214
+  v_mag: 12.78
+  v_mag_calc: false
 WASP-6:
   dec: '-22:40:26.277'
   gaia_bp_mag: 12.385
@@ -7917,9 +12155,9 @@ WASP-62:
   r_mag: 9.93
   r_mag_calc: false
   ra: '05:48:33.5937'
-  simbad_id: CPD-64   484
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-64+++484"
-    target="_blank">CPD-64   484</a>
+  simbad_id: CPD-64 484
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CPD-64+484"
+    target="_blank">CPD-64 484</a>
   twomass_id: 05483359-6359183
   v_mag: 10.21
   v_mag_calc: false
@@ -7943,9 +12181,9 @@ WASP-63:
   r_mag: 10.684
   r_mag_calc: true
   ra: '06:17:20.7486'
-  simbad_id: CD-38  2551
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38++2551"
-    target="_blank">CD-38  2551</a>
+  simbad_id: CD-38 2551
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-38+2551"
+    target="_blank">CD-38 2551</a>
   twomass_id: 06172074-3819237
   v_mag: 11.15
   v_mag_calc: false
@@ -8095,9 +12333,9 @@ WASP-69:
   r_mag: 9.22
   r_mag_calc: true
   ra: '21:00:06.1969'
-  simbad_id: BD-05  5432
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-05++5432"
-    target="_blank">BD-05  5432</a>
+  simbad_id: BD-05 5432
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-05+5432"
+    target="_blank">BD-05 5432</a>
   twomass_id: 21000618-0505398
   v_mag: 9.87
   v_mag_calc: false
@@ -8173,9 +12411,9 @@ WASP-71:
   r_mag: 10.356
   r_mag_calc: true
   ra: '01:57:03.2040'
-  simbad_id: BD+00   316
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%00+++316"
-    target="_blank">BD+00   316</a>
+  simbad_id: BD+00 316
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B00+316"
+    target="_blank">BD+00 316</a>
   twomass_id: 01570320+0045318
   v_mag: 10.56
   v_mag_calc: false
@@ -8199,9 +12437,9 @@ WASP-72:
   r_mag: 10.47
   r_mag_calc: false
   ra: '02:44:09.6097'
-  simbad_id: CD-30  1019
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-30++1019"
-    target="_blank">CD-30  1019</a>
+  simbad_id: CD-30 1019
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-30+1019"
+    target="_blank">CD-30 1019</a>
   twomass_id: 02440959-3010085
   v_mag: 10.96
   v_mag_calc: false
@@ -8251,9 +12489,9 @@ WASP-74:
   r_mag: 9.348
   r_mag_calc: true
   ra: '20:18:09.3209'
-  simbad_id: BD-01  3943
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-01++3943"
-    target="_blank">BD-01  3943</a>
+  simbad_id: BD-01 3943
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-01+3943"
+    target="_blank">BD-01 3943</a>
   twomass_id: 20180931-0104324
   v_mag: 9.75
   v_mag_calc: false
@@ -8277,9 +12515,9 @@ WASP-75:
   r_mag: 11.123
   r_mag_calc: true
   ra: '22:49:32.5677'
-  simbad_id: BD-11  5929
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-11++5929"
-    target="_blank">BD-11  5929</a>
+  simbad_id: BD-11 5929
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-11+5929"
+    target="_blank">BD-11 5929</a>
   twomass_id: 22493256-1040320
   v_mag: 11.46
   v_mag_calc: false
@@ -8303,9 +12541,9 @@ WASP-76:
   r_mag: 9.196
   r_mag_calc: true
   ra: '01:46:31.8576'
-  simbad_id: BD+01   316
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%01+++316"
-    target="_blank">BD+01   316</a>
+  simbad_id: BD+01 316
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B01+316"
+    target="_blank">BD+01 316</a>
   twomass_id: 01463185+0242019
   v_mag: 9.52
   v_mag_calc: false
@@ -8329,9 +12567,9 @@ WASP-77A:
   r_mag: 10.23
   r_mag_calc: false
   ra: '02:28:37.226'
-  simbad_id: BD-07   436
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-07+++436"
-    target="_blank">BD-07   436</a>
+  simbad_id: BD-07 436
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-07+436"
+    target="_blank">BD-07 436</a>
   twomass_id: 02283722-0703384
   v_mag: 10.12
   v_mag_calc: false
@@ -8380,9 +12618,9 @@ WASP-79:
   r_mag: 9.802
   r_mag_calc: true
   ra: '04:25:29.0168'
-  simbad_id: CD-30  1812
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-30++1812"
-    target="_blank">CD-30  1812</a>
+  simbad_id: CD-30 1812
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-30+1812"
+    target="_blank">CD-30 1812</a>
   twomass_id: 04252901-3036016
   v_mag: 10.04
   v_mag_calc: false
@@ -8482,9 +12720,9 @@ WASP-82:
   r_mag: 9.702
   r_mag_calc: true
   ra: '04:50:38.5586'
-  simbad_id: BD+01   828
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%01+++828"
-    target="_blank">BD+01   828</a>
+  simbad_id: BD+01 828
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B01+828"
+    target="_blank">BD+01 828</a>
   twomass_id: 04503856+0153381
   v_mag: 10.07
   v_mag_calc: false
@@ -8533,9 +12771,9 @@ WASP-84:
   r_mag: 10.327
   r_mag_calc: true
   ra: '08:44:25.7032'
-  simbad_id: BD+02  2056
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%02++2056"
-    target="_blank">BD+02  2056</a>
+  simbad_id: BD+02 2056
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B02+2056"
+    target="_blank">BD+02 2056</a>
   twomass_id: 08442570+0151361
   v_mag: 10.83
   v_mag_calc: false
@@ -8559,11 +12797,37 @@ WASP-85A:
   r_mag: 10.34
   r_mag_calc: false
   ra: '11:43:38.0162'
-  simbad_id: BD+07  2474
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%07++2474"
-    target="_blank">BD+07  2474</a>
+  simbad_id: BD+07 2474
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B07+2474"
+    target="_blank">BD+07 2474</a>
   twomass_id: 11433800+0633494
   v_mag: 10.41
+  v_mag_calc: false
+WASP-87:
+  dec: '-52:50:26.999'
+  gaia_bp_mag: 10.984
+  gaia_dec: -52.84081632199239
+  gaia_g_mag: 10.709
+  gaia_id: '6077185317188247936'
+  gaia_parallax: 3.323
+  gaia_pm_dec: 3.919
+  gaia_pm_ra: -1.356
+  gaia_ra: 185.3246821433053
+  gaia_rp_mag: 10.299
+  h_mag: 9.593
+  i_mag: 10.139
+  i_mag_calc: true
+  j_mag: 9.832
+  k_mag: 9.552
+  notes: ''
+  r_mag: 10.513
+  r_mag_calc: true
+  ra: '12:21:17.9260'
+  simbad_id: CD-52 4998
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-52+4998"
+    target="_blank">CD-52 4998</a>
+  twomass_id: 12211792-5250269
+  v_mag: 10.73
   v_mag_calc: false
 WASP-88:
   dec: '-48:27:43.425'
@@ -8639,6 +12903,31 @@ WASP-90:
   simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-90" target="_blank">WASP-90</a>
   twomass_id: 21020767+0703224
   v_mag: 11.7
+  v_mag_calc: false
+WASP-91:
+  dec: '-70:09:10.276'
+  gaia_bp_mag: 12.128
+  gaia_dec: -70.15286207170413
+  gaia_g_mag: 11.624
+  gaia_id: '6386751579018596864'
+  gaia_parallax: 6.64
+  gaia_pm_dec: -1.746
+  gaia_pm_ra: 96.184
+  gaia_ra: 357.8464339998919
+  gaia_rp_mag: 10.996
+  h_mag: 9.838
+  i_mag: 10.995
+  i_mag_calc: true
+  j_mag: 10.275
+  k_mag: 9.712
+  notes: ''
+  r_mag: 11.366
+  r_mag_calc: true
+  ra: '23:51:22.8514'
+  simbad_id: WASP-91
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=WASP-91" target="_blank">WASP-91</a>
+  twomass_id: 23512286-7009103
+  v_mag: 11.98
   v_mag_calc: false
 WASP-92:
   dec: '+51:02:27.892'
@@ -8788,9 +13077,9 @@ WASP-97:
   r_mag: 10.196
   r_mag_calc: true
   ra: '01:38:25.0566'
-  simbad_id: CD-56   324
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-56+++324"
-    target="_blank">CD-56   324</a>
+  simbad_id: CD-56 324
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-56+324"
+    target="_blank">CD-56 324</a>
   twomass_id: 01382504-5546194
   v_mag: 10.57
   v_mag_calc: false
@@ -8839,11 +13128,37 @@ WASP-99:
   r_mag: 9.116
   r_mag_calc: true
   ra: '02:39:35.4435'
-  simbad_id: CD-50   777
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-50+++777"
-    target="_blank">CD-50   777</a>
+  simbad_id: CD-50 777
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=CD-50+777"
+    target="_blank">CD-50 777</a>
   twomass_id: 02393544-5000288
   v_mag: 9.48
+  v_mag_calc: false
+WD1856+534:
+  dec: '+53:30:33.301'
+  gaia_bp_mag: 17.503
+  gaia_dec: 53.50902437840754
+  gaia_g_mag: 16.958
+  gaia_id: '2146576589564898688'
+  gaia_parallax: 40.398
+  gaia_pm_dec: -52.514
+  gaia_pm_ra: 240.759
+  gaia_ra: 284.4156750159658
+  gaia_rp_mag: 16.278
+  h_mag: 15.429
+  i_mag: 16.174
+  i_mag_calc: true
+  j_mag: 15.677
+  k_mag: 15.548
+  notes: ''
+  r_mag: 16.4
+  r_mag_calc: false
+  ra: '18:57:39.3436'
+  simbad_id: LP 141-14
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=LP+141-14"
+    target="_blank">LP 141-14</a>
+  twomass_id: 18573936+5330332
+  v_mag: 17.244
   v_mag_calc: false
 Wolf503:
   dec: '-06:08:12.729'
@@ -8865,9 +13180,9 @@ Wolf503:
   r_mag: 9.631
   r_mag_calc: true
   ra: '13:47:23.4437'
-  simbad_id: BD-05  3763
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-05++3763"
-    target="_blank">BD-05  3763</a>
+  simbad_id: BD-05 3763
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD-05+3763"
+    target="_blank">BD-05 3763</a>
   twomass_id: 13472346-0608121
   v_mag: 10.28
   v_mag_calc: false
@@ -8891,9 +13206,9 @@ XO-1:
   r_mag: 10.81
   r_mag_calc: false
   ra: '16:02:11.8463'
-  simbad_id: BD+28  2507
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%28++2507"
-    target="_blank">BD+28  2507</a>
+  simbad_id: BD+28 2507
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B28+2507"
+    target="_blank">BD+28 2507</a>
   twomass_id: 16021184+2810105
   v_mag: 11.25
   v_mag_calc: false
@@ -8918,9 +13233,9 @@ XO-2N:
   r_mag: 10.669
   r_mag_calc: false
   ra: '07:48:06.4726'
-  simbad_id: BD+50  1471
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%50++1471"
-    target="_blank">BD+50  1471</a>
+  simbad_id: BD+50 1471
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B50+1471"
+    target="_blank">BD+50 1471</a>
   twomass_id: 07480647+5013328
   v_mag: 11.138
   v_mag_calc: false
@@ -8944,9 +13259,9 @@ XO-3:
   r_mag: 9.567
   r_mag_calc: true
   ra: '04:21:52.7044'
-  simbad_id: BD+57   793
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%57+++793"
-    target="_blank">BD+57   793</a>
+  simbad_id: BD+57 793
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B57+793"
+    target="_blank">BD+57 793</a>
   twomass_id: 04215269+5749018
   v_mag: 9.85
   v_mag_calc: false
@@ -9020,11 +13335,37 @@ XO-6:
   r_mag: 10.016
   r_mag_calc: true
   ra: '06:19:10.3709'
-  simbad_id: BD+73   323
-  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%73+++323"
-    target="_blank">BD+73   323</a>
+  simbad_id: BD+73 323
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B73+323"
+    target="_blank">BD+73 323</a>
   twomass_id: 06191038+7349396
   v_mag: 10.25
+  v_mag_calc: false
+XO-7:
+  dec: '+85:13:59.575'
+  gaia_bp_mag: 10.779
+  gaia_dec: 85.23332076819977
+  gaia_g_mag: 10.457
+  gaia_id: '2303332931542914048'
+  gaia_parallax: 4.242
+  gaia_pm_dec: 24.461
+  gaia_pm_ra: -15.354
+  gaia_ra: 277.47807533565975
+  gaia_rp_mag: 10.009
+  h_mag: 9.308
+  i_mag: 9.856
+  i_mag_calc: true
+  j_mag: 9.557
+  k_mag: 9.241
+  notes: ''
+  r_mag: 10.245
+  r_mag_calc: true
+  ra: '18:29:54.9290'
+  simbad_id: BD+85 317
+  simbad_link: <a href="https://simbad.u-strasbg.fr/simbad/sim-id?Ident=BD%2B85+317"
+    target="_blank">BD+85 317</a>
+  twomass_id: 18295488+8513593
+  v_mag: 10.52
   v_mag_calc: false
 piMen:
   dec: '-80:28:08.831'

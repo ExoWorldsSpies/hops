@@ -8,7 +8,7 @@ import sys
 
 from .analysis_functions_and_fit import fit_two_d_gaussian
 from .analysis_distributions import one_d_distribution
-from .tools_maths import waverage, mad
+from .tools_maths import waverage, cartesian_to_polar
 from .exoplanet_lc import transit_flux_drop
 
 
@@ -318,151 +318,207 @@ def fast_psf_find(data_array, mean, std, burn_limit):
     return max(psf)
 
 
-def pixel_to_aperture_overlap(x_pix, y_pix, x_ap, y_ap, ap):
-    d = np.sqrt((x_pix - x_ap) ** 2 + (y_pix - y_ap) ** 2)
+# circle to square
 
-    if ap >= d + np.sqrt(0.5):
+def solve(c1_x, c1_y, c2_x, c2_y):
+    if c1_x > c2_x:
+        c1_x, c1_y, c2_x, c2_y = c2_x, c2_y, c1_x, c1_y
+
+    a = (c2_y - c1_y)/(c2_x - c1_x)
+    b = (c1_y - c1_x * a)
+    D = (2 * a * b) ** 2 - 4 * (1 + a ** 2) * (b ** 2 - 1)
+    cuts = []
+    if D == 0:
+        sol_x = - (a * b) / (1 + a ** 2)
+        if (sol_x > c1_x) * (sol_x < c2_x):
+            cuts.append(sol_x)
+    elif D >0 :
+        sol_x = (- (2 * a * b) + np.sqrt(D)) / (2 * (1 + a ** 2))
+        if (sol_x > c1_x) * (sol_x < c2_x):
+            cuts.append(sol_x)
+        sol_xx = (- (2 * a * b) - np.sqrt(D)) / (2 * (1 + a ** 2))
+        if (sol_xx > c1_x) * (sol_xx < c2_x):
+            cuts.append(sol_xx)
+
+    cuts = [(x, a * x + b) for x in cuts]
+
+    if len(cuts) == 2:
+        if cuts[0][1] < cuts[1][1]:
+            cuts = [cuts[1], cuts[0]]
+
+    return cuts
+
+
+def find_corners_and_cuts(a, d, theta):
+
+    sin_theta = np.sin(theta)
+    cos_theta = np.cos(theta)
+
+    aa = np.sqrt(0.5) * a
+
+    c1_x = d - aa * cos_theta
+    c1_y = aa * sin_theta
+
+    c2_x = d + aa * sin_theta
+    c2_y = aa * cos_theta
+
+    c3_x = d + aa * cos_theta
+    c3_y = - aa * sin_theta
+
+    c4_x = d - aa * sin_theta
+    c4_y = - aa * cos_theta
+
+    line_1 = solve(c1_x, c1_y, c2_x, c2_y)
+    line_2 = solve(c2_x, c2_y, c3_x, c3_y)
+    line_3 = solve(c3_x, c3_y, c4_x, c4_y)
+    line_4 = solve(c4_x, c4_y, c1_x, c1_y)
+
+    return ([(c1_x, c1_y), (c2_x, c2_y), (c3_x, c3_y), (c4_x, c4_y)], [line_1, line_2, line_3, line_4])
+
+
+def get_distance(p1, p2):
+    return np.sqrt((p1[0] - p2[0]) **2 + (p1[1] - p2[1]) ** 2)
+
+def get_circular_sector_area(p1, p2):
+    return np.arcsin(0.5 * get_distance(p1, p2))
+
+def get_triangle_area(p1, p2, p3):
+    return np.abs(0.5 * (p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1])))
+
+def get_circle_to_chord_area(p1, p2):
+    return get_circular_sector_area(p1, p2) - get_triangle_area((0, 0), p1, p2)
+
+
+def get_area(a, d, theta):
+    if d <= 1 - np.sqrt(2)*a/2:
         return 1
-
-    if ap <= d - np.sqrt(0.5):
+    elif d >= 1 + np.sqrt(2)*a/2:
         return 0
 
-    x_shift = x_pix - 0.5
-    y_shift = y_pix - 0.5
-
-    x_pix -= x_shift
-    y_pix -= y_shift
-    x_ap -= x_shift
-    y_ap -= y_shift
-
-    xx = 1.5 - np.sqrt(2)
-    aa = 0.207107
-    bb = 0.0428932
-
-    area = 0
-
-    # main circle:
-
-    area += circles_overlap(x_ap, y_ap, ap, 0.5, 0.5, 0.5) * np.pi * 0.5 * 0.5
-
-    # out of main circle
-
-    out_of_c1 = (1 - np.pi * 0.5 * 0.5) / 4
-
-    # low left
-
-    circles = [[xx, xx, xx], [aa, bb, bb], [bb, aa, bb]]
-
-    circles_in = []
-    circles_in_area = []
-
-    for circle in circles:
-        x, y, r = circle
-
-        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
-
-        if ap >= d + r:
-            circles_in.append(1)
-            circles_in_area.append(np.pi * r * r)
-        elif ap <= d - r:
-            circles_in.append(0)
-            circles_in_area.append(0)
+    elif theta == np.pi / 4:
+        if (d + a/2.0) ** 2 + (a/2.0)**2 <= 1:
+            return 1
+        elif d + a/2.0 < 1:
+            cut_1 = (np.sqrt(1 - (a/2.0)**2), a/2.0)
+            cut_2 = (d + a/2.0, np.sqrt(1 - (d + a/2.0)**2))
+            area = (
+                    get_triangle_area((d - a/2.0, a/2.0), (d - a/2.0, 0.0), cut_1) +
+                    get_triangle_area(cut_1, (d - a/2.0, 0.0), cut_2) +
+                    get_triangle_area(cut_2, (d - a/2.0, 0.0), (d + a/2.0, 0)) +
+                    get_circle_to_chord_area(cut_1, cut_2)
+            )
+            return 2 * area / a ** 2
+        elif (d - 0.5 * a) ** 2 + (0.5 * a)**2 < 1:
+            cut_1 = (np.sqrt(1 - (a/2.0)**2), a/2.0)
+            area = (
+                    get_triangle_area((d - a/2.0, a/2.0), (d - a/2.0, 0.0), cut_1) +
+                    get_triangle_area(cut_1, (d - a/2.0, 0.0), (1, 0)) +
+                    get_circle_to_chord_area(cut_1, (1, 0))
+            )
+            return 2 * area / a ** 2
+        elif d - a/2.0 < 1:
+            cut_1 = (d - a/2.0, np.sqrt(1 - (d - a/2.0)**2))
+            area = (
+                get_circle_to_chord_area(cut_1, (1, 0))
+            )
+            return 2 * area / a ** 2
         else:
-            circles_in.append(0)
-            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
+            return 0
 
-    if sum(circles_in) == 3:
-        area += out_of_c1
     else:
-        area += sum(circles_in_area)
 
-    # low right
+        corners, cuts = find_corners_and_cuts(a, d, theta)
+        corner_1, corner_2, corner_3, corner_4 = corners
+        cuts_1, cuts_2, cuts_3, cuts_4 = cuts
+        cuts_numbers = [len(cut) for cut in cuts]
 
-    circles = [[1 - xx, xx, xx], [1 - aa, bb, bb], [1 - bb, aa, bb]]
+        if np.sum(cuts_numbers) == 0:
+            if np.sqrt(corner_1[0] ** 2 + corner_1[1] ** 2) < 1:
+                return 1
+            else:
+                return 0
 
-    circles_in = []
-    circles_in_area = []
+        elif (corner_2[0] ** 2 + corner_2[1] ** 2) == 1:
+            area = (
+                    get_triangle_area(corner_1, corner_4, corner_2) +
+                    get_triangle_area(corner_4, corner_2, cuts_3[0]) +
+                    get_circle_to_chord_area(corner_2, cuts_3[0])
+            )
+            return area / a ** 2
 
-    for circle in circles:
-        x, y, r = circle
+        elif (corner_4[0] ** 2 + corner_4[1] ** 2) == 1:
+            area = (
+                    get_triangle_area(corner_1, cuts_1[0], corner_4) +
+                    get_circle_to_chord_area(cuts_1[0], corner_4)
+            )
+            return area / a ** 2
 
-        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
+        elif cuts_numbers == [1, 0, 0, 1]:
+            area = (
+                    get_triangle_area(corner_1, cuts_1[0], cuts_4[0]) +
+                    get_circle_to_chord_area(cuts_1[0], cuts_4[0])
+            )
+            return area / a ** 2
 
-        if ap >= d + r:
-            circles_in.append(1)
-            circles_in_area.append(np.pi * r * r)
-        elif ap <= d - r:
-            circles_in.append(0)
-            circles_in_area.append(0)
+        elif cuts_numbers == [1, 0, 1, 0]:
+            area = (
+                    get_triangle_area(corner_1, corner_4, cuts_1[0]) +
+                    get_triangle_area(corner_4, cuts_1[0], cuts_3[0]) +
+                    get_circle_to_chord_area(cuts_1[0], cuts_3[0])
+            )
+            return area / a ** 2
+
+        elif cuts_numbers == [0, 1, 1, 0]:
+            area = (
+                    get_triangle_area(corner_1, corner_2, corner_4) +
+                    get_triangle_area(corner_2, corner_4, cuts_2[0]) +
+                    get_triangle_area(corner_4, cuts_2[0], cuts_3[0]) +
+                    get_circle_to_chord_area(cuts_2[0], cuts_3[0])
+            )
+            return area / a ** 2
+
+        elif cuts_numbers == [1, 2, 1, 0]:
+            area = (
+                    get_triangle_area(corner_1, corner_4, cuts_1[0]) +
+                    get_triangle_area(corner_4, cuts_1[0], cuts_3[0]) +
+                    get_triangle_area(cuts_1[0], cuts_3[0], cuts_2[0]) +
+                    get_triangle_area(cuts_3[0], cuts_2[0], cuts_2[1]) +
+                    get_circle_to_chord_area(cuts_1[0], cuts_2[0]) +
+                    get_circle_to_chord_area(cuts_2[1], cuts_3[0])
+            )
+            return area / a ** 2
+
+        elif cuts_numbers == [0, 0, 0, 2]:
+            area = (
+                get_circle_to_chord_area(cuts_4[0], cuts_4[1])
+            )
+            return area / a ** 2
+
         else:
-            circles_in.append(0)
-            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
-
-    if sum(circles_in) == 3:
-        area += out_of_c1
-    else:
-        area += sum(circles_in_area)
-
-    # upper left
-
-    circles = [[xx, 1 - xx, xx], [aa, 1 - bb, bb], [bb, 1 - aa, bb]]
-
-    circles_in = []
-    circles_in_area = []
-
-    for circle in circles:
-        x, y, r = circle
-
-        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
-
-        if ap >= d + r:
-            circles_in.append(1)
-            circles_in_area.append(np.pi * r * r)
-        elif ap <= d - r:
-            circles_in.append(0)
-            circles_in_area.append(0)
-        else:
-            circles_in.append(0)
-            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
-
-    if sum(circles_in) == 3:
-        area += out_of_c1
-    else:
-        area += sum(circles_in_area)
-
-    # upper right
-
-    circles = [[1 - xx, 1 - xx, xx], [1 - aa, 1 - bb, bb], [1 - bb, 1 - aa, bb]]
-
-    circles_in = []
-    circles_in_area = []
-
-    for circle in circles:
-        x, y, r = circle
-
-        d = np.sqrt((x - x_ap) ** 2 + (y - y_ap) ** 2)
-
-        if ap >= d + r:
-            circles_in.append(1)
-            circles_in_area.append(np.pi * r * r)
-        elif ap <= d - r:
-            circles_in.append(0)
-            circles_in_area.append(0)
-        else:
-            circles_in.append(0)
-            circles_in_area.append(circles_overlap(x_ap, y_ap, ap, x, y, r) * np.pi * r * r)
-
-    if sum(circles_in) == 3:
-        area += out_of_c1
-    else:
-        area += sum(circles_in_area)
-
-    # return final
-
-    return area
+            print('pending')
 
 
-def circles_overlap(x1, y1, r1, x2, y2, r2):
-    d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+def pixel_to_aperture_overlap(x_pix, y_pix, x_ap, y_ap, ap):
 
-    return 1 - transit_flux_drop('zero', [], r1 / r2, np.array([d / r2]), precision=3)[0]
+    x1, y1 = x_pix - 0.5, y_pix + 0.5
+    x2, y2 = x_pix + 0.5, y_pix + 0.5
+    x3, y3 = x_pix + 0.5, y_pix - 0.5
+    x4, y4 = x_pix - 0.5, y_pix - 0.5
+
+    rc = np.sqrt( (x_pix - x_ap) ** 2 + (y_pix - y_ap) ** 2)
+    r1 = np.sqrt( (x1 - x_ap) ** 2 + (y1 - y_ap) ** 2)
+    r2 = np.sqrt( (x2 - x_ap) ** 2 + (y2 - y_ap) ** 2)
+    if r2 < r1:
+        r1 = r2
+    r3 = np.sqrt( (x3 - x_ap) ** 2 + (y3 - y_ap) ** 2)
+    if r3 < r1:
+        r1 = r3
+    r4 = np.sqrt( (x4 - x_ap) ** 2 + (y4 - y_ap) ** 2)
+    if r4 < r1:
+        r1 = r4
+
+    theta = np.arccos((r1 ** 2 - rc ** 2 - 0.5) / (-np.sqrt(2) * rc))
+    a = 1 / ap
+    d = np.sqrt((x_pix - x_ap) ** 2 + (y_pix - y_ap) ** 2) / ap
+
+    return get_area(a, d, theta)

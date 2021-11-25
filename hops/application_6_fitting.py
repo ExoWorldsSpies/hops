@@ -5,6 +5,7 @@ import numpy as np
 import shutil
 import urllib
 import json
+import yaml
 from scipy.optimize import curve_fit as scipy_curve_fit
 import hops.pylightcurve3 as plc
 import matplotlib.image as mpimg
@@ -25,6 +26,26 @@ filter_map = {'Clear': 'V', 'Luminance': 'V',
               'Astrodon ExoPlanet-BB': 'R',
               'UV': 'U', 'Rc': 'R', 'Ic': 'I', 'Re': 'R', 'Ie': 'I', 'Y': 'y,', 'r': 'r,', 'z': 'z,', 'i': 'i,',
               }
+
+__location__ = os.path.abspath(os.path.dirname(__file__))
+ecc_stars = yaml.load(open(os.path.join(__location__ , 'stars.yaml'), 'r'), Loader=yaml.SafeLoader)
+ecc_planets = yaml.load(open(os.path.join(__location__ , 'planets.yaml'), 'r'), Loader=yaml.SafeLoader)
+
+for star in ecc_stars:
+    ecc_stars[star]['planets'] = []
+for planet in ecc_planets:
+    ecc_stars[planet[:-1]]['planets'].append(planet)
+
+def find_nearest(fov_coord):
+
+    stars = [[ff, plc.Target(plc.Hours(ecc_stars[ff]['ra']), plc.Degrees(ecc_stars[ff]['dec']))] for ff in ecc_stars]
+
+    stars = sorted(stars, key=lambda x: fov_coord.distance_from_target(x[1]).deg)
+
+    star = stars[0][0]
+
+    return ecc_stars[star]
+
 
 
 class FittingWindow(MainWindow):
@@ -118,37 +139,28 @@ class FittingWindow(MainWindow):
         self.periastron = self.Entry(value=self.log.get_param('periastron'), instance=float, command=self.update_window_no_refit_if_auto)
 
         ra_target, dec_target = self.log.get_param('target_ra_dec').split(' ')
-        ecc_planet = plc.find_nearest(plc.Target(plc.Hours(ra_target), plc.Degrees(dec_target)))
+        ecc_star_data = find_nearest(plc.Target(plc.Hours(ra_target), plc.Degrees(dec_target)))
+        planet_name = ecc_star_data['planets'][0]
+        ecc_data = ecc_planets[planet_name]
+        self.auto_planet = self.Label(text=planet_name)
+        self.auto_target_ra_dec = self.Label(text='{0} {1}'.format(ecc_star_data['ra'], ecc_star_data['dec']))
+        self.auto_metallicity = self.Label(text=ecc_data['meta'], instance=float)
+        self.auto_temperature = self.Label(text=ecc_data['teff'], instance=float)
+        self.auto_logg = self.Label(text=ecc_data['logg'], instance=float)
+        self.auto_period = self.Label(text=ecc_data['ephem_period'], instance=float)
+        self.auto_mid_time = self.Label(text=ecc_data['ephem_mid_time'], instance=float)
+        self.auto_rp_over_rs = self.Label(text=ecc_data['rp_over_rs'], instance=float)
+        self.auto_sma_over_rs = self.Label(text=ecc_data['sma_over_rs'], instance=float)
+        self.auto_eccentricity = self.Label(text=ecc_data['eccentricity'], instance=float)
+        self.auto_inclination = self.Label(text=ecc_data['inclination'], instance=float)
+        self.auto_periastron = self.Label(text=ecc_data['periastron'], instance=float)
 
-        self.auto_planet = self.Label(text=ecc_planet.planet.name)
-        self.auto_target_ra_dec = self.Label(text='{0} {1}'.format(ecc_planet.star.ra, ecc_planet.star.dec))
-        self.auto_metallicity = self.Label(text=ecc_planet.star.met, instance=float)
-        self.auto_temperature = self.Label(text=ecc_planet.star.teff, instance=float)
-        self.auto_logg = self.Label(text=ecc_planet.star.logg, instance=float)
-        self.auto_period = self.Label(text=ecc_planet.planet.period, instance=float)
-        self.auto_mid_time = self.Label(text=0, instance=float)
-        self.auto_rp_over_rs = self.Label(text=ecc_planet.planet.rp_over_rs, instance=float)
-        self.auto_sma_over_rs = self.Label(text=ecc_planet.planet.sma_over_rs, instance=float)
-        self.auto_eccentricity = self.Label(text=ecc_planet.planet.eccentricity, instance=float)
-        self.auto_inclination = self.Label(text=ecc_planet.planet.inclination, instance=float)
-        self.auto_periastron = self.Label(text=ecc_planet.planet.periastron, instance=float)
-        target = plc.Target(plc.Hours(ecc_planet.star.ra), plc.Degrees(ecc_planet.star.dec))
-        if ecc_planet.planet.time_format in ['BJD_TDB', 'BJD_TT']:
-            self.auto_mid_time.set(ecc_planet.planet.mid_time)
-        elif ecc_planet.planet.time_format == 'BJD_UTC':
-            self.auto_mid_time.set(plc.BJDUTC(ecc_planet.planet.mid_time, target).bjd_tdb(target))
-        elif ecc_planet.planet.time_format in ['HJD_TDB', 'HJD_TT']:
-            self.auto_mid_time.set(plc.HJDTDB(ecc_planet.planet.mid_time, target).bjd_tdb(target))
-        elif ecc_planet.planet.time_format == 'HJD_UTC':
-            self.auto_mid_time.set(plc.HJDUTC(ecc_planet.planet.mid_time, target).bjd_tdb(target))
-        elif ecc_planet.planet.time_format == 'JD_UTC':
-            self.auto_mid_time.set(plc.JD(ecc_planet.planet.mid_time).bjd_tdb(target))
 
         # try updating from ExoClock
         try:
 
             ecc_data = json.loads(urllib.request.urlopen(
-                'https://www.exoclock.space/database/planets/{0}/json'.format(ecc_planet.planet.name)).read())
+                'https://www.exoclock.space/database/planets/{0}/json'.format(planet_name)).read())
 
             self.auto_metallicity = self.Label(text=ecc_data['meta'], instance=float)
             self.auto_temperature = self.Label(text=ecc_data['teff'], instance=float)

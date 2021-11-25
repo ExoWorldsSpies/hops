@@ -14,7 +14,6 @@ from astropy.io import fits as pf
 
 from hops.application_windows import MainWindow
 
-
 class PhotometryWindow(MainWindow):
 
     def __init__(self, log):
@@ -220,7 +219,7 @@ class PhotometryWindow(MainWindow):
             [[self.show_good_comparisons, 1, 7], [self.show_good_comparisons_percent, 8, 2]],
             [[self.Label(text='X'), 4], [self.Label(text='Y'), 5], [self.Label(text='Total\ncounts'), 6],
              [self.Label(text='Max\ncounts'), 7], [self.Label(text='Max\nHWHM'), 8],
-             [self.Label(text='Aperture\nradius'), 9], [self.Label(text='    WARNINGS    '), 10]],
+             [self.Label(text='Aperture\nradius (>1.5)'), 9], [self.Label(text='    WARNINGS    '), 10]],
         ]
 
         for target in range(self.max_targets):
@@ -345,7 +344,7 @@ class PhotometryWindow(MainWindow):
                     try:
                         app = self.targets_aperture[i_target].get()
                         if app < 1.5 * self.fits.header[self.log.psf_key]:
-                            self.targets_warning[i_target].set('Apert. too small')
+                            self.targets_warning[i_target].set('Ap. too small')
                         else:
                             self.targets_warning[i_target].set('')
                     except TclError:
@@ -396,10 +395,10 @@ class PhotometryWindow(MainWindow):
                         if 0 not in [self.targets_x_position[0].get(), self.targets_y_position[0].get()]:
                             if self.targets_flux[i_target] > 2 * self.targets_flux[0]:
                                 self.targets_warning[i_target].set(
-                                    self.targets_warning[i_target].get() + ' Comp. too bright')
+                                    self.targets_warning[i_target].get() + ',Comp. too bright')
                             elif self.targets_flux[i_target] < 0.5 * self.targets_flux[0]:
                                 self.targets_warning[i_target].set(
-                                    self.targets_warning[i_target].get() + ' Comp. too faint')
+                                    self.targets_warning[i_target].get() + ',Comp. too faint')
 
                     if self.use_geometric_center.get():
 
@@ -463,6 +462,10 @@ class PhotometryWindow(MainWindow):
             if 0 not in [self.targets_x_position[i_target].get(), self.targets_y_position[i_target].get()]:
                 try:
                     app = self.targets_aperture[i_target].get()
+                    if app < 1.5:
+                        photometry_active = False
+                        self.targets_warning[i_target].set(
+                            self.targets_warning[i_target].get() + ',Ap. not allowed')
                 except TclError:
                     photometry_active = False
 

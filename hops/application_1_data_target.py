@@ -29,9 +29,23 @@ ecc_planets = yaml.load(open(os.path.join(__location__ , 'planets.yaml'), 'r'), 
 for planet in ecc_planets:
     ecc_stars[planet[:-1]]['planets'].append(planet)
 
+def flat_name(name):
+
+    flat_name_list = [
+        [' ', ''],
+        ['-', ''],
+    ]
+
+    name = name.lower()
+
+    for char in flat_name_list:
+        name = name.replace(char[0], char[1])
+
+    return name
+
+ecc_stars_flat_names = {flat_name(ff): ecc_stars[ff]['simbad_id'] for ff in ecc_stars}
 
 ecc_stars = {ecc_stars[ff]['simbad_id']: 'Host of {0}'.format(','.join(ecc_stars[ff]['planets'])) for ff in ecc_stars}
-
 
 class DataTargetWindow(MainWindow):
 
@@ -470,35 +484,41 @@ class DataTargetWindow(MainWindow):
 
             try:
 
-                name = self.simbad_target_name.get().lower()
+                flat_input_name = flat_name(self.simbad_target_name.get())
 
-                name = name.replace('hd-', 'hd ')
-                name = name.replace('2mass-', '2mass ')
-                name = name.replace('gj-', 'gj ')
-                name = name.replace('hip-', 'hip ')
-                name = name.replace('lhs-', 'lhs ')
-                name = name.replace('tyc-', 'tyc ')
-                name = name.replace('kic-', 'kic ')
-                name = name.replace('qatar-', 'qatar ')
-                name = name.replace('tres-1', 'V* V672 Lyr')
-                name = name.replace('tres-2', 'Kepler-1')
-                name = name.replace('tres-3', '1SWASP J175207.01+373246.3')
-                name = name.replace('tres-4', 'TYC 2620-648-1')
-                name = name.replace('tres-5', 'GSC 03949-00967')
+                if flat_input_name in ecc_stars_flat_names:
+                    name = ecc_stars_flat_names[flat_input_name]
+                elif flat_input_name[:-1] in ecc_stars_flat_names:
+                    name = ecc_stars_flat_names[flat_input_name[:-1]]
 
-                if 'bd' in name:
-                    name = name[:3] + name[3:].replace('-', ' ')
+                else:
+                    name = self.simbad_target_name.get().lower()
+                    name = name.replace('hd-', 'hd ')
+                    name = name.replace('2mass-', '2mass ')
+                    name = name.replace('gj-', 'gj ')
+                    name = name.replace('hip-', 'hip ')
+                    name = name.replace('lhs-', 'lhs ')
+                    name = name.replace('tyc-', 'tyc ')
+                    name = name.replace('kic-', 'kic ')
+                    name = name.replace('tic-', 'tic ')
+                    name = name.replace('toi-', 'toi ')
+                    name = name.replace('qatar-', 'qatar ')
+
+                    if 'bd' in name:
+                        name = name[:3] + name[3:].replace('-', ' ')
+
+                print(name)
 
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     result_table = Simbad.query_object(name)[0]
 
                 self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'), str(result_table['DEC']).replace(' ', ':')))
-                try:
-                    xx = result_table['MAIN_ID'].decode("utf-8")
-                except:
-                    xx = result_table['MAIN_ID']
-                self.target_name_2.set(xx)
+                main_id = result_table['MAIN_ID']
+                while '  ' in main_id:
+                    main_id = main_id.replace('  ', ' ')
+                print(main_id)
+                self.target_name_2.set(main_id)
             except:
                 self.target_ra_dec_2.set('Coordinates not found')
                 self.target_name_2.set(' ')
@@ -517,15 +537,16 @@ class DataTargetWindow(MainWindow):
                                                                   frame='icrs'), radius='0d5m0s')[0]
                 self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'),
                                                         str(result_table['DEC']).replace(' ', ':')))
-                try:
-                    xx = result_table['MAIN_ID'].decode("utf-8")
-                except:
-                    xx = result_table['MAIN_ID']
-                self.target_name_2.set(xx)
+                main_id = result_table['MAIN_ID']
+                while '  ' in main_id:
+                    main_id = main_id.replace('  ', ' ')
+                self.target_name_2.set(main_id)
             except:
                 self.target_ra_dec_2.set(self.manual_target_ra_dec.get())
                 self.target_name_2.set(' ')
 
+        print(self.target_name_2.get())
+        print(self.target_name_2.get() in ecc_stars)
         if self.target_name_2.get() in ecc_stars:
             self.target_name_2.set('{0} - {1}'.format(self.target_name_2.get(), ecc_stars[self.target_name_2.get()]))
 
