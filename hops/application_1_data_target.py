@@ -546,8 +546,6 @@ class DataTargetWindow(MainWindow):
                 self.target_ra_dec_2.set(self.manual_target_ra_dec.get())
                 self.target_name_2.set(' ')
 
-        print(self.target_name_2.get())
-        print(self.target_name_2.get() in ecc_stars)
         if self.target_name_2.get() in ecc_stars:
             self.target_name_2.set('{0} - {1}'.format(self.target_name_2.get(), ecc_stars[self.target_name_2.get()]))
 
