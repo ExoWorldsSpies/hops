@@ -27,7 +27,10 @@ for star in ecc_stars:
 
 ecc_planets = yaml.load(open(os.path.join(__location__ , 'planets.yaml'), 'r'), Loader=yaml.SafeLoader)
 for planet in ecc_planets:
-    ecc_stars[planet[:-1]]['planets'].append(planet)
+    if '.' in planet:
+        ecc_stars[planet.split('.')[0]]['planets'].append(planet)
+    else:
+        ecc_stars[planet[:-1]]['planets'].append(planet)
 
 def flat_name(name):
 
