@@ -2,11 +2,11 @@
 __all__ = ['get_planet', 'get_all_planets', 'locate_planet']
 
 
-from pylightcurve.errors import *
-from pylightcurve.__databases__ import plc_data
-from pylightcurve.models.exoplanet import Planet
-from pylightcurve.spacetime.angles import Degrees, Hours, _request_angle
-from pylightcurve.spacetime.targets import FixedTarget
+from ..errors import *
+from ..__databases__ import plc_data
+from ..models.exoplanet import Planet
+from ..spacetime.angles import Degrees, Hours, _request_angle
+from ..spacetime.targets import FixedTarget
 
 
 def _flat_name(name):

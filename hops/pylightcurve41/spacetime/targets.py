@@ -4,12 +4,12 @@ __all__ = ['FixedTarget', 'Moon', 'Sun']
 import numpy as np
 from functools import lru_cache
 
-from pylightcurve.errors import *
-from pylightcurve.__databases__ import plc_data
-from pylightcurve.analysis.curve_fit import curve_fit
-from pylightcurve.spacetime.angles import *
-from pylightcurve.spacetime.angles import _request_angle
-from pylightcurve.spacetime.times import _request_time
+from ..errors import *
+from ..__databases__ import plc_data
+from ..analysis.curve_fit import curve_fit
+from .angles import *
+from .angles import _request_angle
+from ..spacetime.times import _request_time
 
 
 class _Target:

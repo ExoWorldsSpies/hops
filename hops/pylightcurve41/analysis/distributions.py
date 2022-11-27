@@ -3,8 +3,8 @@ __all__ = ['one_d_distribution', 'two_d_distribution']
 
 import numpy as np
 
-from pylightcurve.errors import *
-from pylightcurve.analysis.gaussian import fit_gaussian, fit_two_d_gaussian
+from ..errors import *
+from ..analysis.gaussian import fit_gaussian, fit_two_d_gaussian
 
 
 def one_d_distribution(datax, step=5.0, abs_step=None,

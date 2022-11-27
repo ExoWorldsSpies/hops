@@ -11,11 +11,11 @@ import warnings
 import pickle
 import numpy as np
 
-from pylightcurve.errors import *
-from pylightcurve.__databases__ import plc_data
-from pylightcurve.analysis.numerical_integration import gauss_numerical_integration
-from pylightcurve.analysis.curve_fit import curve_fit
-from pylightcurve.processes.files import open_dict
+from ..errors import *
+from ..__databases__ import plc_data
+from ..analysis.numerical_integration import gauss_numerical_integration
+from ..analysis.curve_fit import curve_fit
+from ..processes.files import open_dict
 
 
 # orbit

@@ -5,8 +5,8 @@ __all__ = ['gaussian', 'fit_gaussian', 'two_d_gaussian', 'fit_two_d_gaussian']
 import numpy as np
 import warnings
 
-from pylightcurve.analysis.curve_fit import curve_fit
-from pylightcurve.analysis.numerical_integration import sample_function
+from .curve_fit import curve_fit
+from .numerical_integration import sample_function
 
 
 # gaussian 1D

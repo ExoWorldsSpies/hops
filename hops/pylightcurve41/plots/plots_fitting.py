@@ -1,8 +1,8 @@
 
 import numpy as np
 
-from pylightcurve.errors import *
-from pylightcurve.analysis.distributions import two_d_distribution
+from ..errors import *
+from ..analysis.distributions import two_d_distribution
 
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec

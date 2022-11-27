@@ -3,9 +3,9 @@ __all__ = ['simbad_search_by_name', 'simbad_search_by_coordinates']
 import time
 
 from astroquery.simbad import Simbad
-from pylightcurve.__databases__ import plc_data
-from pylightcurve.spacetime.targets import FixedTarget
-from pylightcurve.spacetime.angles import Degrees, Hours, _request_angle
+from ..__databases__ import plc_data
+from ..spacetime.targets import FixedTarget
+from ..spacetime.angles import Degrees, Hours, _request_angle
 
 import astropy.coordinates as coord
 import astropy.units as u

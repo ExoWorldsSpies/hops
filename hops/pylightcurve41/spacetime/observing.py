@@ -3,14 +3,14 @@ __all__ = ['Observatory']
 import numpy as np
 from functools import lru_cache
 
-from pylightcurve.errors import *
-from pylightcurve.analysis.curve_fit import interp1d
-from pylightcurve.spacetime.angles import *
-from pylightcurve.spacetime.angles import _request_angle
-from pylightcurve.spacetime.times import *
-from pylightcurve.spacetime.times import _request_time
-from pylightcurve.spacetime.targets import *
-from pylightcurve.spacetime.targets import _request_target
+from ..errors import *
+from ..analysis.curve_fit import interp1d
+from .angles import *
+from .angles import _request_angle
+from .times import *
+from .times import _request_time
+from .targets import *
+from .targets import _request_target
 
 
 class _Horizon:

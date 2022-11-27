@@ -8,14 +8,14 @@ import warnings
 from scipy.optimize import minimize
 from scipy.stats import shapiro
 
-from pylightcurve.errors import *
-from pylightcurve.processes.counter import Counter
-from pylightcurve.processes.files import save_dict
-from pylightcurve.plots.plots_fitting import plot_mcmc_corner, plot_mcmc_traces, plot_mcmc_fitting
-from pylightcurve.analysis.distributions import one_d_distribution
-from pylightcurve.analysis.gaussian import gaussian
-from pylightcurve.analysis.curve_fit import curve_fit
-from pylightcurve.analysis.stats import *
+from ..errors import *
+from ..processes.counter import Counter
+from ..processes.files import save_dict
+from ..plots.plots_fitting import plot_mcmc_corner, plot_mcmc_traces, plot_mcmc_fitting
+from ..analysis.distributions import one_d_distribution
+from ..analysis.gaussian import gaussian
+from .curve_fit import curve_fit
+from .stats import *
 
 
 class Fitting:

@@ -5,7 +5,7 @@ __all__ = ['Degrees', 'Hours', 'Rad', 'arcsin', 'arccos', 'arctan', 'pi']
 import numpy as np
 from functools import lru_cache
 
-from pylightcurve.errors import *
+from ..errors import *
 
 
 def _break_seconds(seconds):

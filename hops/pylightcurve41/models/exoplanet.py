@@ -6,23 +6,23 @@ import warnings
 
 import numpy as np
 
-from pylightcurve.errors import *
-from pylightcurve.__databases__ import plc_data
+from ..errors import *
+from ..__databases__ import plc_data
 
-from pylightcurve.models.exoplanet_lc import planet_orbit, planet_star_projected_distance, planet_phase, \
+from ..models.exoplanet_lc import planet_orbit, planet_star_projected_distance, planet_phase, \
     transit, transit_integrated, \
     transit_duration, transit_depth, eclipse, eclipse_integrated, eclipse_mid_time, eclipse_duration, eclipse_depth,\
     fp_over_fs, transit_t12, exotethys
-from pylightcurve.analysis.optimisation import Fitting
-from pylightcurve.processes.files import open_dict, save_dict,  copy_dict
-from pylightcurve.plots.plots_fitting import plot_transit_fitting_models
-from pylightcurve.spacetime.angles import Degrees, _request_angle, _reformat_or_request_angle
-from pylightcurve.spacetime.times import JD
-from pylightcurve.spacetime.targets import FixedTarget
-from pylightcurve.plots.plots_fitting import in_brackets
+from ..analysis.optimisation import Fitting
+from ..processes.files import open_dict, save_dict,  copy_dict
+from ..plots.plots_fitting import plot_transit_fitting_models
+from ..spacetime.angles import Degrees, _request_angle, _reformat_or_request_angle
+from ..spacetime.times import JD
+from ..spacetime.targets import FixedTarget
+from ..plots.plots_fitting import in_brackets
 
-from pylightcurve.spacetime.times import now
-from pylightcurve.spacetime.observing import Observatory
+from ..spacetime.times import now
+from ..spacetime.observing import Observatory
 
 from inspect import signature
 

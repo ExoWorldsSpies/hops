@@ -3,9 +3,9 @@ __all__ = ['DTime', 'UTC', 'JD', 'MJD', 'now']
 import datetime
 from functools import lru_cache
 
-from pylightcurve.errors import *
-from pylightcurve.__databases__ import plc_data
-from pylightcurve.spacetime.angles import *
+from ..errors import *
+from ..__databases__ import plc_data
+from .angles import *
 
 
 class _Time:
