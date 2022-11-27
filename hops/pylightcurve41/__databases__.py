@@ -7,8 +7,8 @@ import datetime
 import numpy as np
 from scipy.interpolate import interp1d
 
-from pylightcurve.processes.files import open_dict, open_yaml, save_dict, download, open_dict_online
-from pylightcurve import __version__
+from .processes.files import open_dict, open_yaml, save_dict, download, open_dict_online
+version = open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '__version__.txt')).read()
 
 try:
     import zipfile
@@ -26,7 +26,7 @@ class PlcData:
     def __init__(self, _reset=False, _test=False):
 
         self.package_name = package_name
-        self.version = '.'.join(__version__.split('.')[:2])
+        self.version = '.'.join(version.split('.')[:2])
 
         self.build_in_databases_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), databases_file)
 

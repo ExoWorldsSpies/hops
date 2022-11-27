@@ -6,27 +6,27 @@ __author_email__ = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),
 __description__ = open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '__description__.txt')).read()
 __url__ = open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '__url__.txt')).read()
 
-from pylightcurve.analysis.distributions import *
-from pylightcurve.analysis.numerical_integration import *
-from pylightcurve.analysis.optimisation import *
-from pylightcurve.analysis.gaussian import *
-from pylightcurve.analysis.curve_fit import *
-from pylightcurve.analysis.stats import *
+from .analysis.distributions import *
+from .analysis.numerical_integration import *
+from .analysis.optimisation import *
+from .analysis.gaussian import *
+from .analysis.curve_fit import *
+from .analysis.stats import *
 
-from pylightcurve.catalogues.catalogues import *
-from pylightcurve.catalogues.simbad import *
+from .catalogues.catalogues import *
+from .catalogues.simbad import *
 
-from pylightcurve.images.find_stars import *
+from .images.find_stars import *
 
-from pylightcurve.models.exoplanet import *
-from pylightcurve.models.exoplanet_lc import *
+from .models.exoplanet import *
+from .models.exoplanet_lc import *
 
-from pylightcurve.processes.counter import *
-from pylightcurve.processes.files import *
+from .processes.counter import *
+from .processes.files import *
 
-from pylightcurve.spacetime.angles import *
-from pylightcurve.spacetime.targets import *
-from pylightcurve.spacetime.times import *
-from pylightcurve.spacetime.observing import *
+from .spacetime.angles import *
+from .spacetime.targets import *
+from .spacetime.times import *
+from .spacetime.observing import *
 
-from pylightcurve.errors import *
+from .errors import *
