@@ -4,6 +4,7 @@ import time
 import numpy as np
 import shutil
 import hops.pylightcurve41 as plc
+import sys
 
 from astropy.io import fits as pf
 
@@ -333,6 +334,7 @@ class ReductionWindow(MainWindow):
                 self.master_flat = 1.0
 
             self.progress_flat.show_message('Calculating master flat... Completed!')
+            sys.setrecursionlimit(100 * len(self.science_files))
             self.after(self.reduce_science)
 
     def reduce_science(self):
