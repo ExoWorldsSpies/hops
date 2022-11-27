@@ -2,11 +2,13 @@
 import os
 import time
 import numpy as np
+import pylightcurve41 as plc
 import matplotlib.patches as mpatches
-import hops.pylightcurve3 as plc
+
 from astropy.io import fits as pf
 
 from hops.application_windows import MainWindow
+from hops.hops_tools.images_find_stars import *
 
 
 class AlignmentWindow(MainWindow):
@@ -18,7 +20,7 @@ class AlignmentWindow(MainWindow):
         # set variables, create and place widgets
 
         self.bin_fits = self.log.get_param('bin_fits')
-        self.burn_limit = int(1.1 * self.log.get_param('burn_limit')) * self.bin_fits * self.bin_fits
+        self.burn_limit = self.log.get_param('burn_limit') * self.bin_fits * self.bin_fits
         self.shift_tolerance_p = self.log.get_param('shift_tolerance_p')
         self.rotation_tolerance = self.log.get_param('rotation_tolerance')
         self.min_calibration_stars_number = int(self.log.get_param('min_calibration_stars_number'))
@@ -74,24 +76,25 @@ class AlignmentWindow(MainWindow):
 
         fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))
 
+        t0 = time.time()
+        _ = plc.mean_std_from_median_mad(fits[1].data)
+        self.fr_time = int(200 * (time.time()-t0))
+
         self.shift_tolerance = int(max(len(fits[1].data), len(fits[1].data[0])) * (self.shift_tolerance_p / 100.0))
         self.y_length, self.x_length = fits[1].data.shape
         self.circles_diameter = 0.02 * max(self.y_length, self.x_length)
 
         # progress window
 
-        y_scale = (self.root.winfo_screenheight() - 500) / self.root.winfo_screenheight()
-
-        self.progress_figure = self.FitsWindow(figsize=(0.5, y_scale, 10, 10, len(fits[1].data[0]) / len(fits[1].data)))
-        self.progress_figure.load_fits(fits[1], input_name=self.science_files[0])
+        self.progress_figure = self.FitsWindow(input=fits[1], input_name=self.science_files[0])
         self.progress_all_stars = self.Label(text='')
         self.progress_alignment = self.Progressbar(task="Aligning frames")
-        # self.progress_all_frames = self.Progressbar(task="Aligning all stars in all frames")
+        self.progress_half_frame = self.CheckButton(text='Show smaller frame', initial=0)
 
         self.setup_window([
             [[self.progress_figure, 0, 2]],
-            [[self.progress_all_stars, 0, 2]],
-            [[self.progress_alignment, 0, 2]],
+            [[self.progress_all_stars, 0]],
+            [[self.progress_alignment, 0], [self.progress_half_frame, 1]],
             [[self.Button(text='STOP ALIGNMENT & RETURN TO MAIN MENU', command=self.trigger_exit), 0, 2]],
             []
         ])
@@ -99,6 +102,8 @@ class AlignmentWindow(MainWindow):
         self.set_close_button_function(self.trigger_exit)
 
     def run_alignment(self):
+
+        self.progress_figure.adjust_size()
 
         self.close = self.trigger_exit
 
@@ -135,7 +140,7 @@ class AlignmentWindow(MainWindow):
 
             self.progress_figure.load_fits(fits[1], self.science_files[0])
 
-            stars, psf = plc.find_all_stars(fits[1].data,
+            stars, psf = find_all_stars(fits[1].data,
                                             mean=metadata[self.log.mean_key], std=metadata[self.log.std_key],
                                             std_limit=3, burn_limit=self.burn_limit, star_std=metadata[self.log.psf_key],
                                             progressbar=self.progress_all_stars, progress_window=self,
@@ -143,7 +148,7 @@ class AlignmentWindow(MainWindow):
                                             )
 
             if self.exit:
-                self.after(self.choose_calibartion_stars)
+                self.after(self.choose_calibration_stars)
 
             stars = np.array(stars)
 
@@ -154,9 +159,9 @@ class AlignmentWindow(MainWindow):
 
             self.progress_all_stars.set('Choosing calibrating stars...')
 
-            self.after(self.choose_calibartion_stars)
+            self.after(self.choose_calibration_stars)
 
-    def choose_calibartion_stars(self):
+    def choose_calibration_stars(self):
 
         if self.exit:
             self.after(self.align)
@@ -178,12 +183,12 @@ class AlignmentWindow(MainWindow):
             while len(bright_stars) < 100 and std_limit >= 5.0:
                 bright_stars = []
                 for star in stars:
-                    if star[2] + star[3] < 2.0 * self.burn_limit / 3.0:
+                    if star[2] + star[3] < 0.9 * self.burn_limit:
                         if star[-1] > (2 * np.pi * (std_limit * frame_std) * frame_star_psf * frame_star_psf):
                             self.alignment_log(star[0], star[1], star[-1],
                                                2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
                             bright_stars.append(star)
-                std_limit -= 5
+                std_limit -= 10
 
             if len(bright_stars) < self.min_calibration_stars_number:
                 bright_stars = []
@@ -195,9 +200,12 @@ class AlignmentWindow(MainWindow):
                             self.alignment_log(star[0], star[1], star[-1],
                                                2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
                             bright_stars.append(star)
-                    std_limit -= 5
+                    std_limit -= 10
 
-            stars = sorted(bright_stars, key=lambda x: -x[-1] / (x[-2] ** 3))
+            weight_distance = 1.5
+            weight_flux = 1
+
+            stars = sorted(bright_stars, key=lambda x: - ((weight_flux * (x[2] / self.burn_limit) - weight_distance * (x[-2] / len(fits[1].data[0])))/(weight_distance + weight_flux)))
 
             x_ref_position = stars[0][0]
             y_ref_position = stars[0][1]
@@ -274,7 +282,7 @@ class AlignmentWindow(MainWindow):
 
             self.progress_alignment.show_message(' ')
 
-            self.progress_figure.load_fits(self.fits[1], self.science_file, draw=False)
+            self.progress_figure.load_fits(self.fits[1], self.science_file, draw=False, show_half=self.progress_half_frame.get())
             self.circle = mpatches.Circle((self.x0, self.y0), self.circles_diameter, ec='r', fill=False)
             self.progress_figure.ax.add_patch(self.circle)
 
@@ -292,15 +300,16 @@ class AlignmentWindow(MainWindow):
         else:
 
             if self.test_level == 1:
-                self.stars = plc.find_single_star(self.fits[1].data, self.x0, self.y0, mean=self.mean, std=self.std,
-                                                  burn_limit=self.burn_limit, star_std=self.star_std)
+                self.stars = find_single_star(self.fits[1].data, self.x0, self.y0,
+                                              window=self.shift_tolerance/self.star_std, mean=self.mean, std=self.std,
+                                              burn_limit=self.burn_limit, star_std=self.star_std)
                 if self.stars:
                     self.stars.append(2 * np.pi * self.stars[2] * self.stars[4] * self.stars[5])
                     self.stars = [self.stars]
 
             elif self.test_level == 2:
                 self.skip_time = time.time()
-                self.stars = plc.find_all_stars(self.fits[1].data, x_low=self.x0 - self.shift_tolerance,
+                self.stars = find_all_stars(self.fits[1].data, x_low=self.x0 - self.shift_tolerance,
                                                 x_upper=self.x0 + self.shift_tolerance,
                                                 y_low=self.y0 - self.shift_tolerance,
                                                 y_upper=self.y0 + self.shift_tolerance, x_centre=self.x0,
@@ -314,7 +323,7 @@ class AlignmentWindow(MainWindow):
                 if self.askyesno('HOPS - Alignment', 'Stars not found close to their previous positions.\n'
                                                      'Do you want to skip this frame?'):
                     self.after(self.plot_current)
-                self.stars = plc.find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
+                self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
                                                 star_std=self.star_std, order_by_flux=self.f0, verbose=True)[0]
                 self.progress_all_stars.set(' ')
 
@@ -458,7 +467,7 @@ class AlignmentWindow(MainWindow):
                     for ii in self.comparisons[:int(self.check_num + 0.5)]:
                         check_x = self.x0 + ii[0] * np.cos(self.u0 + ii[1])
                         check_y = self.y0 + ii[0] * np.sin(self.u0 + ii[1])
-                        star = plc.find_single_star(self.fits[1].data, check_x, check_y, mean=self.mean,  std=self.std,
+                        star = find_single_star(self.fits[1].data, check_x, check_y, mean=self.mean,  std=self.std,
                                                     burn_limit=self.burn_limit, star_std=self.star_std)
 
                         if star:

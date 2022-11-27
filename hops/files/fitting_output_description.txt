@@ -7,7 +7,7 @@ rp is the planet to star radius ratio (no units), a is the semi-major axis relat
 (no units), e is the eccentricity (no units), i is the inclination (degrees), w is the argument of periastron
 (degrees) and mt is the mid-transit time (BJD_TDB).
 
---- set_1_model.txt ---
+--- model.txt ---
 Contains the data and the final model. The columns contain the following information (in order):
 1. mid-exposure time in BJD_TDB
 2. orbital phase
@@ -16,7 +16,7 @@ Contains the data and the final model. The columns contain the following informa
 5. model
 6. fitting residuals
 
---- set_1_detrended_model.txt ---
+--- detrended_model.txt ---
 Contains the detrended data and the final model, where all fluxes have been divided by the best-fit model for
 the systematics. The columns contain the following information (in order):
 1. mid-exposure time in BJD_TDB

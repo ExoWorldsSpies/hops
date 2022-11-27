@@ -1,18 +1,22 @@
 
 import os
+import glob
 import numpy as np
 import shutil
+import warnings
 import matplotlib
+import webbrowser
+import pylightcurve41 as plc
 import matplotlib.patches as mpatches
 import matplotlib.gridspec as gridspec
-import hops.pylightcurve3 as plc
-import webbrowser
-import warnings
-from tkinter import TclError
-from matplotlib.cm import Greys, Greys_r
-from astropy.io import fits as pf
 
-from hops.application_windows import MainWindow
+from astropy.io import fits as pf
+from matplotlib.cm import Greys, Greys_r
+
+
+from hops.application_windows import MainWindow, AddOnWindow
+from hops.hops_tools.images_find_stars import *
+
 
 class PhotometryWindow(MainWindow):
 
@@ -22,8 +26,65 @@ class PhotometryWindow(MainWindow):
 
         # set variables, create and place widgets, main window
 
+        self.advanced_options_window = AddOnWindow(self, name='Advanced settings', position=2)
+        self.show_advanced_options_button = self.Button(text='Advanced settings', command=self.advanced_options_window.show)
+
+        self.use_variable_aperture = self.advanced_options_window.CheckButton(
+            text='Vary the aperture size proportionally to the variations of the PSF size.',
+            initial=self.log.get_param('use_variable_aperture'),
+            command=self.update_window
+        )
+
+        self.use_geometric_center = self.advanced_options_window.CheckButton(
+            text='Align the aperture with the geometric center instead of the PSF peak.',
+            initial=self.log.get_param('use_geometric_center'),
+            command=self.update_window
+        )
+
+        self.sky_inner_aperture = self.advanced_options_window.Entry(
+            value=self.log.get_param('sky_inner_aperture'),
+            instance=float,
+            command=self.update_window
+        )
+
+        self.sky_outer_aperture = self.advanced_options_window.Entry(
+            value=self.log.get_param('sky_outer_aperture'),
+            instance=float,
+            command=self.update_window
+        )
+
+        self.saturation = self.advanced_options_window.Entry(
+            value=self.log.get_param('saturation'),
+            instance=float,
+            command=self.update_window
+        )
+
+        self.advanced_options_window.setup_window([
+            [],
+            [
+                [self.advanced_options_window.Label(text='Inner sky-ring radius, relatively to the aperture'), 0],
+                [self.sky_inner_aperture, 1],
+                [self.advanced_options_window.Label(text='(default = 1.7)'), 2]
+             ],
+            [
+                [self.advanced_options_window.Label(text='Outer sky-ring radius, relatively to the aperture'), 0],
+                [self.sky_outer_aperture, 1],
+                [self.advanced_options_window.Label(text='(default = 2.4)'), 2]
+            ],
+            [[self.advanced_options_window.Label(text='Note: the bright pixels inside the sky-ring\nare NOT taken into account for the sky background estimation.'), 0, 3]],
+            [],
+            [
+                [self.advanced_options_window.Label(text='Saturation warning limit, relatively to the full-well depth'), 0],
+                [self.saturation, 1],
+                [self.advanced_options_window.Label(text='(default = 0.95)'), 2]],
+            [],
+            [[self.use_variable_aperture, 0, 3]],
+            [[self.use_geometric_center, 0, 3]],
+            [],
+        ])
+
         self.bin_fits = self.log.get_param('bin_fits')
-        self.burn_limit = self.log.get_param('burn_limit') * self.bin_fits * self.bin_fits
+        self.burn_limit = self.log.get_param('burn_limit')
         self.max_targets = self.log.get_param('max_comparisons') + 1
         self.target_ra_dec = self.log.get_param('target_ra_dec')
         self.visible_fov_x_min = self.log.get_param('min_x')
@@ -50,7 +111,7 @@ class PhotometryWindow(MainWindow):
 
         self.fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))[1]
 
-        self.show_good_comparisons = self.CheckButton(text='Show stars of similar flux to the target, % difference:',
+        self.show_good_comparisons = self.CheckButton(text='Show stars with flux similar\nto the target (+/- %):',
                                                       initial=self.log.get_param('show_good_comparisons'),
                                                       command=self.update_window)
         self.show_good_comparisons_percent = self.DropDown(initial=float(self.log.get_param('show_good_comparisons_percent')),
@@ -76,9 +137,11 @@ class PhotometryWindow(MainWindow):
             self.targets_aperture = [self.Entry(value=self.log.get_param('target_aperture'), instance=float, command=self.update_window)]
         except:
             self.targets_aperture = [self.Entry(value=0.0, instance=float, command=self.update_window)]
-        self.targets_clear = [self.Button(text='CLEAR', command=self.clear_target(0))]
+        self.targets_clear = [self.Label(text='')]
         self.targets_warning = [self.Label()]
         self.targets_flux = [0.0]
+        self.targets_wx = [0.0]
+        self.targets_wy = [0.0]
 
         for comparison in range(self.log.get_param('max_comparisons')):
 
@@ -105,6 +168,8 @@ class PhotometryWindow(MainWindow):
             self.targets_clear.append(self.Button(text='CLEAR', command=self.clear_target(comparison + 1)))
             self.targets_warning.append(self.Label())
             self.targets_flux.append(0)
+            self.targets_wx.append(0)
+            self.targets_wy.append(0)
 
             if self.targets_indication.get() == 0 and self.targets_x_position[-1].get() == 0:
                 self.targets_indication.set(comparison + 1)
@@ -112,25 +177,14 @@ class PhotometryWindow(MainWindow):
         if self.targets_x_position[0].get() == 0:
             self.targets_indication.set(0)
 
-        self.use_variable_aperture = self.CheckButton(text='Vary the aperture size proportionally to the '
-                                                          'variations of the PSF size.',
-                                                      initial=self.log.get_param('use_variable_aperture'))
-
-        self.use_geometric_center = self.CheckButton(text='Align the aperture with the geometric center '
-                                                          'instead of the PSF peak.',
-                                                     initial=self.log.get_param('use_geometric_center'),
-                                                     command=self.update_window)
-
         self.photometry_button = self.Button(text='RUN PHOTOMETRY', command=self.run_photometry, bg='green', highlightbackground='green')
 
         # plot
 
-        y_scale = (self.root.winfo_screenheight() - 375) / self.root.winfo_screenheight()
-        x_scale = (self.root.winfo_screenheight() - 600) / self.root.winfo_screenheight()
-
-        self.fits_figure = self.FitsWindow(figsize=(x_scale, y_scale, 10, 10, len(self.fits.data[0]) / (1.2 * len(self.fits.data))), show_controls=True, show_axes=True,
-                                           subplots_adjust=(0.01, 0.99, 0.05, 0.89))
-        self.fits_figure.load_fits(self.fits, self.science_files[0], self.log.get_param('photometry_fov_options'))
+        self.fits_figure = self.FitsWindow(input=self.fits, input_name=self.science_files[0],
+                                           input_options=self.log.get_param('photometry_fov_options'),
+                                           show_controls=True, show_axes=True,
+                                           subplots_adjust=(0.07, 0.99, 0.05, 0.85))
 
         self.fits_figure.canvas.callbacks.connect('button_press_event', self.update_window)
 
@@ -142,17 +196,17 @@ class PhotometryWindow(MainWindow):
                                              ec='r', fill=False, label='Available FOV'))
 
         if self.targets_x_position[0].get() ** 2 + self.targets_y_position[0].get() ** 2 == 0:
-            self.targets_box = [mpatches.Circle((-1000, -1000),
+            self.targets_box = [[mpatches.Circle((-1000, -1000),
                                                 self.targets_aperture[0].get(),
-                                                ec='r', fill=False)]
+                                                ec='r', fill=False) for ff in range(3)]]
             self.targets_text = [self.fits_figure.ax.text(-1000,
                                                           -1000 - self.targets_aperture[
                                                               0].get() - 1, 'T',
                                                           color='r', fontsize=15, va='top')]
         else:
-            self.targets_box = [mpatches.Circle((self.targets_x_position[0].get(), self.targets_y_position[0].get()),
+            self.targets_box = [[mpatches.Circle((self.targets_x_position[0].get(), self.targets_y_position[0].get()),
                                                 self.targets_aperture[0].get(),
-                                                ec='r', fill=False)]
+                                                ec='r', fill=False) for ff in range(3)]]
             self.targets_text = [self.fits_figure.ax.text(self.targets_x_position[0].get(),
                                                           self.targets_y_position[0].get() - self.targets_aperture[
                                                               0].get() - 1, 'T',
@@ -160,9 +214,9 @@ class PhotometryWindow(MainWindow):
 
         for comparison in range(self.log.get_param('max_comparisons')):
             if self.targets_x_position[comparison + 1].get() ** 2 + self.targets_y_position[comparison + 1].get() ** 2 == 0:
-                box = mpatches.Circle((-1000, -1000),
-                                      self.targets_aperture[comparison + 1].get(),
-                                      ec='#07fefc', fill=False)
+                self.targets_box.append([mpatches.Circle((-1000, -1000),
+                                                         self.targets_aperture[comparison + 1].get(),
+                                                         ec='#07fefc', fill=False) for ff in range(3)])
                 self.targets_text.append(self.fits_figure.ax.text(-1000
                                                                   + self.targets_aperture[comparison + 1].get() + 1,
                                                                   -1000
@@ -170,17 +224,16 @@ class PhotometryWindow(MainWindow):
                                                                   'C{0}'.format(comparison + 1), color='#07fefc',
                                                                   fontsize=15, va='top'))
             else:
-                box = mpatches.Circle((self.targets_x_position[comparison + 1].get(),
-                                       self.targets_y_position[comparison + 1].get()),
-                                      self.targets_aperture[comparison + 1].get(),
-                                      ec='#07fefc', fill=False)
+                self.targets_box.append([mpatches.Circle((self.targets_x_position[comparison + 1].get(),
+                                                          self.targets_y_position[comparison + 1].get()),
+                                                         self.targets_aperture[comparison + 1].get(),
+                                                         ec='#07fefc', fill=False) for ff in range(3)])
                 self.targets_text.append(self.fits_figure.ax.text(self.targets_x_position[comparison + 1].get()
                                                                   + self.targets_aperture[comparison + 1].get() + 1,
                                                                   self.targets_y_position[comparison + 1].get()
                                                                   - self.targets_aperture[comparison + 1].get() - 1,
                                                                   'C{0}'.format(comparison + 1), color='#07fefc',
                                                                   fontsize=15, va='top'))
-            self.targets_box.append(box)
 
         self.good_comps_boxes1 = []
         for comparison in range(100):
@@ -193,14 +246,24 @@ class PhotometryWindow(MainWindow):
             self.good_comps_boxes1.append(circle1)
 
         for box in self.targets_box:
-            self.fits_figure.ax.add_patch(box)
+            for ff in range(3):
+                self.fits_figure.ax.add_patch(box[ff])
 
         for circle1 in self.good_comps_boxes1:
             self.fits_figure.ax.add_patch(circle1)
 
         self.fits_figure.ax.legend(loc=(0, 1.01))
 
-        self.proceed_button = self.Button(text='SKIP PHOTOMETRY & PROCEED TO FITTING', command=self.proceed)
+        photometry_folders = (glob.glob(os.path.join('{0}*'.format(self.log.photometry_directory_base))))
+        photometry_folders = sorted(photometry_folders, key=lambda x: float(x.split('_')[1]))
+        photometry_folders = ['Load options from previous run'] + photometry_folders
+        self.photometry_folder_to_load = self.DropDown(initial='Load options from previous run',
+                                               options=photometry_folders,
+                                               width=40, command=self.load_options)
+
+        self.run_message = self.Label(text='')
+
+        self.proceed_button = self.Button(text='PROCEED TO FITTING', command=self.proceed)
         if self.log.get_param('photometry_complete'):
             self.proceed_button.activate()
         else:
@@ -209,48 +272,135 @@ class PhotometryWindow(MainWindow):
         self.save_and_return_button = self.Button(text='SAVE OPTIONS & RETURN TO MAIN MENU', command=self.save_and_return)
 
         setup_list = [
-            [[self.fits_figure, 0, 1, 50]],
-            [],
-            [[self.Label(text="Remember, the best comparison stars need to be:\n"
+            [[self.show_good_comparisons, 0],
+             [self.show_good_comparisons_percent, 1],
+             [self.Button(text='Check SIMBAD', command=self.openweb_simbad), 2],
+             [self.Label(text="Remember, the best comparison stars need to be:\n"
                               "a) close to your target, b) of similar magnitude to the target,\n"
                               "c) of similar colour to the target, d) photometrically stable, i.e. "
-                              "not variables!"), 1, 9]],
-            [[self.Button(text='Check SIMBAD', command=self.openweb_simbad), 1, 9]],
-            [[self.show_good_comparisons, 1, 7], [self.show_good_comparisons_percent, 8, 2]],
-            [[self.Label(text='X'), 4], [self.Label(text='Y'), 5], [self.Label(text='Total\ncounts'), 6],
-             [self.Label(text='Max\ncounts'), 7], [self.Label(text='Max\nHWHM'), 8],
-             [self.Label(text='Aperture\nradius (>1.5)'), 9], [self.Label(text='    WARNINGS    '), 10]],
+                              "not variables!"), 3, 9]
+             ],
+            [[self.fits_figure, 0, 3, 24],],
+            [[self.Label(text='X'), 5], [self.Label(text='Y'), 6], [self.Label(text='Total\ncounts'), 7],
+             [self.Label(text='Max\ncounts'), 8], [self.Label(text='Max\nHWHM'), 9],
+             [self.Label(text='Aperture\nradius (>1.5)'), 10]],
         ]
 
         for target in range(self.max_targets):
 
-            setup_list.append([[self.targets_indication_entry[target], 1],
-                               [self.targets_clear[target], 2],
-                               [self.Label(text=' '), 3],
-                               [self.targets_x_position[target], 4],
-                               [self.targets_y_position[target], 5],
-                               [self.targets_total_flux[target], 6],
-                               [self.targets_peak[target], 7],
-                               [self.targets_max_hwhm[target], 8],
-                               [self.targets_aperture[target], 9],
-                               [self.targets_warning[target], 10]])
+            setup_list.append([[self.targets_indication_entry[target], 3],
+                               [self.targets_clear[target], 4],
+                               [self.targets_x_position[target], 5],
+                               [self.targets_y_position[target], 6],
+                               [self.targets_total_flux[target], 7],
+                               [self.targets_peak[target], 8],
+                               [self.targets_max_hwhm[target], 9],
+                               [self.targets_aperture[target], 10],
+                               [self.targets_warning[target], 11]])
 
         setup_list += [
-            [[self.Label(text='Advanced aperture options:'), 1, 9]],
-            [[self.use_variable_aperture, 1, 9]],
-            [[self.use_geometric_center, 1, 9]],
+            [[self.show_advanced_options_button, 7, 4]],
             [],
-            [[self.Label(text='You need to select the target and at least one comparison star to proceed.'), 1, 9]],
-            [[self.Button(text='RETURN TO MAIN MENU', command=self.close), 1, 2],
-             [self.save_and_return_button, 3, 7]],
-            [[self.photometry_button, 1, 2],
-             [self.proceed_button, 3, 7]],
+            [[self.photometry_folder_to_load, 3, 8]],
+            [[self.Button(text='RETURN TO MAIN MENU', command=self.close), 3, 2],
+             [self.save_and_return_button, 5, 6]],
+            [[self.photometry_button, 3, 2],
+             [self.proceed_button, 5, 6]],
+            [[self.run_message, 3, 8]],
             []
         ]
 
         self.setup_window(setup_list, entries_wd=5)
 
-        self.after(self.update_window)
+        self.update_window(None)
+
+    def load_options(self):
+
+        try:
+
+            other_log = self.log.open_yaml(os.path.join(self.photometry_folder_to_load.get(), 'log.yaml'))
+
+            self.use_variable_aperture.set(other_log['use_variable_aperture'])
+            self.use_geometric_center.set(other_log['use_geometric_center'])
+            self.sky_inner_aperture.set(other_log['sky_inner_aperture'])
+            self.sky_outer_aperture.set(other_log['sky_outer_aperture'])
+            self.saturation.set(other_log['saturation'])
+            self.show_good_comparisons.set(other_log['show_good_comparisons'])
+            self.show_good_comparisons_percent.set(other_log['show_good_comparisons_percent'])
+
+            self.targets_indication.set(0)
+            try:
+                self.targets_x_position[0].set(other_log['target_x_position'])
+                self.targets_y_position[0].set(other_log['target_y_position'])
+                self.targets_aperture[0].set(other_log['target_aperture'])
+            except:
+                self.targets_x_position[0].set(0)
+                self.targets_y_position[0].set(0)
+                self.targets_aperture[0].set(0)
+
+            for comparison in range(self.log.get_param('max_comparisons')):
+
+                try:
+                    self.targets_x_position[1 + comparison].set(other_log['comparison_{0}_x_position'.format(comparison + 1)])
+                    self.targets_y_position[1 + comparison].set(other_log['comparison_{0}_y_position'.format(comparison + 1)])
+                    self.targets_aperture[1 + comparison].set(other_log['comparison_{0}_aperture'.format(comparison + 1)])
+                except:
+                    self.targets_x_position[1 + comparison].set(0)
+                    self.targets_y_position[1 + comparison].set(0)
+                    self.targets_aperture[1 + comparison].set(0)
+
+            for comparison in range(self.log.get_param('max_comparisons')):
+                if self.targets_x_position[comparison].get() == 0:
+                    self.targets_indication.set(comparison)
+                    break
+
+            self.update_window(None)
+
+        except FileNotFoundError:
+            pass
+
+    def get_star(self, x, y):
+
+        star = find_single_star(
+            self.fits.data, x, y,
+            mean=self.fits.header[self.log.mean_key], std=self.fits.header[self.log.std_key],
+            burn_limit=self.burn_limit * self.bin_fits * self.bin_fits,
+            star_std=self.fits.header[self.log.psf_key])
+
+        if not star:
+            return None
+
+        else:
+            app = round(3 * self.fits.header[self.log.psf_key], 1)
+            x = round(star[0], 1)
+            y = round(star[1], 1)
+
+            x1 = int(star[0] - app)
+            x2 = x1 + int(2 * app) + 2
+            y1 = int(star[1] - app)
+            y2 = y1 + int(2 * app) + 2
+
+            peak = round(np.max(self.fits.data[y1:y2, x1:x2]), 1)
+
+            flux = round(2 * np.pi * star[2] * star[4] * star[5], 1)
+
+            max_hwhm = round(0.5 * 2.355 * max(star[4], star[5]), 1)
+
+            x1 = int(star[0] - 3 * self.fits.header[self.log.psf_key])
+            x2 = x1 + int(6 * self.fits.header[self.log.psf_key]) + 1
+            y1 = int(star[1] - 3 * self.fits.header[self.log.psf_key])
+            y2 = y1 + int(6 * self.fits.header[self.log.psf_key]) + 1
+
+            area = self.fits.data[y1:y2, x1:x2]
+
+            area_x, area_y = np.meshgrid(
+                np.arange(x1, x2) + 0.5,
+                np.arange(y1, y2) + 0.5)
+
+            wx = (round(np.sum(area_x * area) / np.sum(area), 1))
+            wy = (round(np.sum(area_y * area) / np.sum(area), 1))
+
+            return x, y, app, peak, flux, max_hwhm, wx, wy
 
     def update_window(self, event=None):
 
@@ -263,214 +413,201 @@ class PhotometryWindow(MainWindow):
 
             if event.dblclick:
 
-                star = plc.find_single_star(
-                    self.fits.data, event.xdata, event.ydata,
-                    mean=self.fits.header[self.log.mean_key], std=self.fits.header[self.log.std_key],
-                    burn_limit=self.burn_limit * 0.95, star_std=self.fits.header[self.log.psf_key])
+                star = self.get_star(event.xdata, event.ydata)
 
                 if not star:
                     self.showinfo('Star not acceptable.',
-                                  'Star could not be located or it is close to saturation.')
-
-                    self.show()
-
-                elif (star[0] < self.visible_fov_x_min or star[0] > self.visible_fov_x_max
-                      or star[1] < self.visible_fov_y_min
-                      or star[1] > self.visible_fov_y_max):
-
-                    self.showinfo('Star not acceptable.', 'Star moves outside the FOV later.')
-
-                    self.show()
+                                  'Star could not be located or it is saturated.')
+                    return None
 
                 else:
 
-                    self.targets_x_position[self.targets_indication.get()].set(round(star[0], 1))
-                    self.targets_y_position[self.targets_indication.get()].set(round(star[1], 1))
-                    self.targets_aperture[self.targets_indication.get()].set(round(3 * self.fits.header[self.log.psf_key], 1))
-                    self.targets_flux[self.targets_indication.get()] = 2 * np.pi * star[2] * star[4] * star[5]
-                    self.targets_total_flux[self.targets_indication.get()].set(round(2 * np.pi * star[2] * star[4] * star[5], 1))
-                    self.targets_max_hwhm[self.targets_indication.get()].set(round(0.5 * 2.355 * max(star[4], star[5]), 1))
+                    x, y, app, peak, flux, max_hwhm, wx, wy = star
 
+                    if (x < self.visible_fov_x_min or x > self.visible_fov_x_max
+                            or y < self.visible_fov_y_min or y > self.visible_fov_y_max):
+
+                        self.showinfo('Star not acceptable.', 'Star moves outside the FOV later.')
+                        return None
+
+                    else:
+
+                        self.targets_x_position[self.targets_indication.get()].set(x)
+                        self.targets_y_position[self.targets_indication.get()].set(y)
+                        self.targets_aperture[self.targets_indication.get()].set(app)
+                        self.targets_peak[self.targets_indication.get()].set(peak)
+                        self.targets_flux[self.targets_indication.get()] = flux
+                        self.targets_wx[self.targets_indication.get()] = wx
+                        self.targets_wy[self.targets_indication.get()] = wy
+                        self.targets_total_flux[self.targets_indication.get()].set(flux)
+                        self.targets_max_hwhm[self.targets_indication.get()].set(max_hwhm)
 
             else:
                 return None
 
-        try:
+        for i_target in range(self.max_targets):
 
-            one_empty = False
+            if 0 in [self.targets_x_position[i_target].get(), self.targets_y_position[i_target].get()]:
 
-            for i_target in range(self.max_targets):
+                self.targets_aperture[i_target].disable()
 
-                if 0 in [self.targets_x_position[i_target].get(), self.targets_y_position[i_target].get()]:
+                self.targets_box[i_target][0].set_center((-10000, -10000))
+                self.targets_box[i_target][1].set_center((-10000, -10000))
+                self.targets_box[i_target][2].set_center((-10000, -10000))
+                self.targets_text[i_target].set_x(-10000)
+                self.targets_text[i_target].set_y(-10000)
 
-                    self.targets_box[i_target].set_center((-10000, -10000))
+                self.targets_x_position[i_target].set(0)
+                self.targets_y_position[i_target].set(0)
+                self.targets_aperture[i_target].set(0)
+                self.targets_peak[i_target].set(0)
+                self.targets_flux[i_target] = 0
+                self.targets_wx[i_target] = 0
+                self.targets_wy[i_target] = 0
+                self.targets_total_flux[i_target].set(0)
+                self.targets_max_hwhm[i_target].set(0)
+                self.targets_warning[i_target].set('')
 
-                    self.targets_text[i_target].set_x(-10000)
-                    self.targets_text[i_target].set_y(-10000)
+                if i_target == 0:
+                    for num in range(100):
+                        self.good_comps_boxes1[num].set_xy((-1000, -1000))
 
-                    self.targets_aperture[i_target].disable()
+            else:
 
-                    if not one_empty:
-                        one_empty = True
-                        self.targets_indication_entry[i_target]['state'] = self.NORMAL
-                        if self.targets_indication.get() > i_target:
-                            self.targets_indication.set(i_target)
+                self.targets_aperture[i_target].activate()
+
+                if self.targets_flux[i_target] == 0:
+
+                    star = self.get_star(self.targets_x_position[i_target].get(),
+                                         self.targets_y_position[i_target].get())
+
+                    if not star:
+                        xx = self.clear_target(i_target)
+                        xx()
+
                     else:
-                        self.targets_indication_entry[i_target]['state'] = self.DISABLED
+
+                        x, y, app, peak, flux, max_hwhm, wx, wy = star
+
+                        self.targets_x_position[i_target].set(x)
+                        self.targets_y_position[i_target].set(y)
+                        if self.targets_aperture[i_target].get() == 0:
+                            self.targets_aperture[i_target].set(app)
+                        self.targets_peak[i_target].set(peak)
+                        self.targets_flux[i_target] = flux
+                        self.targets_wx[i_target] = wx
+                        self.targets_wy[i_target] = wy
+                        self.targets_total_flux[i_target].set(flux)
+                        self.targets_max_hwhm[i_target].set(max_hwhm)
+
+                if self.targets_aperture[i_target].get() < 1.5:
+                    self.targets_warning[i_target].set('Ap. too small')
+                else:
+                    self.targets_warning[i_target].set('')
+
+                # for compatibility with older versions - end
+
+                fov_options = self.fits_figure.get_fov_options()
+                text_y_drift = [-1, 1][int(fov_options[3])]
+                text_x_drift = [1, -1][int(fov_options[4])]
+
+                if i_target == 0:
+
+                    good_comps = []
+
+                    for j, comp_star in enumerate(self.all_stars):
+                        if np.sqrt((comp_star[0] - self.targets_x_position[i_target].get())**2 +
+                                   (comp_star[1] - self.targets_y_position[i_target].get())**2) > self.fits.header[self.log.psf_key]:
+                            if self.in_fov[j]:
+                                if comp_star[-1] < (1 + self.show_good_comparisons_percent.get() / 100) * self.targets_flux[i_target]:
+                                    if comp_star[-1] > (1 - self.show_good_comparisons_percent.get() / 100) * self.targets_flux[i_target]:
+                                        good_comps.append(comp_star)
+
+                    good_comps = sorted(good_comps,
+                                        key=lambda x: np.sqrt((x[0] -
+                                                               self.targets_x_position[i_target].get()) ** 2 +
+                                                              (x[1] -
+                                                               self.targets_y_position[i_target].get()) ** 2))
+
+                    for num in range(100):
+
+                        if num < len(good_comps):
+                            self.good_comps_boxes1[num].set_xy((good_comps[num][0] - self.circles_radius / 2,
+                                                                good_comps[num][1] - self.circles_radius / 2))
+                        else:
+                            self.good_comps_boxes1[num].set_xy((-1000, -1000))
+
+                        if not self.show_good_comparisons.get():
+                            self.good_comps_boxes1[num].set_alpha(0)
+                        else:
+                            self.good_comps_boxes1[num].set_alpha(1)
 
                 else:
 
-                    self.targets_aperture[i_target].activate()
-
-                    # for compatibility with older versions - start
-
-                    if self.targets_flux[i_target] == 0:
-
-                        star = plc.find_single_star(
-                            self.fits.data, self.targets_x_position[i_target].get(),
-                            self.targets_y_position[i_target].get(),
-                            mean=self.fits.header[self.log.mean_key], std=self.fits.header[self.log.std_key],
-                            burn_limit=self.burn_limit * 0.95, star_std=self.fits.header[self.log.psf_key])
-
-                        if not star:
-                            xx = self.clear_target(i_target)
-                            xx()
-                            return None
-
-                        self.targets_flux[i_target] = 2 * np.pi * star[2] * star[4] * star[5]
-                        self.targets_total_flux[i_target].set(round(2 * np.pi * star[2] * star[4] * star[5], 1))
-                        self.targets_max_hwhm[i_target].set(round(0.5 * 2.355 * max(star[4], star[5]), 1))
-
-                    try:
-                        app = self.targets_aperture[i_target].get()
-                        if app < 1.5 * self.fits.header[self.log.psf_key]:
-                            self.targets_warning[i_target].set('Ap. too small')
-                        else:
-                            self.targets_warning[i_target].set('')
-                    except TclError:
-                        app = 1
-
-                    # for compatibility with older versions - end
-
-                    fov_options = self.fits_figure.get_fov_options()
-                    text_y_drift = [-1, 1][int(fov_options[3])]
-                    text_x_drift = [1, -1][int(fov_options[4])]
-
-                    if i_target == 0:
-
-                        good_comps = []
-
-                        for j, comp_star in enumerate(self.all_stars):
-                            if np.sqrt((comp_star[0] - self.targets_x_position[i_target].get())**2 +
-                                       (comp_star[1] - self.targets_y_position[i_target].get())**2) > self.fits.header[self.log.psf_key]:
-                                if self.in_fov[j]:
-                                    if comp_star[-1] < (1 + self.show_good_comparisons_percent.get() / 100) * self.targets_flux[i_target]:
-                                        if comp_star[-1] > (1 - self.show_good_comparisons_percent.get() / 100) * self.targets_flux[i_target]:
-                                            good_comps.append(comp_star)
-
-                        good_comps = sorted(good_comps,
-                                            key=lambda x: np.sqrt((x[0] -
-                                                                   self.targets_x_position[i_target].get()) ** 2 +
-                                                                  (x[1] -
-                                                                   self.targets_y_position[i_target].get()) ** 2))
-
-                        for num in range(100):
-
-                            if num < len(good_comps):
-                                self.good_comps_boxes1[num].set_xy((good_comps[num][0] - self.circles_radius / 2,
-                                                                    good_comps[num][1] - self.circles_radius / 2))
+                    if 0 not in [self.targets_x_position[0].get(), self.targets_y_position[0].get()]:
+                        if self.targets_flux[i_target] > 2 * self.targets_flux[0]:
+                            if self.targets_warning[i_target].get() == '':
+                                self.targets_warning[i_target].set('Comp. too bright')
                             else:
-                                self.good_comps_boxes1[num].set_xy((-1000, -1000))
-
-                            if not self.show_good_comparisons.get():
-                                self.good_comps_boxes1[num].set_alpha(0)
+                                self.targets_warning[i_target].set(
+                                    ', '.join(self.targets_warning[i_target].get().split(', ') + ['Comp. too bright']))
+                        elif self.targets_flux[i_target] < 0.5 * self.targets_flux[0]:
+                            if self.targets_warning[i_target].get() == '':
+                                self.targets_warning[i_target].set('Comp. too faint')
                             else:
-                                self.good_comps_boxes1[num].set_alpha(1)
-
-                    if 0 in [self.targets_x_position[0].get(), self.targets_y_position[0].get()]:
-                        for num in range(100):
-                            self.good_comps_boxes1[num].set_xy((-1000, -1000))
-
-                    if i_target > 0:
-                        if 0 not in [self.targets_x_position[0].get(), self.targets_y_position[0].get()]:
-                            if self.targets_flux[i_target] > 2 * self.targets_flux[0]:
                                 self.targets_warning[i_target].set(
-                                    self.targets_warning[i_target].get() + ',Comp. too bright')
-                            elif self.targets_flux[i_target] < 0.5 * self.targets_flux[0]:
-                                self.targets_warning[i_target].set(
-                                    self.targets_warning[i_target].get() + ',Comp. too faint')
+                                    ', '.join(self.targets_warning[i_target].get().split(', ') + ['Comp. too faint']))
 
+                for ff in range(3):
                     if self.use_geometric_center.get():
-
-                        star = plc.find_single_star(
-                            self.fits.data,
-                            self.targets_x_position[i_target].get(),
-                            self.targets_y_position[i_target].get(),
-                            mean=self.fits.header[self.log.mean_key], std=self.fits.header[self.log.std_key],
-                            burn_limit=self.burn_limit * 0.95, star_std=self.fits.header[self.log.psf_key])
-
-                        x1 = int(star[0] - 3 * self.fits.header[self.log.psf_key])
-                        x2 = x1 + int(6 * self.fits.header[self.log.psf_key]) + 1
-                        y1 = int(star[1] - 3 * self.fits.header[self.log.psf_key])
-                        y2 = y1 + int(6 * self.fits.header[self.log.psf_key]) + 1
-
-                        area = self.fits.data[y1:y2, x1:x2]
-
-                        area_x, area_y = np.meshgrid(
-                            np.arange(max(0, x1), min(len(self.fits.data[0]), x2) + 0.5),
-                            np.arange(max(0, y1), min(len(self.fits.data), y2) + 0.5))
-
-                        xx = np.mean(
-                            area_x[np.where(area > self.fits.header[self.log.mean_key] + 3 * self.fits.header[
-                                self.log.std_key])])
-                        yy = np.mean(
-                            area_y[np.where(area > self.fits.header[self.log.mean_key] + 3 * self.fits.header[
-                                self.log.std_key])])
-
-                        self.targets_x_position[i_target].set(round(xx, 1))
-                        self.targets_y_position[i_target].set(round(yy, 1))
+                        self.targets_box[i_target][ff].set_center((self.targets_wx[i_target],
+                                                                   self.targets_wy[i_target]))
                     else:
-                        star = plc.find_single_star(
-                            self.fits.data,
-                            self.targets_x_position[i_target].get(),
-                            self.targets_y_position[i_target].get(),
-                            mean=self.fits.header[self.log.mean_key], std=self.fits.header[self.log.std_key],
-                            burn_limit=self.burn_limit * 0.95, star_std=self.fits.header[self.log.psf_key])
+                        self.targets_box[i_target][ff].set_center((self.targets_x_position[i_target].get(),
+                                                                 self.targets_y_position[i_target].get()))
 
-                        self.targets_x_position[i_target].set(round(star[0], 1))
-                        self.targets_y_position[i_target].set(round(star[1], 1))
+                self.targets_box[i_target][0].set_radius(self.targets_aperture[i_target].get())
+                self.targets_box[i_target][1].set_radius(self.targets_aperture[i_target].get() * self.sky_inner_aperture.get())
+                self.targets_box[i_target][1].set_linestyle(":")
+                self.targets_box[i_target][2].set_radius(self.targets_aperture[i_target].get() * self.sky_outer_aperture.get())
+                self.targets_box[i_target][2].set_linestyle(":")
 
-                    self.targets_box[i_target].set_center((self.targets_x_position[i_target].get(),
-                                                           self.targets_y_position[i_target].get()))
+                self.targets_text[i_target].set_x(self.targets_x_position[i_target].get() + text_x_drift * self.targets_aperture[i_target].get())
+                self.targets_text[i_target].set_y(self.targets_y_position[i_target].get() + text_y_drift * self.targets_aperture[i_target].get())
 
-                    self.targets_box[i_target].set_radius(app)
+                if self.targets_peak[i_target].get() > self.saturation.get() * self.burn_limit * self.bin_fits * self.bin_fits:
+                    if self.targets_warning[i_target].get() == '':
+                        self.targets_warning[i_target].set('Star close to saturation')
+                    else:
+                        self.targets_warning[i_target].set(
+                            ', '.join(self.targets_warning[i_target].get().split(', ') + ['Star close to saturation']))
 
-                    self.targets_text[i_target].set_x(self.targets_x_position[i_target].get() + text_x_drift * app)
-                    self.targets_text[i_target].set_y(self.targets_y_position[i_target].get() + text_y_drift * app)
-
-                    y1 = int(self.targets_y_position[i_target].get() - app)
-                    y2 = y1 + int(2 * app) + 2
-                    x1 = int(self.targets_x_position[i_target].get() - app)
-                    x2 = x1 + int(2 * app) + 2
-                    self.targets_peak[i_target].set(round(np.max(self.fits.data[y1:y2, x1:x2]), 1))
-
-        except ValueError:
-            self.photometry_button.disable()
-            self.save_and_return_button.disable()
-
+        self.run_message.set('')
         for i_target in range(self.max_targets):
             if 0 not in [self.targets_x_position[i_target].get(), self.targets_y_position[i_target].get()]:
-                try:
-                    app = self.targets_aperture[i_target].get()
-                    if app < 1.5:
-                        photometry_active = False
-                        self.targets_warning[i_target].set(
-                            self.targets_warning[i_target].get() + ',Ap. not allowed')
-                except TclError:
+                if self.targets_aperture[i_target].get() < 1.5:
                     photometry_active = False
+                    self.run_message.set('All aperture radii must be larget than 1.5 pixels')
 
         if 0 in [self.targets_x_position[0].get(), self.targets_y_position[0].get(),
                  self.targets_x_position[1].get(), self.targets_y_position[1].get()]:
+            self.run_message.set('You need to select the target and at least one comparison star to proceed.')
+            photometry_active = False
+
+        if self.sky_inner_aperture.get() <= 1.0 or self.sky_outer_aperture.get() <= 1.0:
+            self.run_message.set('Inner and outer sky-ring radii must be larger than 1.')
+            photometry_active = False
+
+        if self.sky_inner_aperture.get() >= self.sky_outer_aperture.get():
+            self.run_message.set('Inner sky-ring radius must be smaller than the outer sky-ring radius.')
+            photometry_active = False
+
+        if self.saturation.get() <= 0:
+            self.run_message.set('Saturation limit must be larger than 0.')
+            photometry_active = False
+
+        if self.saturation.get() >= 1:
+            self.run_message.set('Saturation limit must be lower than 1.')
             photometry_active = False
 
         if photometry_active:
@@ -479,6 +616,15 @@ class PhotometryWindow(MainWindow):
         else:
             self.photometry_button.disable()
             self.save_and_return_button.disable()
+
+        for i_target in range(self.max_targets):
+            self.targets_indication_entry[i_target]['state'] = self.DISABLED
+        for i_target in range(self.max_targets):
+            if 0 not in [self.targets_x_position[i_target].get(), self.targets_y_position[i_target].get()]:
+                self.targets_indication_entry[i_target]['state'] = self.NORMAL
+            else:
+                self.targets_indication_entry[i_target]['state'] = self.NORMAL
+                break
 
         self.fits_figure.draw()
 
@@ -502,6 +648,8 @@ class PhotometryWindow(MainWindow):
                     self.targets_x_position[i_target].set(self.targets_x_position[i_target + 1].get())
                     self.targets_y_position[i_target].set(self.targets_y_position[i_target + 1].get())
                     self.targets_aperture[i_target].set(self.targets_aperture[i_target + 1].get())
+                    self.targets_wx[i_target] = self.targets_wx[i_target + 1]
+                    self.targets_wy[i_target] = self.targets_wy[i_target + 1]
                     self.targets_peak[i_target].set(self.targets_peak[i_target + 1].get())
                     self.targets_max_hwhm[i_target].set(self.targets_max_hwhm[i_target + 1].get())
                     self.targets_total_flux[i_target].set(self.targets_total_flux[i_target + 1].get())
@@ -511,11 +659,16 @@ class PhotometryWindow(MainWindow):
                     self.targets_x_position[i_target + 1].set(0.0)
                     self.targets_y_position[i_target + 1].set(0.0)
                     self.targets_aperture[i_target + 1].set(0.0)
+                    self.targets_wx[i_target + 1] = 0
+                    self.targets_wy[i_target + 1] = 0
                     self.targets_peak[i_target + 1].set(0.0)
                     self.targets_max_hwhm[i_target + 1].set(0.0)
                     self.targets_total_flux[i_target + 1].set(0.0)
                     self.targets_flux[i_target + 1] = 0.0
                     self.targets_warning[i_target + 1].set('')
+
+            if self.targets_indication.get() > num:
+                self.targets_indication.set(self.targets_indication.get() - 1)
 
             self.update_window(None)
 
@@ -533,6 +686,8 @@ class PhotometryWindow(MainWindow):
         self.log.set_param('show_good_comparisons', self.show_good_comparisons.get())
         self.log.set_param('show_good_comparisons_percent', self.show_good_comparisons_percent.get())
         self.log.set_param('show_good_comparisons_percent', self.show_good_comparisons_percent.get())
+        self.log.set_param('sky_inner_aperture', self.sky_inner_aperture.get())
+        self.log.set_param('sky_outer_aperture', self.sky_outer_aperture.get())
         self.log.set_param('use_variable_aperture', self.use_variable_aperture.get())
         self.log.set_param('use_geometric_center', self.use_geometric_center.get())
         self.log.set_param('photometry_fov_options', self.fits_figure.get_fov_options())
@@ -607,7 +762,8 @@ class PhotometryProgressWindow(MainWindow):
         # load variabvles
 
         self.bin_fits = self.log.get_param('bin_fits')
-        self.burn_limit = self.log.get_param('burn_limit') * self.bin_fits * self.bin_fits
+        self.burn_limit = self.log.get_param('burn_limit')
+        self.saturation = self.log.get_param('saturation')
         self.max_targets = self.log.get_param('max_comparisons') + 1
         self.target_ra_dec = self.log.get_param('target_ra_dec')
         self.visible_fov_x_min = self.log.get_param('min_x')
@@ -616,6 +772,8 @@ class PhotometryProgressWindow(MainWindow):
         self.visible_fov_y_max = self.log.get_param('max_y')
         self.use_geometric_center = self.log.get_param('use_geometric_center')
         self.use_variable_aperture = self.log.get_param('use_variable_aperture')
+        self.sky_inner_aperture = self.log.get_param('sky_inner_aperture')
+        self.sky_outer_aperture = self.log.get_param('sky_outer_aperture')
 
         # load science files and targets
 
@@ -634,10 +792,12 @@ class PhotometryProgressWindow(MainWindow):
         self.first_fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))
 
         self.jd = []
+        self.file_names = []
         self.psf_ratio = []
         for science_file in self.science_files:
             metadata = self.all_frames[science_file]
             self.jd.append(metadata[self.log.time_key])
+            self.file_names.append(science_file)
             self.psf_ratio.append(metadata[self.log.psf_key])
 
         if self.use_variable_aperture:
@@ -668,6 +828,7 @@ class PhotometryProgressWindow(MainWindow):
 
         self.results = {
             'jd': np.array(self.jd),
+            'file_names': np.array(self.file_names),
             'gauss_x_position': np.array([[np.nan for fff in self.science_files] for ff in range(self.targets)]),
             'gauss_y_position': np.array([[np.nan for fff in self.science_files] for ff in range(self.targets)]),
             'gauss_x_std': np.array([[np.nan for fff in self.science_files] for ff in range(self.targets)]),
@@ -688,9 +849,7 @@ class PhotometryProgressWindow(MainWindow):
 
         # progress figure
 
-        y_scale = (self.root.winfo_screenheight() - 250) / self.root.winfo_screenheight()
-
-        self.progress_figure = self.FigureWindow(figsize=(0.6, y_scale, 10, 10, 2.5 - self.targets * 0.15))
+        self.progress_figure = self.FigureWindow()
 
         self.axes_fits = []
         self.circles_fits = []
@@ -703,7 +862,8 @@ class PhotometryProgressWindow(MainWindow):
         self.images_aperture_lc = []
         self.axes_lc_ylims = [0.99, 1.01]
 
-        gs = gridspec.GridSpec(self.targets, 4, self.progress_figure.figure, 0.01, 0.2 - self.targets * 0.01, 0.99, 0.98, 1.0, 0.1)
+        xx = 1 / (self.targets + 2)
+        gs = gridspec.GridSpec(self.targets, 4, self.progress_figure.figure, 0.01, xx, 0.99, 1 - xx, 1.0, 0.1)
 
         for target in range(self.targets):
             self.axes_fits.append(self.progress_figure.figure.add_subplot(gs[target, 0]))
@@ -740,16 +900,17 @@ class PhotometryProgressWindow(MainWindow):
             self.axes_lc[-1].set_ylim(self.axes_lc_ylims[0], self.axes_lc_ylims[1])
             self.axes_lc[-1].set_xlim((-0.01) * 24, (self.results['jd'][-1] - self.results['jd'][0] + 0.01) * 24)
             if target == 0:
-                self.axes_lc[-1].set_ylabel('T', fontsize=15)
+                self.axes_lc[-1].set_ylabel('T', fontsize=12)
             else:
-                self.axes_lc[-1].set_ylabel('C{0}'.format(target), fontsize=15)
+                self.axes_lc[-1].set_ylabel('C{0}'.format(target), fontsize=12)
 
             if target != self.targets - 1:
-                self.axes_lc[-1].tick_params(labelbottom=False)
+                self.axes_lc[-1].tick_params(labelbottom=False, labelsize=8)
             else:
-                self.axes_lc[-1].set_xlabel('Time (hours in observation)')
+                self.axes_lc[-1].set_xlabel('Time (hours in observation)', fontsize=8)
+                self.axes_lc[-1].tick_params(labelsize=8)
 
-        self.axes_lc[0].legend(loc='upper right', fontsize='x-small')
+        self.axes_lc[0].legend(bbox_to_anchor=(1, 2.2), fontsize='x-small')
 
         if self.targets == 2:
             self.images_text_lc[1].set_text('Can\'t plot relative curve with only 1 active comparison')
@@ -758,12 +919,14 @@ class PhotometryProgressWindow(MainWindow):
 
         self.progress_photometry = self.Progressbar(task="Photometry")
 
-        self.progress_diagnostics = [self.Label(text='Target')]
-        self.progress_active = [self.Label(text=' ')]
+        self.target_label = self.Label(text='Target')
+
+        self.progress_diagnostics = [self.target_label]
+        self.progress_active = [self.CheckButton(text='',initial=1)]
+        self.progress_active[0].disable()
         for target in range(1, self.targets):
             self.progress_diagnostics.append(self.Label(text='Comparison {0}'.format(target)))
-            self.progress_active.append(self.CheckButton(text='Active Comparison {0}'.format(target),
-                                                         initial=1, command=self.replot_results))
+            self.progress_active.append(self.CheckButton(text='', initial=1, command=self.replot_results))
 
         for i in self.progress_active:
             i.disable()
@@ -782,19 +945,18 @@ class PhotometryProgressWindow(MainWindow):
         # structure
 
         structure = [
-            [[self.progress_diagnostics[0], 0], [self.progress_figure, 1, 3, 2 * self.targets + 1]],
-            [[self.progress_active[0], 0]]
+            [[self.Label(text=' '), 0], [self.Label(text='Active'), 1], [self.progress_figure, 2, 2, self.targets + 2]],
+            [[self.progress_diagnostics[0], 0], [self.progress_active[0], 1]],
         ]
 
         for i in range(1, self.targets):
-            structure.append([[self.progress_diagnostics[i], 0]])
-            structure.append([[self.progress_active[i], 0]])
+            structure.append([[self.progress_diagnostics[i], 0], [self.progress_active[i], 1]])
 
+        structure.append([[self.Label(text='...'), 0]])
         structure.append([])
 
-        structure.append([[self.progress_photometry, 0, 4]])
-        structure.append([[self.stop_and_return_button, 0], [self.save_button, 1],
-                          [self.return_to_photomertry_button, 2], [self.proceed_button, 3]])
+        structure.append([[self.progress_photometry, 2], [self.stop_and_return_button, 3]])
+        structure.append([[self.save_button, 0, 2], [self.return_to_photomertry_button, 2], [self.proceed_button, 3]])
         structure.append([])
 
         self.set_close_button_function(self.trigger_exit)
@@ -840,15 +1002,17 @@ class PhotometryProgressWindow(MainWindow):
                 if self.exit:
                     break
 
-                star = plc.find_single_star(fits[1].data,
-                                            (ref_x_position + self.targets_r_position[target] *
-                                             np.cos(ref_u_position + self.targets_u_position[target])),
-                                            (ref_y_position + self.targets_r_position[target] *
-                                             np.sin(ref_u_position + self.targets_u_position[target])),
-                                            mean=fits[1].header[self.log.mean_key],
-                                            std=fits[1].header[self.log.std_key],
-                                            burn_limit=self.burn_limit, star_std=fits[1].header[self.log.psf_key]
-                                            )
+                star = find_single_star(
+                    fits[1].data,
+                    (ref_x_position + self.targets_r_position[target] *
+                     np.cos(ref_u_position + self.targets_u_position[target])),
+                    (ref_y_position + self.targets_r_position[target] *
+                     np.sin(ref_u_position + self.targets_u_position[target])),
+                    mean=fits[1].header[self.log.mean_key],
+                    std=fits[1].header[self.log.std_key],
+                    burn_limit=self.burn_limit * self.bin_fits * self.bin_fits,
+                    star_std=fits[1].header[self.log.psf_key]
+                )
 
                 if star:
 
@@ -877,15 +1041,11 @@ class PhotometryProgressWindow(MainWindow):
                             area = fits[1].data[y1:y2, x1:x2]
 
                             area_x, area_y = np.meshgrid(
-                                np.arange(max(0, x1), min(len(fits[1].data[0]), x2) + 0.5),
-                                np.arange(max(0, y1), min(len(fits[1].data), y2) + 0.5))
+                                np.arange(x1, x2) + 0.5,
+                                np.arange(y1, y2) + 0.5)
 
-                            x_mean = np.mean(
-                                area_x[np.where(area > fits[1].header[self.log.mean_key] + 3 * fits[1].header[
-                                    self.log.std_key])])
-                            y_mean = np.mean(
-                                area_y[np.where(area > fits[1].header[self.log.mean_key] + 3 * fits[1].header[
-                                    self.log.std_key])])
+                            x_mean = np.sum(area * area_x)/np.sum(area)
+                            y_mean = np.sum(area * area_y)/np.sum(area)
 
                         # progress plot
 
@@ -915,10 +1075,10 @@ class PhotometryProgressWindow(MainWindow):
                         # aperture photometry
 
                         sky_area_1 = int(round(
-                            self.log.get_param('sky_inner_aperture') * self.targets_aperture[target] * self.psf_ratio[
+                            self.sky_inner_aperture * self.targets_aperture[target] * self.psf_ratio[
                                 counter]))
                         sky_area_2 = int(round(
-                            self.log.get_param('sky_outer_aperture') * self.targets_aperture[target] * self.psf_ratio[
+                            self.sky_outer_aperture * self.targets_aperture[target] * self.psf_ratio[
                                 counter]))
                         sky_area_2 = max(sky_area_2, sky_area_1 + 3)
 
@@ -963,7 +1123,7 @@ class PhotometryProgressWindow(MainWindow):
                         aperture_flux = 0
                         aperture_flux_error = 0
                         for pixel in flux_pixels:
-                            overlap = plc.pixel_to_aperture_overlap(pixel[1], pixel[2], x_mean, y_mean,
+                            overlap = pixel_to_aperture_overlap(pixel[1], pixel[2], x_mean, y_mean,
                                                                     self.targets_aperture[target] * self.psf_ratio[
                                                                         counter])
                             aperture_flux += (pixel[0] - sky) * overlap
@@ -979,7 +1139,8 @@ class PhotometryProgressWindow(MainWindow):
                         self.results['aperture_sky'][target][counter] = sky
                         self.results['aperture_sky_error'][target][counter] = sky_error
 
-                    except:
+                    except Exception as e:
+                        print(e)
                         self.target_fails[target] += 1
 
                 else:
@@ -1046,7 +1207,7 @@ class PhotometryProgressWindow(MainWindow):
             self.save()
 
             if self.targets > 2:
-                for i in self.progress_active:
+                for i in self.progress_active[1:]:
                     i.activate()
 
     def replot_results(self):
@@ -1070,7 +1231,7 @@ class PhotometryProgressWindow(MainWindow):
                     self.progress_active[target].disable()
                     self.images_text_lc[target].set_text('Can\'t plot relative curve with only 1 active comparison')
         else:
-            for target in range(self.targets):
+            for target in range(1, self.targets):
                 self.progress_active[target].activate()
 
         self.axes_lc_ylims = [0.99, 1.01]
@@ -1131,15 +1292,15 @@ class PhotometryProgressWindow(MainWindow):
         self.return_to_photomertry_button.disable()
         self.proceed_button.disable()
 
-        photometry_directory = self.log.photometry_directory_base
+        photometry_directory = self.log.photometry_directory_base + '_1'
 
         if not os.path.isdir(photometry_directory):
             os.mkdir(photometry_directory)
         else:
             fi = 2
-            while os.path.isdir('{0}_{1}'.format(photometry_directory, str(fi))):
+            while os.path.isdir('{0}_{1}'.format(self.log.photometry_directory_base, str(fi))):
                 fi += 1
-            photometry_directory = '{0}_{1}'.format(photometry_directory, str(fi))
+            photometry_directory = '{0}_{1}'.format(self.log.photometry_directory_base, str(fi))
             os.mkdir(photometry_directory)
 
         # save fov
@@ -1149,13 +1310,9 @@ class PhotometryProgressWindow(MainWindow):
         visible_fov_x_max = self.log.get_param('max_x')
         visible_fov_y_max = self.log.get_param('max_y')
 
-        y_scale = (self.root.winfo_screenheight() - 375) / self.root.winfo_screenheight()
-        x_scale = (self.root.winfo_screenheight() - 600) / self.root.winfo_screenheight()
-
-        fov = self.FitsWindow(figsize=(x_scale, y_scale, 20, 20, len(self.first_fits[1].data[0]) / len(self.first_fits[1].data)), show_controls=True, show_axes=True,
+        fov = self.FitsWindow(input=self.first_fits[1], input_options=self.log.get_param('photometry_fov_options'),
                               subplots_adjust=(0.01, 0.99, 0.05, 0.89))
         options = self.log.get_param('photometry_fov_options')
-        fov.load_fits(self.first_fits[1], input_options=self.log.get_param('photometry_fov_options'))
 
         fov.ax.add_patch(mpatches.Rectangle((visible_fov_x_min + 1, visible_fov_y_min + 1),
                                              visible_fov_x_max - visible_fov_x_min - 2,
@@ -1239,7 +1396,7 @@ class PhotometryProgressWindow(MainWindow):
         valid_gauss = np.where(~np.isnan(gauss_lc))
         valid_aperture = np.where(~np.isnan(aperture_lc))
 
-        targets_results = [self.results['jd'][valid_gauss]]
+        targets_results = [self.results['file_names'][valid_gauss], self.results['jd'][valid_gauss]]
 
         for array in ['gauss_x_position', 'gauss_y_position', 'gauss_x_std', 'gauss_y_std', 'gauss_flux',
                       'gauss_flux_error', 'gauss_sky', 'gauss_sky_error']:
@@ -1247,13 +1404,13 @@ class PhotometryProgressWindow(MainWindow):
                 targets_results.append(self.results[array][target][valid_gauss])
 
         np.savetxt(os.path.join(photometry_directory, self.log.photometry_file.replace('.txt', '_g.txt')),
-                   np.swapaxes(targets_results, 0, 1))
+                   np.swapaxes(targets_results, 0, 1), fmt="%s")
 
         np.savetxt(os.path.join(photometry_directory, self.log.light_curve_gauss_file), np.swapaxes([
             self.results['jd'][valid_gauss], gauss_lc[valid_gauss], gauss_lc_error[valid_gauss]
         ], 0, 1))
 
-        targets_results = [self.results['jd'][valid_aperture]]
+        targets_results = [self.results['file_names'][valid_gauss], self.results['jd'][valid_aperture]]
 
         for array in ['aperture_x_position', 'aperture_y_position', 'aperture_flux',
                       'aperture_flux_error', 'aperture_sky', 'aperture_sky_error']:
@@ -1261,7 +1418,7 @@ class PhotometryProgressWindow(MainWindow):
                 targets_results.append(self.results[array][target][valid_aperture])
 
         np.savetxt(os.path.join(photometry_directory, self.log.photometry_file.replace('.txt', '_a.txt')),
-                   np.swapaxes(targets_results, 0, 1))
+                   np.swapaxes(targets_results, 0, 1), fmt="%s")
 
         np.savetxt(os.path.join(photometry_directory, self.log.light_curve_aperture_file), np.swapaxes([
             self.results['jd'][valid_aperture], aperture_lc[valid_aperture], aperture_lc_error[valid_aperture]
@@ -1274,10 +1431,11 @@ class PhotometryProgressWindow(MainWindow):
         # save exoclock info
 
         ra_dec_string = self.log.get_param('target_ra_dec')
-        ra_dec_string = ra_dec_string.replace(':', ' ').split(' ')
-        target = plc.Target(plc.Hours(*ra_dec_string[:3]), plc.Degrees(*ra_dec_string[3:]))
-
-        ecc_planet = plc.find_nearest(target)
+        ra_dec_string = ra_dec_string.split(' ')
+        try:
+            planet = plc.locate_planet(plc.Hours(ra_dec_string[0]), plc.Degrees(ra_dec_string[1])).name
+        except:
+            planet = 'Could not find a planet in the ExoClock catalogue at this location'
 
         phot_filter = self.log.get_param('filter')
 
@@ -1294,8 +1452,7 @@ class PhotometryProgressWindow(MainWindow):
             'File to upload: {0} \n(this is a suggestion based on the scatter \nof your light curves, '
             'you can also try \nuploading {1})'.format(*files_to_upload),
             '',
-            'Planet: {0} \n(this is the closest known exoplanet found \nin the catalogue, if this is not the '
-            'target \nyou observed, please ignore)'.format(ecc_planet.planet.name),
+            'Planet: {0}'.format(planet),
             '',
             'Time format: JD_UTC \n(UTC-based Julian date)',
             '',

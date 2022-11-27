@@ -2,23 +2,12 @@
 __all__=['HOPS']
 
 import os
-import numpy as np
 import shutil
 import yaml
-import time
+import matplotlib.image as mpimg
 
 from urllib.request import urlopen
-
 from tkinter.messagebox import showinfo
-from tkinter import Tk
-import matplotlib
-try:
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-except ImportError:
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-    NavigationToolbar2Tk = NavigationToolbar2TkAgg
-
-import matplotlib.image as mpimg
 
 from hops import __version__
 
@@ -84,10 +73,6 @@ class HOPSLog:
         self.load_main_log()
         self.load_main_log_user()
         self.load_main_log_profile()
-
-        self.initiate_local_log_user()
-        self.initiate_local_log_profile()
-
         self.load_local_log_user()
         self.load_local_log_profile()
 
@@ -137,25 +122,6 @@ class HOPSLog:
         self.frame_low_std = -3
         self.frame_upper_std = 20
 
-        # check screen
-
-        test = Tk()
-        test_figure = matplotlib.figure.Figure(figsize=(1, 1))
-        test_canvas = FigureCanvasTkAgg(test_figure, test)
-        test_canvas.get_tk_widget().pack()
-
-        x = test_figure
-        y = x.add_subplot(111)
-        x.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
-        y.plot(0, 0, 'o')
-        test.update_idletasks()
-        h_ratio = test.winfo_screenheight() / test.winfo_reqheight()
-        w_ratio = test.winfo_screenwidth() / test.winfo_reqwidth()
-        test.destroy()
-
-        self.plt2screen_h = h_ratio
-        self.plt2screen_w = w_ratio
-
         # process - keywords
 
         self.align_star_area_key = 'ALIGN_SA'
@@ -167,6 +133,7 @@ class HOPSLog:
         self.std_key = 'STD'
         self.skip_key = 'SKIP'
         self.time_key = 'HOPSJD'
+        self.airmass_key= 'AIRMASS'
 
         # process - values
 
@@ -201,46 +168,43 @@ class HOPSLog:
         for i in main_log_profile:
             self.params[i] = main_log_profile[i]
 
-    def initiate_local_log_user(self):
-        try:
-            test = self.open_yaml(self.files['local_log_user'])
-        except:
-            self.save_local_log_user()
-
-    def initiate_local_log_profile(self):
-        try:
-            test = self.open_yaml(self.files['local_log_profile'])
-            self.load_local_log_profile()
-        except:
-            self.save_local_log_profile()
-
     def load_local_log_user(self):
 
-        local_log_user = self.open_yaml(self.files['local_log_user'])
-        main_log_user = self.open_yaml(self.files['main_log_user'])
+        try:
+            local_log_user = self.open_yaml(self.files['local_log_user'])
+            main_log_user = self.open_yaml(self.files['main_log_user'])
 
-        for i in local_log_user:
-            if isinstance(local_log_user[i], dict):
-                for j in local_log_user[i]:
-                    if j in main_log_user:
-                        self.set_param(j, local_log_user[i][j])
+            for i in local_log_user:
+                if isinstance(local_log_user[i], dict):
+                    for j in local_log_user[i]:
+                        if j in main_log_user:
+                            self.set_param(j, local_log_user[i][j])
 
-            elif i in main_log_user:
-                self.set_param(i, local_log_user[i])
+                elif i in main_log_user:
+                    self.set_param(i, local_log_user[i])
+        except:
+            pass
+
+        self.save_local_log_user()
 
     def load_local_log_profile(self):
 
-        local_log_profile = self.open_yaml(self.files['local_log_profile'])
-        main_log_profile = self.open_yaml(self.files['main_log_profile'])
+        try:
+            local_log_profile = self.open_yaml(self.files['local_log_profile'])
+            main_log_profile = self.open_yaml(self.files['main_log_profile'])
 
-        for i in local_log_profile:
-            if isinstance(local_log_profile[i], dict):
-                for j in local_log_profile[i]:
-                    if j in main_log_profile:
-                        self.set_param(j, local_log_profile[i][j])
+            for i in local_log_profile:
+                if isinstance(local_log_profile[i], dict):
+                    for j in local_log_profile[i]:
+                        if j in main_log_profile:
+                            self.set_param(j, local_log_profile[i][j])
 
-            elif i in main_log_profile:
-                self.set_param(i, local_log_profile[i])
+                elif i in main_log_profile:
+                    self.set_param(i, local_log_profile[i])
+        except:
+            pass
+
+        self.save_local_log_profile()
 
     def load_local_log(self):
 
@@ -381,7 +345,7 @@ class HOPSLog:
         v2 = int(version2.split('.')[1]) * 100 * 100
         v3 = int(version2.split('.')[2]) * 100
 
-        if v1 + v2 + v3 > c1 + c2 + c3:
+        if v1 + v2 + v3 >= c1 + c2 + c3:
             return False
         else:
             return True

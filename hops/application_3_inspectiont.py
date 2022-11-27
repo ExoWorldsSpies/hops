@@ -1,11 +1,10 @@
 
 import os
 import numpy as np
+import pylightcurve41 as plc
 import matplotlib.patches as mpatches
 
 from matplotlib.backend_bases import MouseEvent as mpl_MouseEvent
-
-import hops.pylightcurve3 as plc
 
 from hops.hops_tools.fits import get_fits_data
 from hops.application_windows import MainWindow
@@ -33,6 +32,7 @@ class InspectiontWindow(MainWindow):
         self.time_array = []
         self.sky_mean_array = []
         self.sky_std_array = []
+        self.airmass_array = []
         self.psf_array = []
         self.skip_array = []
 
@@ -43,30 +43,39 @@ class InspectiontWindow(MainWindow):
             self.sky_mean_array.append(self.all_frames[science_file][self.log.mean_key] / self.all_frames[science_file][self.log.get_param('exposure_time_key')])
             self.sky_std_array.append(self.all_frames[science_file][self.log.std_key] / self.all_frames[science_file][self.log.get_param('exposure_time_key')])
             self.psf_array.append(self.all_frames[science_file][self.log.psf_key] * 2.355 / 2)
+            try:
+                self.airmass_array.append(self.all_frames[science_file][self.log.airmass_key])
+            except:
+                self.airmass_array.append(1)
             self.skip_array.append(self.all_frames[science_file][self.log.skip_key])
 
         self.time_array = (np.array(self.time_array) - np.min(self.time_array)) * 24
         self.sky_mean_array = np.array(self.sky_mean_array)
+        self.airmass_array = np.array(self.airmass_array)
         self.psf_array = np.array(self.psf_array)
         self.skip_array = np.array(self.skip_array)
 
         # main window
 
-        y_scale = (self.root.winfo_screenheight() - 375) / self.root.winfo_screenheight()
+        test_fits_name = self.science[0]
+        test_fits_data = get_fits_data(test_fits_name)[0]
 
-        data = get_fits_data(self.science[0])[0].data
-
-        self.fits_figure = self.FitsWindow(figsize=(0.5, y_scale, 20, 20, len(data[0])/len(data)), show_controls=True)
+        self.fits_figure = self.FitsWindow(input=test_fits_data, input_name=self.science_files[0],
+                                           show_controls=True, show_axes=True,
+                                           subplots_adjust=(0.07, 0.99, 0.05, 0.99))
         self.fits_to_plot = np.argmin(self.time_array)
         self.fits_figure.load_fits(self.science[self.fits_to_plot])
 
         self.sky_threshold = self.Entry(value=self.log.get_param('sky_threshold'), instance=float, command=self.apply_thresholds)
         self.psf_threshold = self.Entry(value=self.log.get_param('psf_threshold'), instance=float, command=self.apply_thresholds)
 
-        self.inspection_figure = self.FigureWindow(figsize=(0.5, 0.5, 10, 6, 1.1), show_nav=True)
+        self.inspection_figure = self.FigureWindow(figsize=(1, 1), show_nav=True)
         self.inspection_figure_ax1 = self.inspection_figure.figure.add_subplot(211)
+        self.inspection_figure_ax1_airmass = self.inspection_figure_ax1.twinx()
         self.inspection_figure_ax2 = self.inspection_figure.figure.add_subplot(212)
-        self.inspection_figure.figure.subplots_adjust(left=0.15, right=0.99, bottom=0.1, top=0.99)
+        self.inspection_figure_ax2.xaxis.tick_top()
+        self.inspection_figure_ax2.xaxis.set_label_position('top')
+        self.inspection_figure_ax2_airmass = self.inspection_figure_ax2.twinx()
         self.inspection_figure.figure.canvas.callbacks.connect('button_press_event', self.update_window)
         self.arrow1 = 0
         self.arrow2 = 0
@@ -77,7 +86,6 @@ class InspectiontWindow(MainWindow):
         self.inspection_figure_ax1.set_xlim(np.min(self.time_array) - 0.1, np.max(self.time_array) + 0.1)
         self.inspection_figure_ax2.set_xlim(np.min(self.time_array) - 0.1, np.max(self.time_array) + 0.1)
 
-        self.yspil = self.inspection_figure.figure.get_size_inches()[1] * self.inspection_figure.figure.dpi * 0.55
         box1 = self.inspection_figure_ax1.get_window_extent()
         self.ax1_width = box1.width
         self.ax1_height = box1.height
@@ -88,10 +96,12 @@ class InspectiontWindow(MainWindow):
         self.dbclick = False
         self.dbclick_xy = (0, 0)
 
+        self.size_adjusted = False
+
         self.replot()
 
         self.setup_window([
-            [[self.fits_figure, 0, 1, 10], [self.inspection_figure, 1, 4]],
+            [[self.fits_figure, 0, 1, 11], [self.inspection_figure, 1, 4]],
             [],
             [[self.Label(text='On the time-sky or PSF-sky graph above'
                               '\n'
@@ -116,42 +126,34 @@ class InspectiontWindow(MainWindow):
     def update_window(self, event=None):
 
         if isinstance(event, mpl_MouseEvent):
+            if event.inaxes:
+                if event.dblclick:
+                    if event.y < 0.5 * self.inspection_figure.canvas.get_tk_widget().winfo_reqheight():
 
-            if event.inaxes is None:
-                return None
+                        time_norm = self.ax2_width / (self.inspection_figure_ax2.get_xlim()[1] - self.inspection_figure_ax2.get_xlim()[0])
+                        psf_norm = self.ax2_height / (self.inspection_figure_ax2.get_ylim()[1] - self.inspection_figure_ax2.get_ylim()[0])
 
-        if (event.x, event.y) != self.dbclick_xy:
-            self.dbclick_xy = (event.x, event.y)
-            return None
-        else:
-            self.dbclick_xy = (0, 0)
+                        self.fits_to_plot = np.argmin(np.sqrt(
+                            ((event.xdata - np.array(self.time_array)) * time_norm) ** 2 + ((event.ydata - np.array(self.psf_array)) * psf_norm)**2))
 
-            if event.y < self.yspil:
+                    else:
 
-                time_norm = self.ax2_width / (self.inspection_figure_ax2.get_xlim()[1] - self.inspection_figure_ax2.get_xlim()[0])
-                psf_norm = self.ax2_height / (self.inspection_figure_ax2.get_ylim()[1] - self.inspection_figure_ax2.get_ylim()[0])
+                        time_norm = self.ax1_width / (self.inspection_figure_ax1.get_xlim()[1] - self.inspection_figure_ax1.get_xlim()[0])
+                        sky_norm = self.ax1_height / (self.inspection_figure_ax1.get_ylim()[1] - self.inspection_figure_ax1.get_ylim()[0])
 
-                self.fits_to_plot = np.argmin(np.sqrt(
-                    ((event.xdata - np.array(self.time_array)) * time_norm) ** 2 + ((event.ydata - np.array(self.psf_array)) * psf_norm)**2))
+                        self.fits_to_plot = np.argmin(np.sqrt(
+                            ((event.xdata - np.array(self.time_array)) * time_norm) ** 2 + ((event.ydata - np.array(self.sky_mean_array)) * sky_norm) ** 2))
 
-            else:
+                    self.fits_figure.load_fits(self.science[self.fits_to_plot], input_options=self.fits_figure.get_fov_options())
 
-                time_norm = self.ax1_width / (self.inspection_figure_ax1.get_xlim()[1] - self.inspection_figure_ax1.get_xlim()[0])
-                sky_norm = self.ax1_height / (self.inspection_figure_ax1.get_ylim()[1] - self.inspection_figure_ax1.get_ylim()[0])
+                    if event.button == 3:
 
-                self.fits_to_plot = np.argmin(np.sqrt(
-                    ((event.xdata - np.array(self.time_array)) * time_norm) ** 2 + ((event.ydata - np.array(self.sky_mean_array)) * sky_norm) ** 2))
+                        if self.skip_array[self.fits_to_plot]:
+                            self.skip_array[self.fits_to_plot] = False
+                        else:
+                            self.skip_array[self.fits_to_plot] = True
 
-            self.fits_figure.load_fits(self.science[self.fits_to_plot])
-
-            if event.button == 3:
-
-                if self.skip_array[self.fits_to_plot]:
-                    self.skip_array[self.fits_to_plot] = False
-                else:
-                    self.skip_array[self.fits_to_plot] = True
-
-            self.replot()
+                    self.replot()
 
     def replot(self):
 
@@ -179,13 +181,24 @@ class InspectiontWindow(MainWindow):
         self.inspection_figure_ax2.set_xlabel('Time (hours in observation)')
 
         self.inspection_figure_ax1.set_ylabel('Sky (counts/pix/s)')
-        self.inspection_figure_ax2.set_ylabel('PSF max. HWHM (pix)')
+        self.inspection_figure_ax1_airmass.set_ylabel('Airmass')
+        self.inspection_figure_ax2.set_ylabel('PSF max.\nHWHM (pix)')
+        self.inspection_figure_ax2_airmass.set_ylabel('Airmass')
 
         self.inspection_figure_ax1.get_xlim()
         self.inspection_figure_ax2.get_xlim()
 
+        self.inspection_figure_ax1_airmass.plot(self.time_array, self.airmass_array, 'k--', lw=1)
         self.inspection_figure_ax1.plot(self.time_array, self.sky_mean_array, 'ko', ms=3)
+        self.inspection_figure_ax1_airmass.set_zorder(0)
+        self.inspection_figure_ax1.set_zorder(1)
+        self.inspection_figure_ax1.patch.set_alpha(0.0)
+        self.inspection_figure_ax2_airmass.plot(self.time_array, self.airmass_array, 'k--', lw=1)
         self.inspection_figure_ax2.plot(self.time_array, self.psf_array, 'ko', ms=3)
+        self.inspection_figure_ax2_airmass.set_zorder(0)
+        self.inspection_figure_ax2.set_zorder(1)
+        self.inspection_figure_ax2.patch.set_alpha(0.0)
+        self.inspection_figure.figure.subplots_adjust(left=0.15, right=0.85, bottom=0.01, top=0.99, hspace=0.5, wspace=0.5)
 
         self.inspection_figure_ax1.plot(self.time_array[np.where(self.skip_array)], self.sky_mean_array[np.where(self.skip_array)], 'ro', ms=3)
         self.inspection_figure_ax2.plot(self.time_array[np.where(self.skip_array)], self.psf_array[np.where(self.skip_array)], 'ro', ms=3)
@@ -201,6 +214,18 @@ class InspectiontWindow(MainWindow):
 
         self.inspection_figure_ax1.add_patch(self.arrow1)
         self.inspection_figure_ax2.add_patch(self.arrow2)
+
+        self.inspection_figure.draw()
+
+    def adjust_size(self):
+
+        self.fits_figure.adjust_size()
+
+        x_pix = self.root.winfo_reqwidth() - self.fits_figure.canvas.get_tk_widget().winfo_reqwidth()
+        y_pix = 0.75 * self.fits_figure.canvas.get_tk_widget().winfo_reqheight()
+
+        self.inspection_figure.canvas.get_tk_widget().config(height=y_pix)
+        self.inspection_figure.canvas.get_tk_widget().config(width=x_pix)
 
         self.inspection_figure.draw()
 

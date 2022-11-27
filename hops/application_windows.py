@@ -7,6 +7,7 @@ import numpy as np
 import datetime
 import matplotlib
 import webbrowser
+import warnings
 
 from tkinter import Tk, TclError
 from tkinter import Label, Button, Entry, Checkbutton, Scrollbar, Listbox, PhotoImage, Radiobutton, Scale, Frame, Canvas
@@ -26,7 +27,7 @@ except ImportError:
 from matplotlib.cm import Greys, Greys_r
 from astropy.io import fits as pf
 
-from hops import pylightcurve3 as plc
+import pylightcurve41 as plc
 from hops.hops_tools.fits import get_fits_data
 from hops.application_log import HOPSLog
 
@@ -71,43 +72,6 @@ class HOPSWindow:
         self.HORIZONTAL = HORIZONTAL
         self.VERTICAL = VERTICAL
 
-        # # create a canvas object and a vertical scrollbar for scrolling it
-        # self.vscrollbar = Scrollbar(self.root, orient=VERTICAL)
-        # self.vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-        # self.canvas = Canvas(self.root, bd=0, highlightthickness=0,
-        #                 yscrollcommand=self.vscrollbar.set)
-        # self.canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
-        # self.vscrollbar.config(command=self.canvas.yview)
-        #
-        # # reset the view
-        # self.canvas.xview_moveto(0)
-        # self.canvas.yview_moveto(0)
-        #
-        # # create a frame inside the canvas which will be scrolled with it
-        # self.interior = Frame(self.canvas)
-        # self.interior_id = self.canvas.create_window(0, 0, window=self.interior,
-        #                                    anchor=NW)
-        #
-        # # track changes to the canvas and frame width and sync them,
-        # # also updating the scrollbar
-        # def _configure_interior(event):
-        #     # update the scrollbars to match the size of the inner frame
-        #     size = (self.interior.winfo_reqwidth(), self.interior.winfo_reqheight())
-        #     self.canvas.config(scrollregion="0 0 %s %s" % size)
-        #     if self.interior.winfo_reqwidth() != self.canvas.winfo_width():
-        #         # update the canvas's width to fit the inner frame
-        #         self.canvas.config(width=self.interior.winfo_reqwidth())
-        #
-        # self.interior.bind('<Configure>', _configure_interior)
-        #
-        # def _configure_canvas(event):
-        #     if self.interior.winfo_reqwidth() != self.canvas.winfo_width():
-        #         # update the inner frame's width to fill the canvas
-        #         self.canvas.itemconfigure(self.interior_id, width=self.canvas.winfo_width())
-        #
-        # self.canvas.bind('<Configure>', _configure_canvas)
-
-        # self.main_frame = self.interior
         self.main_frame = self.root
 
         self.widgets = []
@@ -121,9 +85,9 @@ class HOPSWindow:
 
         self.root.update()
 
-    def after(self, function):
+    def after(self, function, time=10):
 
-        xx = self.root.after(5, function)
+        xx = self.root.after(time, function)
         self.jobs.append(xx)
         self.update_idletasks()
 
@@ -131,73 +95,65 @@ class HOPSWindow:
 
         self.root.update_idletasks()
 
-    def finalise(self):
+    def reposition(self):
 
-        if not self.finalised:
+        self.root.update_idletasks()
 
-            self.update_idletasks()
+        if self.position == 1:
+            x = 0
+            y = 0
 
-            # print(self.interior.winfo_reqwidth(), self.interior.winfo_reqheight())
-            # self.canvas.config(width=self.interior.winfo_reqwidth(), height=self.interior.winfo_reqheight())
-            # self.canvas.itemconfigure(self.interior_id, width=self.interior.winfo_reqwidth(), height=self.interior.winfo_reqheight())
+        elif self.position == 2:
+            x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
+            y = 0
 
-            if self.position == 1:
-                x = 0
-                y = 0
+        elif self.position == 3:
+            x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
+            y = 0
 
-            elif self.position == 2:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = 0
+        elif self.position == 4:
+            x = 0
+            y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
 
-            elif self.position == 3:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = 0
+        elif self.position == 5:
+            x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
+            y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
 
-            elif self.position == 4:
-                x = 0
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
+        elif self.position == 6:
+            x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
+            y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
 
-            elif self.position == 5:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
+        elif self.position == 7:
+            x = 0
+            y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
 
-            elif self.position == 6:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
+        elif self.position == 8:
+            x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
+            y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
 
-            elif self.position == 7:
-                x = 0
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
+        elif self.position == 9:
+            x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
+            y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
 
-            elif self.position == 8:
-                x = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
+        elif self.position == 10:
+            x = self.root.winfo_screenwidth()/2 - self.root.winfo_reqwidth()
+            y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
 
-            elif self.position == 9:
-                x = self.root.winfo_screenwidth() - self.root.winfo_reqwidth()
-                y = self.root.winfo_screenheight() - self.root.winfo_reqheight()
+        elif self.position == 11:
+            x = self.root.winfo_screenwidth()/2
+            y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
 
-            elif self.position == 10:
-                x = self.root.winfo_screenwidth()/2 - self.root.winfo_reqwidth()
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
+        else:
+            x = 0
+            y = 0
 
-            elif self.position == 11:
-                x = self.root.winfo_screenwidth()/2
-                y = (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
+        self.root.geometry('+%d+%d' % (int(x), int(y)))
 
-            else:
-                x = 0
-                y = 0
-
-            self.root.geometry('+%d+%d' % (int(x), int(y)))
-
-            self.update_idletasks()
-
-            self.finalised = True
+        self.root.update_idletasks()
 
     def show(self):
 
-        self.finalise()
+        self.reposition()
 
         self.root.wm_attributes("-topmost", 1)
         self.root.after_idle(self.root.attributes, '-topmost', 0)
@@ -210,7 +166,28 @@ class HOPSWindow:
         self.mainloop_on = True
 
         if f_after:
-            self.root.after(500, f_after)
+
+            def nested_after(function1, function2):
+
+                def xx():
+                    function1()
+                    self.after(function2)
+
+                return xx
+
+            def internal_command():
+
+                if isinstance(f_after, list):
+                    functions = [nested_after(f_after[-2], f_after[-1])]
+                    for i in range(len(f_after)-2):
+
+                        functions.append(nested_after(f_after[-i-3], functions[-1]))
+                    self.after(functions[-1])
+
+                else:
+                    f_after()
+
+            self.after(internal_command)
 
         self.root.mainloop()
 
@@ -218,15 +195,13 @@ class HOPSWindow:
 
         self.root.withdraw()
 
-    def def_run(self):
-
-        self.show()
-
-    def run(self, f_after=None):
+    def run(self, f_after=None, f_before=None):
 
         print('\nStarting window: ', self.name)
 
-        self.def_run()
+        if f_before:
+            f_before()
+        self.show()
         self.loop(f_after)
 
     def trigger_exit(self):
@@ -281,8 +256,9 @@ class HOPSWindow:
         return askyesnocancel(*args, **kwargs)
 
     def showinfo(self, *args, **kwargs):
-
-        return showinfo(*args, **kwargs)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            showinfo(*args, **kwargs)
 
     # tk variables initiated directly in - and linked with - the hops window
 
@@ -370,13 +346,6 @@ class HOPSWindow:
                         obj[0].grid(row=row, column=obj[1])
 
 
-class AppWindow(HOPSWindow):
-
-    def __init__(self, log, name, sizex=None, sizey=None, position=5):
-
-        HOPSWindow.__init__(self, log, name, sizex, sizey, position)
-
-
 class MainWindow(HOPSWindow):
 
     def __init__(self, log, name, sizex=None, sizey=None, position=5):
@@ -421,6 +390,8 @@ class HOPSWidget:
         window.register(self)
         self.widget = widget
         self.name = name
+        self.root = self.window.root
+        self.log = self.window.log
 
     def winfo_class(self):
         return self.name
@@ -446,6 +417,9 @@ class HOPSWidget:
     def config(self,  *args, **kwargs):
         self.widget.configure(*args, **kwargs)
 
+    def after(self, *args, **kwargs):
+        self.window.after(*args, **kwargs)
+
 
 # single widgets
 
@@ -463,7 +437,7 @@ class HOPSLabel(HOPSWidget):
         elif instance == bool:
             self.variable = BooleanVar(window.root, value=text)
 
-        widget = Label(window.main_frame, textvar=self.variable)
+        widget = Label(window.root, textvar=self.variable)
 
         HOPSWidget.__init__(self, window, widget, 'Label')
 
@@ -480,14 +454,7 @@ class HOPSEntry(HOPSWidget):
 
         self.instance = instance
 
-        if instance == str:
-            self.variable = StringVar(window.root, value=value)
-        elif instance == float:
-            self.variable = DoubleVar(window.root, value=value)
-        elif instance == int:
-            self.variable = IntVar(window.root, value=value)
-        elif instance == bool:
-            self.variable = BooleanVar(window.root, value=value)
+        self.variable = StringVar(window.root, value=value)
 
         widget = Entry(window.main_frame, textvar=self.variable, validate='key')
 
@@ -498,11 +465,21 @@ class HOPSEntry(HOPSWidget):
 
         HOPSWidget.__init__(self, window, widget, 'Entry')
 
+    def get(self):
+
+        if self.instance == str:
+            return self.variable.get()
+        else:
+            if self.variable.get() == '':
+                return 0
+            else:
+                return self.instance(self.variable.get())
+
     def validate(self, input_str, typing):
 
         if typing == '1':
             try:
-                test = self.instance(input_str)
+                _ = self.instance(input_str)
                 return True
             except ValueError:
                 return False
@@ -513,8 +490,6 @@ class HOPSEntry(HOPSWidget):
     def set(self, value):
         self.variable.set(value)
 
-    def get(self):
-        return self.variable.get()
 
 
 class HOPSButton(HOPSWidget):
@@ -522,10 +497,31 @@ class HOPSButton(HOPSWidget):
     def __init__(self, window, text=' ', command=None, **kwargs):
 
         self.variable = StringVar(window.root, value=text)
+        self.command=command
 
-        widget = Button(window.main_frame, textvar=self.variable, command=command, **kwargs)
+        widget = Button(window.main_frame, textvar=self.variable, command=self.internal_command, **kwargs)
 
         HOPSWidget.__init__(self, window, widget, 'Button')
+
+    def internal_command(self):
+
+        if isinstance(self.command, list):
+            functions = [self.nested_after(self.command[-2], self.command[-1])]
+            for i in range(len(self.command)-2):
+
+                functions.append(self.nested_after(self.command[-i-3], functions[-1]))
+            self.window.after(functions[-1])
+
+        else:
+            self.command()
+
+    def nested_after(self, function1, function2):
+
+        def xx():
+            function1()
+            self.window.after(function2, 10)
+
+        return xx
 
 
 class HOPSCheckButton(HOPSWidget):
@@ -627,11 +623,9 @@ class HOPSListDisplay(HOPSWidget):
 
 class HOPSProgressbar(HOPSWidget):
 
-    def __init__(self, window, task='Process', length=None):
+    def __init__(self, window, task='Process', length=0.2):
 
         self.task = task
-        if not length:
-            length = 4 / window.log.plt2screen_w
 
         widget = Frame(window.main_frame)
         self.progress = DoubleVar(widget, value=0)
@@ -699,25 +693,19 @@ class HOPSProgressbar(HOPSWidget):
 
 class HOPSFigureWindow(HOPSWidget):
 
-    def __init__(self, window, figsize=None, show_nav=False, dwmax=8.0, dhmax=8.0):
+    def __init__(self, window,
+                 figsize=None, max_figsize_percent=(0.9,0.8),
+                 show_nav=False):
 
         widget = Frame(window.main_frame)
 
+        self.max_figsize_percent = max_figsize_percent
+
         if figsize:
-            try:
-                wpcent, hpcent, wmax, hmax, ratio, = figsize
-                wmax, hmax = dwmax, dhmax
-                w = min(wpcent * window.log.plt2screen_w, wmax)
-                h = min(hpcent * window.log.plt2screen_h, hmax)
-                if h * ratio < w:
-                    w = h * ratio
-                else:
-                    h = w / ratio
-            except:
-                w, h = figsize
-            self.figure = matplotlib.figure.Figure(figsize=(w, h))
+            self.figure = matplotlib.figure.Figure(figsize=figsize)
         else:
             self.figure = matplotlib.figure.Figure()
+
         self.figure.patch.set_facecolor('white')
         self.canvas = FigureCanvasTkAgg(self.figure, master=widget)
         self.canvas.get_tk_widget().pack(side=TOP)
@@ -727,6 +715,25 @@ class HOPSFigureWindow(HOPSWidget):
             toolbar.pack(side=BOTTOM)
 
         HOPSWidget.__init__(self, window, widget, 'FigureWindow')
+
+    def adjust_size(self):
+
+        self.window.reposition()
+
+        current_figure_height = self.canvas.get_tk_widget().winfo_reqheight()
+        current_figure_width = self.canvas.get_tk_widget().winfo_width()
+
+        if self.root.winfo_reqheight() > self.max_figsize_percent[1] * self.root.winfo_screenheight():
+            dh = (self.root.winfo_reqheight() - self.max_figsize_percent[1] * self.root.winfo_screenheight())
+            new_figure_height = max(current_figure_height - dh, 100)
+            self.canvas.get_tk_widget().config(height=new_figure_height)
+
+        if self.root.winfo_reqwidth() > self.max_figsize_percent[0] * self.root.winfo_screenwidth():
+            dw = (self.root.winfo_reqwidth() - self.max_figsize_percent[0] * self.root.winfo_screenwidth())
+            new_figure_width = max(current_figure_width - dw, 100)
+            self.canvas.get_tk_widget().config(width=new_figure_width)
+
+        self.window.reposition()
 
     def draw(self, update_level=1):
         self.canvas.draw()
@@ -740,41 +747,32 @@ class HOPSFigureWindow(HOPSWidget):
 
 class HOPSFitsWindow(HOPSWidget):
 
-    def __init__(self, window, input=None, input_name=None, input_options=None, figsize=None, show_nav=False, show_controls=False,
-                 show_axes=False, subplots_adjust=None, dwmax=8.0, dhmax=8.0):
+    def __init__(self, window, input=None,
+                 input_name=None, input_options=None,
+                 max_figsize_percent=(0.9,0.8),  subplots_adjust=None,
+                 show_nav=False, show_controls=False, show_axes=False):
 
-        widget = Frame(window.main_frame)
+        widget = Frame(window.root)
+        HOPSWidget.__init__(self, window, widget, 'FitsWindow')
 
         self.show_axes = show_axes
+        self.show_half = False
+        self.max_figsize_percent = max_figsize_percent
 
-        if figsize:
-            try:
-                wpcent, hpcent, wmax, hmax, ratio, = figsize
-                wmax, hmax = dwmax, dhmax
-                w = min(wpcent * window.log.plt2screen_w, wmax)
-                h = min(hpcent * window.log.plt2screen_h, hmax)
-                if h * ratio < w:
-                    w = h * ratio
-                else:
-                    h = w / ratio
-            except:
-                w, h = figsize
-            self.figure = matplotlib.figure.Figure(figsize=(w, h))
-        else:
-            self.figure = matplotlib.figure.Figure()
+        self.figure = matplotlib.figure.Figure()
         self.figure.patch.set_facecolor('white')
         self.canvas = FigureCanvasTkAgg(self.figure, widget)
-
         self.ax = self.figure.add_subplot(111)
         self.ax.tick_params(axis='y', rotation=90)
 
         if not self.show_axes:
             self.ax.axis('off')
-            self.figure.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
 
         if subplots_adjust:
             self.figure.subplots_adjust(left=subplots_adjust[0], right=subplots_adjust[1],
                                         bottom=subplots_adjust[2], top=subplots_adjust[3])
+        else:
+            self.figure.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
 
         self.data = None
         self.mean = 0
@@ -788,11 +786,6 @@ class HOPSFitsWindow(HOPSWidget):
         self.flip = IntVar(widget, value=0)
         self.mirror = IntVar(widget, value=0)
         self.white_sky = IntVar(widget, value=0)
-
-        if input_name:
-            if len(input_name) > 50:
-                split = [input_name[i:i + 50] for i in range(0, len(input_name), 50)]
-                input_name = '\n'.join(split)
 
         self.fits_name = StringVar(widget, value=input_name)
         self.fits_name_label = Label(widget, textvar=self.fits_name)
@@ -855,14 +848,13 @@ class HOPSFitsWindow(HOPSWidget):
 
         self.picked = False
 
-        if input:
-            self.load_fits(input, input_name, input_options)
-
-        self.canvas.get_tk_widget().pack(side=TOP)
+        self.canvas.get_tk_widget().pack(side=TOP, fill='both', expand=True)
         if show_nav:
             toolbar = NavigationToolbar2Tk(self.canvas, self.widget)
             toolbar.pack(side=BOTTOM)
+
         self.fits_name_label.pack()
+
         if show_controls:
             control_frame.pack()
             self.canvas.callbacks.connect('scroll_event', self.zoom)
@@ -870,9 +862,32 @@ class HOPSFitsWindow(HOPSWidget):
             self.canvas.callbacks.connect('button_press_event', self.pick)
             self.canvas.callbacks.connect('button_release_event', self.pick)
 
-        HOPSWidget.__init__(self, window, widget, 'FitsWindow')
+        if input:
+            self.load_fits(input, input_name, input_options)
 
-    def load_fits(self, input, input_name=None, input_options=None, draw=True):
+    def adjust_size(self):
+
+        self.window.reposition()
+
+        current_figure_height = self.canvas.get_tk_widget().winfo_reqheight()
+        current_figure_width = self.canvas.get_tk_widget().winfo_width()
+
+        if self.root.winfo_reqheight() > self.max_figsize_percent[1] * self.root.winfo_screenheight():
+            dh = (self.root.winfo_reqheight() - self.max_figsize_percent[1] * self.root.winfo_screenheight())
+            new_figure_height = max(current_figure_height - dh, 100)
+            self.canvas.get_tk_widget().config(height=new_figure_height)
+
+        if self.root.winfo_reqwidth() > self.max_figsize_percent[0] * self.root.winfo_screenwidth():
+            dw = (self.root.winfo_reqwidth() - self.max_figsize_percent[0] * self.root.winfo_screenwidth())
+            new_figure_width = max(current_figure_width - dw, 100)
+            self.canvas.get_tk_widget().config(width=new_figure_width)
+
+        self.window.reposition()
+
+    def load_fits(self, input, input_name=None, input_options=None, draw=True, shift=0, show_half=False):
+
+        self.show_half = show_half
+
         if isinstance(input, str):
             fits = get_fits_data(input)
             input_name = os.path.split(input)[1]
@@ -882,6 +897,7 @@ class HOPSFitsWindow(HOPSWidget):
             raise RuntimeError('Invalid input ', type(input))
 
         if input_name:
+            input_name = os.path.split(input_name)[1]
             if len(input_name) > 50:
                 split = [input_name[i:i + 50] for i in range(0, len(input_name), 50)]
                 input_name = '\n'.join(split)
@@ -894,8 +910,7 @@ class HOPSFitsWindow(HOPSWidget):
             self.mean = fits[0].header[self.window.log.mean_key]
             self.std = fits[0].header[self.window.log.std_key]
         except:
-            self.mean = np.median(fits[0].data)
-            self.std = plc.mad(fits[0].data) * 1.5
+            self.mean, self.std = plc.mean_std_from_median_mad(fits[0].data)
 
         self.black_entry['from_'] = np.sqrt(max(0, np.min(self.data)))
         self.black_entry['to'] = np.sqrt(np.max(self.data))
@@ -914,9 +929,9 @@ class HOPSFitsWindow(HOPSWidget):
 
         if input_options:
             if input_options[0] != 'auto':
-                self.vmin.set(input_options[0])
+                self.vmin.set(max(1, int(self.mean + input_options[0] * self.std)))
             if input_options[1] != 'auto':
-                self.vmax.set(input_options[1])
+                self.vmax.set(max(1, int(self.mean + input_options[1] * self.std)))
             self.gamma.set(input_options[2])
             self.flip.set(input_options[3])
             self.mirror.set(input_options[4])
@@ -925,9 +940,19 @@ class HOPSFitsWindow(HOPSWidget):
         self.sqrt_vmin.set(np.sqrt(self.vmin.get()))
         self.sqrt_vmax.set(np.sqrt(self.vmax.get()))
 
-        self.image = self.ax.imshow(self.data ** (10 ** - self.gamma.get()), origin='lower',
-                                    extent=(0, len(self.data[0]), 0, len(self.data)),
-                                    cmap=Greys, vmin=self.vmin.get(), vmax=self.vmax.get())
+        if self.show_half:
+            xl = len(self.data[0])
+            yl = len(self.data)
+            x1, x2 = int(0.25*xl), int(0.75*xl)
+            y1, y2 = int(0.25*yl), int(0.75*yl)
+            self.image = self.ax.imshow(self.data[y1:y2,x1:x2] ** (10 ** - self.gamma.get()), origin='lower',
+                                        extent=(x1, x2, y1, y2),
+                                        cmap=Greys, vmin=self.vmin.get(), vmax=self.vmax.get())
+        else:
+            self.image = self.ax.imshow(self.data ** (10 ** - self.gamma.get()), origin='lower',
+                                        extent=(0, len(self.data[0]), 0, len(self.data)),
+                                        cmap=Greys, vmin=self.vmin.get(), vmax=self.vmax.get())
+
         if self.white_sky.get():
             self.image.set_cmap(Greys)
         else:
@@ -943,6 +968,13 @@ class HOPSFitsWindow(HOPSWidget):
         else:
             self.ax.set_xlim(0, len(self.data[0]) + 5)
 
+        try:
+            if 'auto' not in input_options[6:]:
+                self.ax.set_xlim(*input_options[6:8])
+                self.ax.set_ylim(*input_options[8:10])
+        except Exception as e:
+            pass
+
         if draw:
             self.draw()
 
@@ -952,7 +984,7 @@ class HOPSFitsWindow(HOPSWidget):
         else:
             self.image.set_cmap(Greys_r)
 
-        self.draw()
+        self.canvas.draw()
 
     def flip_fov(self):
         lims = self.ax.get_ylim()
@@ -960,7 +992,7 @@ class HOPSFitsWindow(HOPSWidget):
             self.ax.set_ylim(max(lims), min(lims))
         else:
             self.ax.set_ylim(min(lims), max(lims))
-        self.draw()
+        self.canvas.draw()
 
     def mirror_fov(self):
         lims = self.ax.get_xlim()
@@ -968,7 +1000,7 @@ class HOPSFitsWindow(HOPSWidget):
             self.ax.set_xlim(max(lims), min(lims))
         else:
             self.ax.set_xlim(min(lims), max(lims))
-        self.draw()
+        self.canvas.draw()
 
     def contrast(self, event):
 
@@ -981,16 +1013,22 @@ class HOPSFitsWindow(HOPSWidget):
         self.image.set_data(np.maximum(0, self.data) ** (10 ** - self.gamma.get()))
 
         self.image.set_clim(self.vmin.get() ** (10 ** -self.gamma.get()), self.vmax.get() ** (10 ** -self.gamma.get()))
-        self.draw()
+        self.canvas.draw()
 
     def get_fov_options(self):
-        return [self.vmin.get(), self.vmax.get(), self.gamma.get(), self.flip.get(), self.mirror.get(), self.white_sky.get()]
+        return [(self.vmin.get() - self.mean)/self.std, (self.vmax.get() - self.mean)/self.std,
+                self.gamma.get(), self.flip.get(), self.mirror.get(), self.white_sky.get(),
+                int(self.ax.get_xlim()[0]), int(self.ax.get_xlim()[1]),
+                int(self.ax.get_ylim()[0]), int(self.ax.get_ylim()[1])]
 
     def pick(self, event):
 
         if isinstance(event, matplotlib.backend_bases.MouseEvent):
 
             if event.inaxes is None:
+                pass
+
+            elif event.dblclick:
                 pass
 
             elif event.name == 'button_press_event':
@@ -1025,7 +1063,7 @@ class HOPSFitsWindow(HOPSWidget):
                     self.ax.set_xlim(self.ax.get_xlim()[0] - dx, self.ax.get_xlim()[1] - dx)
                     self.ax.set_ylim(self.ax.get_ylim()[0] - dy, self.ax.get_ylim()[1] - dy)
 
-                    self.draw()
+                    self.canvas.draw()
 
     def zoom(self, event):
 
@@ -1062,7 +1100,7 @@ class HOPSFitsWindow(HOPSWidget):
                 self.ax.set_xlim([new_xmin, new_xmin + new_xrange])
                 self.ax.set_ylim([new_ymin, new_ymin + new_yrange])
 
-                self.draw()
+                self.canvas.draw()
 
     def reset(self):
 
@@ -1089,12 +1127,14 @@ class HOPSFitsWindow(HOPSWidget):
 
     def draw(self, update_level=1):
         self.canvas.draw()
-        if update_level == 0:
-            pass
-        elif update_level == 1:
-            self.window.update_idletasks()
-        elif update_level == 2:
-            self.window.update()
+        # if update_level == 0:
+        #     pass
+        # elif update_level == 1:
+        #     self.window.update_idletasks()
+        # elif update_level == 2:
+        #     self.window.update()
+
+        self.after(self.canvas.draw)
 
     def disable(self):
         for child in self.widget.winfo_children():

@@ -1,54 +1,52 @@
 
 import os
+import numpy as np
+import pylightcurve41 as plc
+from astropy.io import fits as pf
 
-import hops.pylightcurve3 as plc
+from hops.hops_tools.fits import *
+from hops.hops_tools.images_reshape import bin_frame
 
-from hops.hops_tools.fits import find_fits_files, get_fits_data
 from .application_windows import MainWindow, AddOnWindow
 
-from astroquery.simbad import Simbad
-import astropy.coordinates as coord
-import astropy.units as u
-from urllib.request import urlopen
-import yaml
-import warnings
 
-
-filter_map = {'Clear': 'V', 'Luminance': 'V',
-              'U': 'U', 'B': 'B', 'V': 'V', 'R': 'R', 'I': 'I', 'H': 'H', 'J': 'J', 'K': 'K',
-              'Astrodon ExoPlanet-BB': 'R',
-              'UV': 'U', 'Rc': 'R', 'Ic': 'I', 'Re': 'R', 'Ie': 'I',
+filter_map = {'Clear': 'clear',
+              'Luminance': 'luminance',
+              'U': 'JOHNSON_U',
+              'B': 'JOHNSON_B',
+              'V': 'JOHNSON_V',
+              'R': 'COUSINS_R',
+              'I': 'COUSINS_I',
+              'H': '2mass_h',
+              'J': '2mass_j',
+              'K': '2mass_ks',
+              'Astrodon ExoPlanet-BB': 'exoplanets_bb',
+              'u\'': 'sdss_u',
+              'g\'': 'sdss_g',
+              'r\'': 'sdss_r',
+              'z\'': 'sdss_z',
               }
 
+filter_translations = {
+    'Clear': ['clear', 'None', 'Clear'],
+    'Luminance': ['luminance', 'Luminance', 'lum', 'Lum', 'L'],
+    'U': ['U', 'Uj', 'u'],
+    'B': ['B', 'Bj', 'b'],
+    'V': ['V', 'Vj', 'v'],
+    'R': ['R', 'Rc', 'r'],
+    'I': ['I', 'Ic', 'i'],
+    'H': ['H', 'h'],
+    'J': ['J', 'j'],
+    'K': ['K', 'k', 'Ks', 'KS'],
+    'Astrodon ExoPlanet-BB': ['exoplanets_bb', 'exoplanets'],
+    'u\'': ['up', 'u\''],
+    'g\'': ['gp', 'g\''],
+    'r\'': ['rp', 'r\''],
+    'z\'': ['zp', 'z\''],
+}
+
 __location__ = os.path.abspath(os.path.dirname(__file__))
-ecc_stars = yaml.load(open(os.path.join(__location__ , 'stars.yaml'), 'r'), Loader=yaml.SafeLoader)
-for star in ecc_stars:
-    ecc_stars[star]['planets'] = []
 
-ecc_planets = yaml.load(open(os.path.join(__location__ , 'planets.yaml'), 'r'), Loader=yaml.SafeLoader)
-for planet in ecc_planets:
-    if '.' in planet:
-        ecc_stars[planet.split('.')[0]]['planets'].append(planet)
-    else:
-        ecc_stars[planet[:-1]]['planets'].append(planet)
-
-def flat_name(name):
-
-    flat_name_list = [
-        [' ', ''],
-        ['-', ''],
-    ]
-
-    name = name.lower()
-
-    for char in flat_name_list:
-        name = name.replace(char[0], char[1])
-
-    return name
-
-ecc_stars_flat_names = {flat_name(ff): ecc_stars[ff]['simbad_id'] for ff in ecc_stars}
-
-ecc_stars = {ecc_stars[ff]['simbad_id']: 'Host of {0}'.format(','.join(ecc_stars[ff]['planets'])) for ff in ecc_stars}
 
 class DataTargetWindow(MainWindow):
 
@@ -60,7 +58,10 @@ class DataTargetWindow(MainWindow):
 
         self.content_window = AddOnWindow(self, name='Files list', sizex=3, sizey=3, position=1)
         self.header_window = AddOnWindow(self, name='Header keywords list', sizex=3, sizey=3, position=7)
-        self.target_window = AddOnWindow(self, name='Select Target')
+        self.target_window = AddOnWindow(self, name='Select/Change target')
+        self.location_window = AddOnWindow(self, name='Select/Change location')
+        self.advanced_settings_window = AddOnWindow(self, name='Advanced settings', position=2)
+        self.observer_information_window = AddOnWindow(self, name='Observer information', position=2)
 
         # set variables, create and place widgets
 
@@ -72,7 +73,9 @@ class DataTargetWindow(MainWindow):
                                             command=self.update_observation_files)
         self.observation_files_test = self.Label(text=' ')
         self.science_files = 0
+        self.science_name = ''
         self.science_header = []
+        self.science_data = None
 
         self.show_files_button = self.Button(text='Show files', command=self.content_window.show)
 
@@ -84,29 +87,13 @@ class DataTargetWindow(MainWindow):
                                      command=self.update_dark_files)
         self.dark_files_test = self.Label(text=' ')
 
+        self.dark_flat_files = self.Entry(value=self.log.get_param('dark_flat_files'), instance=str,
+                                     command=self.update_dark_flat_files)
+        self.dark_flat_files_test = self.Label(text=' ')
+
         self.flat_files = self.Entry(value=self.log.get_param('flat_files'), instance=str,
                                      command=self.update_flat_files)
         self.flat_files_test = self.Label(text=' ')
-
-        try:
-            initial_bin = self.log.get_param('bin_fits')
-            initial_bin = max(1, initial_bin)
-            initial_bin = min(initial_bin, 4)
-        except:
-            print('WARNING the bin_fits parameter should be 1, 2, 3 or 4. Re-setting it to 1.')
-            initial_bin = 1
-
-        self.bin_fits = self.DropDown(initial=initial_bin, options=[1, 2, 3, 4], instance=int)
-
-        try:
-            initial_crop = self.log.get_param('crop_fits')
-            initial_crop = max(0.2, initial_crop)
-            initial_crop = min(initial_crop, 1)
-        except:
-            print('WARNING the crop_fits parameter should be 1, 0.8, 0.6, 0.4, or 0.2. Re-setting it to 1.')
-            initial_crop = 1
-
-        self.crop_fits = self.DropDown(initial=initial_crop, options=[1, 0.8, 0.6, 0.4, 0.2], instance=float)
 
         self.show_header_button = self.Button(text='Show header', command=self.header_window.show)
 
@@ -125,83 +112,89 @@ class DataTargetWindow(MainWindow):
         self.time_stamp = self.DropDown(initial=self.log.get_param('time_stamp'),
                                         options=['exposure start', 'mid-exposure', 'exposure end'])
 
-        self.select_target_button = self.Button(text='CHOOSE TARGET', command=self.update_ra_dec_options)
-
+        self.select_target_button = self.Button(text='Select/Change target', command=self.target_window.show)
         self.target_ra_dec = self.Label(text=self.log.get_param('target_ra_dec'))
         self.target_name = self.Label(text=self.log.get_param('target_name'))
         self.target_ra_dec_test = self.Label(text='')
 
-        self.observer = self.Entry(value=self.log.get_param('observer'))
-        self.observatory = self.Entry(value=self.log.get_param('observatory'))
-        self.telescope = self.Entry(value=self.log.get_param('telescope'))
-        self.camera = self.Entry(value=self.log.get_param('camera'))
+        self.select_location_button = self.Button(text='Select/Change location', command=self.location_window.show)
+        self.location = self.Label(text=self.log.get_param('location'))
+        self.location_test = self.Label(text='')
 
-        filters = ['default'] + list(filter_map.keys())
-        if self.log.get_param('filter') not in filters:
-            self.log.set_param('filter', 'default')
-
-        self.filter = self.DropDown(initial=self.log.get_param('filter'), options=filters, command=self.check_filter)
+        filters = ['No filter chosen'] + list(filter_map.keys())
+        try:
+            self.filter = self.DropDown(initial=self.log.get_param('filter') , options=filters, command=self.check_filter)
+        except:
+            self.filter = self.DropDown(initial='No filter chosen' , options=filters, command=self.check_filter)
         self.filter_test = self.Label(text=' ')
 
-        self.save_and_return_button = self.Button(text='SAVE OPTIONS & RETURN TO MAIN MENU', command=self.save_and_return)
-        self.save_and_proceed_button = self.Button(text='SAVE OPTIONS & PROCEED', command=self.save_and_proceed,
+        self.show_advanced_settings_button = self.Button(text='Advanced settings',
+                                                         command=self.advanced_settings_window.show)
+        self.show_observer_information_button = self.Button(text='Observer\'s information (optional)',
+                                                            command=self.observer_information_window.show)
+
+        self.save_and_return_button = self.Button(text='SAVE OPTIONS &\nRETURN TO MAIN MENU',
+                                                  command=self.save_and_return)
+        self.save_and_proceed_button = self.Button(text='SAVE OPTIONS &\nPROCEED',
+                                                   command=self.save_and_proceed,
                                                    bg='green', highlightbackground='green')
 
         self.setup_window([
             [],
-
-            [[self.Button(text='CHOOSE DIRECTORY', command=self.update_directory), 1], [self.directory_test, 2, 2]],
-
-            [[self.show_files_button, 2]],
-
-            [[self.Label(text='Name identifier for observation files'), 1],
-             [self.observation_files, 2], [self.observation_files_test, 3]],
-
-            [[self.Label(text='Name identifier for bias files'), 1],
-             [self.bias_files, 2], [self.bias_files_test, 3]],
-
-            [[self.Label(text='Name identifier for dark files'), 1],
-             [self.dark_files, 2], [self.dark_files_test, 3]
-             ],
-
-            [[self.Label(text='Name identifier for flat files'), 1],
-             [self.flat_files, 2], [self.flat_files_test, 3],
-             ],
-
-            [[self.Label(text='Bin fits files (reduced only)'), 1], [self.bin_fits, 2]],
-            [[self.Label(text='Subframe (reduced only)'), 1], [self.crop_fits, 2]],
-
-            [[self.show_header_button, 2]],
-
-            [[self.Label(text='Exposure time header keyword'), 1],
-             [self.exposure_time_key, 2], [self.exposure_time_key_test, 3]
-             ],
-
-            [[self.Label(text='Observation date header keyword\n(no JD, HJD, BJD)'), 1],
-             [self.observation_date_key, 2], [self.observation_date_key_test, 3],
-             ],
-
-            [[self.Label(text='Observation time header keyword'), 1],
-             [self.observation_time_key, 2], [self.observation_time_key_test, 3]],
-
-            [[self.Label(text='Time-stamp\n(which time is saved in your fits files?)'), 1],
-             [self.time_stamp, 2]],
-
+            [
+                [self.Label(text='Directory:'), 1],
+                [self.directory_test, 2, 2],
+                [self.Button(text='Select/Change directory', command=self.change_directory), 5, 2],
+            ],
             [],
-
-            [[self.select_target_button, 1], [self.target_ra_dec, 2], [self.target_ra_dec_test, 3]],
-            [[self.target_name, 2]],
-
-            [[self.Label(text='Observer'), 1], [self.observer, 2], [self.Label(text='OK'), 3]],
-            [[self.Label(text='Observatory'), 1], [self.observatory, 2], [self.Label(text='OK'), 3]],
-            [[self.Label(text='Telescope'), 1], [self.telescope, 2], [self.Label(text='OK'), 3]],
-            [[self.Label(text='Camera'), 1], [self.camera, 2], [self.Label(text='OK'), 3]],
-            [[self.Label(text='Filter'), 1], [self.filter, 2], [self.filter_test, 3]],
-
+            [
+                [self.Label(text='Name identifiers:'), 1, 3],
+                [self.Label(text='Header information:'), 4, 3]
+            ],
+            [
+                [self.Label(text='Observation files'), 1], [self.observation_files, 2], [self.observation_files_test, 3],
+                [self.Label(text='Exposure time key'), 4], [self.exposure_time_key, 5], [self.exposure_time_key_test, 6],
+            ],
+            [
+                [self.Label(text='Bias files'), 1], [self.bias_files, 2], [self.bias_files_test, 3],
+                [self.Label(text='Observation date key'), 4], [self.observation_date_key, 5], [self.observation_date_key_test, 6]
+            ],
+            [
+                [self.Label(text='Dark files'), 1], [self.dark_files, 2], [self.dark_files_test, 3],
+                [self.Label(text='Observation time key'), 4], [self.observation_time_key, 5], [self.observation_time_key_test, 6]
+            ],
+            [
+                [self.Label(text='Dark-flat files'), 1], [self.dark_flat_files, 2], [self.dark_flat_files_test, 3],
+                [self.Label(text='Time-stamp'), 4], [self.time_stamp, 5], [self.Label(text='   OK   '), 6],
+            ],
+            [
+                [self.Label(text='Flat files'), 1], [self.flat_files, 2], [self.flat_files_test, 3],
+                [self.Label(text='Filter'), 4], [self.filter, 5], [self.filter_test, 6]
+            ],
+            [
+                [self.show_files_button, 1, 3],
+                [self.show_header_button, 4, 3]
+            ],
             [],
-            [[self.Button(text='RETURN TO MAIN MENU', command=self.close), 1, 6]],
-            [[self.save_and_return_button, 1, 6]],
-            [[self.save_and_proceed_button, 1, 6]],
+            [
+                [self.Label(text='Location:'), 1], [self.location, 2], [self.location_test, 3],
+                [self.Label(text='Target:'), 4], [self.target_ra_dec, 5], [self.target_ra_dec_test, 6],
+            ],
+            [
+                [self.select_location_button, 1,3],  [self.select_target_button, 4, 3],
+            ],
+            [
+                [self.target_name, 4, 3]
+            ],
+            [],
+            [
+                [self.show_advanced_settings_button, 1, 3], [self.show_observer_information_button, 4, 3]
+            ],
+            [],
+            [
+                [self.save_and_return_button, 1, 3],
+                [self.save_and_proceed_button, 4, 3]
+            ],
             []
 
         ], entries_wd=self.log.entries_width)
@@ -214,15 +207,6 @@ class DataTargetWindow(MainWindow):
             [[self.content_list, 0]]
         ])
 
-        content_list = ['  List of files in your directory:', '  ']
-
-        xx = find_fits_files('*')
-
-        for ii in xx:
-            content_list.append('  {0}'.format(str(ii).split(os.sep)[-1]))
-
-        self.content_list.update_list(content_list)
-
         # headers window
 
         self.header_list = self.header_window.ListDisplay()
@@ -230,9 +214,6 @@ class DataTargetWindow(MainWindow):
         self.header_window.setup_window([
             [[self.header_list, 0]]
         ])
-
-        self.stars = plc.open_dict(os.path.join(plc.databases.oec, 'stars_catalogue.pickle'))
-        self.stars = {self.stars[ff]['simbad_id']: self.stars[ff]['planets'][0] for ff in self.stars}
 
         # target window
 
@@ -258,8 +239,8 @@ class DataTargetWindow(MainWindow):
             [],
             [[self.target_window.Label(text='How would you like to choose your target? Select one of the three options:'), 0, 5]],
             [],
-            [[self.target_ra_dec_choice_0, 1], [self.auto_target_ra_dec, 2, 2], [self.auto_target_ra_dec_check, 4]],
-            [[self.target_ra_dec_choice_1, 1], [self.simbad_target_name, 2, 2], [self.simbad_target_name_check, 4]],
+            [[self.target_ra_dec_choice_0, 1], [self.auto_target_ra_dec, 2, 2]],
+            [[self.target_ra_dec_choice_1, 1], [self.simbad_target_name, 2, 2]],
             [[self.target_ra_dec_choice_2, 1], [self.manual_target_ra_dec, 2, 2]],
             [],
             [[self.target_window.Label(text='Target RA/DEC: '), 0], [self.target_ra_dec_2, 1, 3]],
@@ -271,134 +252,316 @@ class DataTargetWindow(MainWindow):
 
         ], entries_wd=self.log.entries_width)
 
-        self.update_observation_files()
-        self.update_bias_files()
-        self.update_dark_files()
-        self.update_flat_files()
+        # location window
 
-    # define functions
+        self.location_choice = self.location_window.IntVar(self.log.get_param('location_choice'))
+        self.location_choice_0 = self.location_window.Radiobutton(
+            text='Use the LAT/LONG found in the file\'s header:',
+            variable=self.location_choice, value=0, command=self.update_location)
+        self.location_choice_1 = self.location_window.Radiobutton(
+            text='Provide the LAT/LONG of the location:\n(+/-dd:mm:ss +/-dd:mm:ss)\npositive LAT is NORTH\npositive LONG is EAST',
+            variable=self.location_choice, value=2, command=self.update_location)
+        self.auto_location = self.location_window.Label(text=self.log.get_param('auto_location'))
+        self.manual_location = self.location_window.Entry(value=self.log.get_param('manual_location'), command=self.update_location)
 
-    def update_directory(self, *event):
+        self.location_window.setup_window([
+            [],
+            [[self.location_window.Label(text='How would you like to choose your location? Select one of the two options:'), 0, 5]],
+            [],
+            [[self.location_choice_0, 1], [self.auto_location, 2, 2]],
+            [[self.location_choice_1, 1], [self.manual_location, 2, 2]],
+            [],
+            [[self.location_window.Button(text='  Cancel  ', command=self.location_window.hide), 2],
+             [self.location_window.Button(text='  Choose  ', command=self.choose_location), 3]],
+            []
 
-        new_directory = self.askdirectory()
+        ], entries_wd=self.log.entries_width)
 
-        if len(new_directory) > 0:
+        # advanced settings window
 
-            self.log.set_param('directory', new_directory)
-            self.log.set_param('directory_short', os.path.split(new_directory)[1])
+        try:
+            initial_bin = self.log.get_param('bin_fits')
+            initial_bin = max(1, initial_bin)
+            initial_bin = min(initial_bin, 4)
+        except:
+            print('WARNING the bin_fits parameter should be 1, 2, 3 or 4. Re-setting it to 1.')
+            initial_bin = 1
 
-            self.log.load_main_log()
-            self.log.load_local_log_profile()
+        self.bin_fits = self.advanced_settings_window.DropDown(initial=initial_bin, options=[1, 2, 3, 4],
+                                                               instance=int, command=self.update_preview)
+
+        self.crop_x1 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x1'), instance=int)
+        self.crop_x2 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x2'), instance=int)
+        self.crop_y1 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_y1'), instance=int)
+        self.crop_y2 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_y2'), instance=int)
+
+        self.initial_figure = self.advanced_settings_window.FitsWindow(
+            show_controls=True, show_axes=True,
+            subplots_adjust=(0.07, 0.99, 0.07, 0.99)
+        )
+        self.final_figure = self.advanced_settings_window.FitsWindow(
+            show_controls=True, show_axes=True,
+            subplots_adjust=(0.07, 0.99, 0.07, 0.99)
+        )
+
+        self.initial_figure_size = self.advanced_settings_window.Label(text='Image before reduction: 0 MB')
+        self.final_figure_size = self.advanced_settings_window.Label(text='Image after reduction: 0 MB')
+
+        self.advanced_settings_window.setup_window([
+            [
+                [self.advanced_settings_window.Label(text='Binning (use 2 for coloured cameras)'), 0],
+                [self.bin_fits, 1],
+            ],
+            [
+                [self.advanced_settings_window.Label(
+                    text='To crop the original image (on the left panel),\n'
+                         'zoom in to the area you want to select and then press "Select area".'
+                ), 0],
+                [self.advanced_settings_window.Button(text='Select area', command=self.crop_to_selected_area), 1]
+            ],
+            [],
+            [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3]],
+            [[self.initial_figure, 0, 3], [self.final_figure, 3]],
+            [],
+        ])
+
+        # observer information window
+
+        self.observer = self.observer_information_window.Entry(value=self.log.get_param('observer'))
+        self.observatory = self.observer_information_window.Entry(value=self.log.get_param('observatory'))
+        self.telescope = self.observer_information_window.Entry(value=self.log.get_param('telescope'))
+        self.camera = self.observer_information_window.Entry(value=self.log.get_param('camera'))
+
+        self.observer_information_window.setup_window([
+            [],
+            [],
+            [
+                [self.observer_information_window.Label(text='Observer Name'), 1],
+                [self.observer, 2, 2],
+                [self.observer_information_window.Label(text='Observatory Name'), 4],
+                [self.observatory, 5, 2]
+            ],
+            [
+                [self.observer_information_window.Label(text='Telescope Name'), 1],
+                [self.telescope, 2, 2],
+                [self.observer_information_window.Label(text='Camera Name'), 4], [self.camera, 5, 2],
+            ],
+            [],
+            []
+        ])
+
+        self.disable()
+
+    def check_dir(self):
+
+        dir_ok = False
+
+        if os.path.isdir(self.log.get_param('directory')):
             try:
-                os.chdir(self.log.get_param('directory'))
                 self.log.load_local_log()
+                dir_ok = True
             except:
+                pass
+
+        if not dir_ok:
+            new_directory = self.askdirectory()
+            if new_directory == '':
+                self.close()
+            else:
                 try:
-                    os.chdir(self.log.get_param('directory'))
-                    self.log.initiate_local_log()
+                    os.chdir(new_directory)
+                    self.log.set_param('directory', new_directory)
+                    self.log.set_param('directory_short', os.path.split(new_directory)[1])
+                    self.log.load_main_log()
+                    self.log.load_local_log_profile()
+                    try:
+                        self.log.load_local_log()
+                    except:
+                        self.log.initiate_local_log()
+                    self.log.save_local_log_user()
+                    dir_ok = True
                 except:
+                    self.showinfo('Not valid directory', 'Not valid directory')
                     os.chdir(self.log.__home__)
                     self.log.set_param('directory', 'Choose Directory')
                     self.log.set_param('directory_short', 'Choose Directory')
+                    self.log.save_local_log_user()
+                    self.close()
 
-            self.log.save_local_log_user()
+        if dir_ok:
+            self.activate()
+            self.update_directory()
 
-            content_list = ['  List of files in your directory:', '  ']
+    # define functions
 
-            xx = find_fits_files('*')
+    def change_directory(self, *event):
 
-            for ii in xx:
-                content_list.append('  {0}'.format(str(ii).split(os.sep)[-1]))
+        current_directory = self.log.get_param('directory')
+        new_directory = self.askdirectory()
+        if new_directory != '':
+            try:
+                os.chdir(new_directory)
+                self.log.set_param('directory', new_directory)
+                self.log.set_param('directory_short', os.path.split(new_directory)[1])
+                self.log.load_main_log()
+                self.log.load_local_log_profile()
+                try:
+                    self.log.load_local_log()
+                except:
+                    self.log.initiate_local_log()
+                self.log.save_local_log_user()
+                self.update_directory()
+            except:
+                self.showinfo('Not valid directory', 'Not valid directory')
+                os.chdir(current_directory)
+                self.log.set_param('directory', current_directory)
+                self.log.set_param('directory_short', os.path.split(current_directory)[1])
+                self.log.load_main_log()
+                self.log.load_local_log_profile()
+                self.log.initiate_local_log()
+                self.log.save_local_log_user()
 
-            self.content_list.update_list(content_list)
+    def update_directory(self, *event):
 
-            self.directory_test.set(self.log.get_param('directory_short'))
-            self.observation_files.set(self.log.get_param('observation_files'))
-            self.bias_files.set(self.log.get_param('bias_files'))
-            self.dark_files.set(self.log.get_param('dark_files'))
-            self.flat_files.set(self.log.get_param('flat_files'))
-            self.bin_fits.set(self.log.get_param('bin_fits'))
-            self.crop_fits.set(self.log.get_param('crop_fits'))
-            self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
-            self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
-            self.target_name.set(self.log.get_param('target_name'))
-            self.auto_target_ra_dec.set(self.log.get_param('auto_target_ra_dec'))
-            self.manual_target_ra_dec.set(self.log.get_param('manual_target_ra_dec'))
-            self.simbad_target_name.set(self.log.get_param('simbad_target_name'))
-            self.time_stamp.set(self.log.get_param('time_stamp'))
-            self.exposure_time_key.set(self.log.get_param('exposure_time_key'))
-            self.observation_date_key.set(self.log.get_param('observation_date_key'))
-            self.observation_time_key.set(self.log.get_param('observation_time_key'))
+        content_list = ['  List of files in your directory:', '  ']
 
-            self.update_observation_files()
-            self.update_bias_files()
-            self.update_dark_files()
-            self.update_flat_files()
+        xx = find_fits_files('*')
 
-        self.show()
+        for ii in xx:
+            content_list.append('  {0}'.format(str(ii).split(os.sep)[-1]))
+
+        self.content_list.update_list(content_list)
+
+        self.directory_test.set(self.log.get_param('directory_short'))
+        self.observation_files.set(self.log.get_param('observation_files'))
+        self.bias_files.set(self.log.get_param('bias_files'))
+        self.dark_files.set(self.log.get_param('dark_files'))
+        self.dark_flat_files.set(self.log.get_param('dark_flat_files'))
+        self.flat_files.set(self.log.get_param('flat_files'))
+        self.bin_fits.set(self.log.get_param('bin_fits'))
+        self.crop_x1.set(self.log.get_param('crop_x1'))
+        self.crop_x2.set(self.log.get_param('crop_x2'))
+        self.crop_y1.set(self.log.get_param('crop_y1'))
+        self.crop_y2.set(self.log.get_param('crop_y2'))
+        self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
+        self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
+        self.target_name.set(self.log.get_param('target_name'))
+        self.auto_target_ra_dec.set(self.log.get_param('auto_target_ra_dec'))
+        self.manual_target_ra_dec.set(self.log.get_param('manual_target_ra_dec'))
+        self.location_choice.set(self.log.get_param('location_choice'))
+        self.location.set(self.log.get_param('location'))
+        self.auto_location.set(self.log.get_param('auto_location'))
+        self.manual_location.set(self.log.get_param('manual_location'))
+        self.simbad_target_name.set(self.log.get_param('simbad_target_name'))
+        self.time_stamp.set(self.log.get_param('time_stamp'))
+        self.exposure_time_key.set(self.log.get_param('exposure_time_key'))
+        self.observation_date_key.set(self.log.get_param('observation_date_key'))
+        self.observation_time_key.set(self.log.get_param('observation_time_key'))
+        self.filter.set(self.log.get_param('filter'))
+
+        self.update_observation_files()
+        self.update_bias_files()
+        self.update_dark_files()
+        self.update_dark_flat_files()
+        self.update_flat_files()
 
     def update_observation_files(self, *event):
 
         check = find_fits_files(self.observation_files.get())
+
         self.science_files = len(check)
 
         if self.science_files == 0:
 
-            self.observation_files_test.set('{0} files found\nyou cannot proceed'.format(len(check)))
+            self.observation_files_test.set('0 files found\nyou cannot proceed')
+            self.science_name = ''
             self.science_header = []
+            self.science_data = None
+
             header_list = ['  Keywords:      Values:', '  ']
+            self.header_list.update_list(header_list)
+
+            self.update_exposure_time_key()
+            self.update_observation_date_key()
+            self.update_observation_time_key()
+            self.update_ra_dec_options()
+            self.choose_target()
+            self.update_location_options()
+            self.choose_location()
+            self.update_observing_info()
 
         else:
-            self.observation_files_test.set('{0} files found - OK'.format(len(check)))
-            self.science_header = []
-            header_list = ['  Keywords:      Values:', '  ']
 
-            self.science_header = get_fits_data(check[0])[0].header
+            self.observation_files_test.set('{0} files - OK'.format(len(check)))
 
-            for ii in self.science_header:
+            if check[0] != self.science_name:
 
-                if ii != '':
-                    header_list.append('  {0}{1}{2}'.format(str(ii[:10]), ' ' * (15 - len(str(ii[:10]))),
-                                                            str(self.science_header[ii])))
+                fits_file = get_fits_data(check[0])[0]
+                self.science_name = check[0]
+                self.science_header = fits_file.header
+                self.science_data = fits_file.data
 
-        self.header_list.update_list(header_list)
+                header_list = ['  Keywords:      Values:', '  ']
+                for ii in self.science_header:
+                    if ii != '':
+                        header_list.append('  {0}{1}{2}'.format(str(ii[:10]), ' ' * (15 - len(str(ii[:10]))),
+                                                                str(self.science_header[ii])))
+                self.header_list.update_list(header_list)
 
-        self.update_exposure_time_key()
-        self.update_observation_date_key()
-        self.update_observation_time_key()
-        self.update_ra_dec()
-        self.choose_target()
-        self.update_observing_info()
-        self.update_save_button()
+                if self.crop_x2.get() == 0:
+                   self.crop_x2.set(len(self.science_data[0]))
+                if self.crop_y2.get() == 0:
+                   self.crop_y2.set(len(self.science_data))
+                self.initial_figure_size.set(
+                    'Image before reduction: {0} MB'.format(
+                        round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+                    )
+                )
+                self.final_figure_size.set(
+                    'Image after reduction: {0} MB'.format(
+                        round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+                    )
+                )
+                self.initial_figure.load_fits(fits_file, input_name=check[0])
+                self.initial_figure.adjust_size()
+                self.final_figure.load_fits(fits_file, input_name='This is only an example of the reduction output.  '
+                                                                  'Select the area to crop on the left image.')
+                self.final_figure.adjust_size()
+                self.update_preview()
 
-    #     and then update the header keywards
+                self.update_exposure_time_key()
+                self.update_observation_date_key()
+                self.update_observation_time_key()
+                self.update_ra_dec_options()
+                self.choose_target()
+                self.update_location_options()
+                self.choose_location()
+                self.update_observing_info()
 
     def update_bias_files(self, *event):
 
         check = find_fits_files(self.bias_files.get())
-        self.bias_files_test.set('{0} files found - OK'.format(len(check)))
-
-        self.update_save_button()
+        self.bias_files_test.set('{0} files - OK'.format(len(check)))
 
     def update_dark_files(self, *event):
 
         check = find_fits_files(self.dark_files.get())
-        self.dark_files_test.set('{0} files found - OK'.format(len(check)))
+        self.dark_files_test.set('{0} files - OK'.format(len(check)))
 
-        self.update_save_button()
+    def update_dark_flat_files(self, *event):
+
+        check = find_fits_files(self.dark_flat_files.get())
+        self.dark_flat_files_test.set('{0} files - OK'.format(len(check)))
 
     def update_flat_files(self, *event):
 
         check = find_fits_files(self.flat_files.get())
-        self.flat_files_test.set('{0} files found - OK'.format(len(check)))
-
-        self.update_save_button()
+        self.flat_files_test.set('{0} files - OK'.format(len(check)))
 
     def update_ra_dec_options(self, *event):
 
-        self.auto_target_ra_dec.set('----------')
+        self.auto_target_ra_dec.set('Not found')
         self.target_ra_dec_choice_0['state'] = self.DISABLED
-        auto_found = False
 
         ra = None
         for key in self.log.get_param('target_ra_key').split(','):
@@ -415,44 +578,18 @@ class DataTargetWindow(MainWindow):
         if ra and dec:
             try:
                 if isinstance(ra, str):
-                    target = plc.Target(plc.Hours(ra.replace(',', '.')),
-                                        plc.Degrees(dec.replace(',', '.')))
-                    self.auto_target_ra_dec.set(target.coord)
+                    target = plc.FixedTarget(plc.Hours(ra.replace(',', '.')),
+                                             plc.Degrees(dec.replace(',', '.')))
+                    self.auto_target_ra_dec.set(target.coord())
                     self.target_ra_dec_choice_0['state'] = self.NORMAL
-                    auto_found = True
                 elif isinstance(ra, float):
-                    target = plc.Target(plc.Degrees(ra), plc.Degrees(dec))
-                    self.auto_target_ra_dec.set(target.coord)
+                    target = plc.FixedTargetTarget(plc.Degrees(ra), plc.Degrees(dec))
+                    self.auto_target_ra_dec.set(target.coord())
                     self.target_ra_dec_choice_0['state'] = self.NORMAL
-                    auto_found = True
             except:
                 pass
 
-        if not auto_found:
-            self.auto_target_ra_dec_check.set('Not found')
-        else:
-            self.auto_target_ra_dec_check.set('')
-
-        if not auto_found and self.target_ra_dec_choice.get() == 0:
-            self.target_ra_dec_choice.set(1)
-
-        try:
-            urlopen('http://www.google.com', timeout=2)
-            self.target_ra_dec_choice_1['state'] = self.NORMAL
-            self.simbad_target_name.activate()
-            auto_found = True
-            self.simbad_target_name_check.set('')
-        except:
-            self.target_ra_dec_choice_1['state'] = self.DISABLED
-            self.simbad_target_name.disable()
-            auto_found = False
-            self.simbad_target_name_check.set('No connection')
-
-        if not auto_found and self.target_ra_dec_choice.get() == 1:
-            self.target_ra_dec_choice.set(2)
-
         self.update_ra_dec()
-        self.target_window.show()
 
     def update_ra_dec(self, *event):
 
@@ -464,19 +601,24 @@ class DataTargetWindow(MainWindow):
             self.manual_target_ra_dec.set('')
 
             try:
-                result_table = Simbad.query_region(coord.SkyCoord(self.auto_target_ra_dec.get(), unit=(u.hourangle, u.deg),
-                                                                  frame='icrs'), radius='0d5m0s')[0]
-                self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'),
-                                                        str(result_table['DEC']).replace(' ', ':')))
+                target = plc.FixedTarget(
+                    plc.Hours(self.auto_target_ra_dec.get().split(' ')[0]),
+                    plc.Degrees(self.auto_target_ra_dec.get().split(' ')[1])
+                )
 
                 try:
-                    xx = result_table['MAIN_ID'].decode("utf-8")
+                    nearest = plc.simbad_search_by_coordinates(target.ra, target.dec, radius=plc.Degrees(0.25))
+                    self.target_ra_dec_2.set(nearest.coord())
+                    if nearest._notes:
+                        self.target_name_2.set(nearest.name + ' ' + nearest._notes)
+                    else:
+                        self.target_name_2.set(nearest.name)
                 except:
-                    xx = result_table['MAIN_ID']
-                self.target_name_2.set(xx)
+                    self.target_ra_dec_2.set(self.auto_target_ra_dec.get())
+                    self.target_name_2.set('Name not resolved')
             except:
-                self.target_ra_dec_2.set(self.auto_target_ra_dec.get())
-                self.target_name_2.set(' ')
+                self.target_ra_dec_2.set('Coordinates not found')
+                self.target_name_2.set('Name not resolved')
 
         elif self.target_ra_dec_choice.get() == 1:
 
@@ -486,46 +628,15 @@ class DataTargetWindow(MainWindow):
             self.manual_target_ra_dec.set('')
 
             try:
-
-                flat_input_name = flat_name(self.simbad_target_name.get())
-
-                if flat_input_name in ecc_stars_flat_names:
-                    name = ecc_stars_flat_names[flat_input_name]
-                elif flat_input_name[:-1] in ecc_stars_flat_names:
-                    name = ecc_stars_flat_names[flat_input_name[:-1]]
-
+                nearest = plc.simbad_search_by_name(self.simbad_target_name.get())
+                self.target_ra_dec_2.set(nearest.coord())
+                if nearest._notes:
+                    self.target_name_2.set(nearest.name + ' ' + nearest._notes)
                 else:
-                    name = self.simbad_target_name.get().lower()
-                    name = name.replace('hd-', 'hd ')
-                    name = name.replace('2mass-', '2mass ')
-                    name = name.replace('gj-', 'gj ')
-                    name = name.replace('hip-', 'hip ')
-                    name = name.replace('lhs-', 'lhs ')
-                    name = name.replace('tyc-', 'tyc ')
-                    name = name.replace('kic-', 'kic ')
-                    name = name.replace('tic-', 'tic ')
-                    name = name.replace('toi-', 'toi ')
-                    name = name.replace('qatar-', 'qatar ')
-
-                    if 'bd' in name:
-                        name = name[:3] + name[3:].replace('-', ' ')
-
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    result_table = Simbad.query_object(name)[0]
-
-                self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'), str(result_table['DEC']).replace(' ', ':')))
-                try:
-                    main_id = result_table['MAIN_ID'].decode("utf-8")
-                except:
-                    main_id = result_table['MAIN_ID']
-
-                while '  ' in main_id:
-                    main_id = main_id.replace('  ', ' ')
-                self.target_name_2.set(main_id)
+                    self.target_name_2.set(nearest.name)
             except:
                 self.target_ra_dec_2.set('Coordinates not found')
-                self.target_name_2.set(' ')
+                self.target_name_2.set('Name not resolved')
 
         else:
 
@@ -535,22 +646,23 @@ class DataTargetWindow(MainWindow):
             self.manual_target_ra_dec.widget.focus()
 
             try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    result_table = Simbad.query_region(coord.SkyCoord(self.manual_target_ra_dec.get(), unit=(u.hourangle, u.deg),
-                                                                  frame='icrs'), radius='0d5m0s')[0]
-                self.target_ra_dec_2.set('{0} {1}'.format(str(result_table['RA']).replace(' ', ':'),
-                                                        str(result_table['DEC']).replace(' ', ':')))
-                main_id = result_table['MAIN_ID']
-                while '  ' in main_id:
-                    main_id = main_id.replace('  ', ' ')
-                self.target_name_2.set(main_id)
+                if len(self.manual_target_ra_dec.get().split(':')) == 5:
+                    target = plc.FixedTarget(
+                        plc.Hours(self.manual_target_ra_dec.get().split(' ')[0]),
+                        plc.Degrees(self.manual_target_ra_dec.get().split(' ')[1])
+                    )
+                    nearest = plc.simbad_search_by_coordinates(target.ra, target.dec, radius=plc.Degrees(0.25))
+                    self.target_ra_dec_2.set(nearest.coord())
+                    if nearest._notes:
+                        self.target_name_2.set(nearest.name + ' ' + nearest._notes)
+                    else:
+                        self.target_name_2.set(nearest.name)
+                else:
+                    self.target_ra_dec_2.set(self.manual_target_ra_dec.get())
+                    self.target_name_2.set(' ')
             except:
                 self.target_ra_dec_2.set(self.manual_target_ra_dec.get())
                 self.target_name_2.set(' ')
-
-        if self.target_name_2.get() in ecc_stars:
-            self.target_name_2.set('{0} - {1}'.format(self.target_name_2.get(), ecc_stars[self.target_name_2.get()]))
 
     def choose_target(self, *event):
 
@@ -559,10 +671,9 @@ class DataTargetWindow(MainWindow):
 
         try:
 
-            ra_dec_string = self.target_ra_dec.get().split(' ')[0].split(':') + self.target_ra_dec.get().split(' ')[1].split(':')
-            target = plc.Target(plc.Hours(ra_dec_string[0], ra_dec_string[1], ra_dec_string[2]),
-                                plc.Degrees(ra_dec_string[3], ra_dec_string[4], ra_dec_string[5]))
-            self.target_ra_dec_test.set('Coordinates accepted - OK')
+            _ = plc.FixedTarget(plc.Hours(self.target_ra_dec.get().split(' ')[0]),
+                                     plc.Degrees(self.target_ra_dec.get().split(' ')[1]))
+            self.target_ra_dec_test.set('   OK   ')
 
         except:
             self.target_ra_dec_test.set('Wrong coordinates\nyou cannot proceed')
@@ -570,10 +681,70 @@ class DataTargetWindow(MainWindow):
         self.update_save_button()
         self.target_window.hide()
 
+    def update_location_options(self, *event):
+
+        self.auto_location.set('Not found')
+        self.location_choice_0['state'] = self.DISABLED
+
+        lat = None
+        for key in self.log.get_param('observatory_latitude_key').split(','):
+            if key in self.science_header:
+                lat = self.science_header[key]
+                break
+
+        long = None
+        for key in self.log.get_param('observatory_longitude_key').split(','):
+            if key in self.science_header:
+                long = self.science_header[key]
+                break
+
+        if lat and long:
+            try:
+                if isinstance(lat, str):
+                    observatory = plc.Observatory(plc.Degrees(lat.replace(',', '.')),
+                                                  plc.Degrees(long.replace(',', '.')))
+                    self.auto_location.set(observatory.coord())
+                    self.location_choice_0['state'] = self.NORMAL
+                elif isinstance(lat, float):
+                    observatory = plc.Observatory(plc.Degrees(lat), plc.Degrees(long))
+                    self.auto_location.set(observatory.coord())
+                    self.location_choice_0['state'] = self.NORMAL
+            except:
+                pass
+
+        self.update_location()
+
+    def update_location(self, *event):
+
+        if self.location_choice.get() == 0:
+
+            self.manual_location.disable()
+            self.location.set(self.auto_location.get())
+
+        else:
+
+            self.manual_location.activate()
+            self.manual_location.widget.focus()
+            self.location.set(self.manual_location.get())
+
+    def choose_location(self, *event):
+
+        try:
+
+            observatory = plc.Observatory(plc.Degrees(self.location.get().split(' ')[0]),
+                                          plc.Degrees(self.location.get().split(' ')[1]))
+            self.location_test.set('   OK   ')
+
+        except:
+            self.location_test.set('Wrong coordinates\nyou cannot proceed')
+
+        self.update_save_button()
+        self.location_window.hide()
+
     def update_exposure_time_key(self, *event):
 
         if self.exposure_time_key.get() in self.science_header:
-            self.exposure_time_key_test.set('Keyword found - OK')
+            self.exposure_time_key_test.set('   OK   ')
         else:
             self.exposure_time_key_test.set('Keyword not found\nyou cannot proceed')
 
@@ -581,7 +752,7 @@ class DataTargetWindow(MainWindow):
 
     def update_observation_date_key(self, *event):
         if self.observation_date_key.get() in self.science_header:
-            self.observation_date_key_test.set('Keyword found - OK')
+            self.observation_date_key_test.set('   OK   ')
 
             if len(self.science_header[self.observation_date_key.get()].split('T')) == 2:
                 self.observation_time_key.set(self.observation_date_key.get())
@@ -599,7 +770,7 @@ class DataTargetWindow(MainWindow):
     def update_observation_time_key(self, *event):
 
         if self.observation_time_key.get() in self.science_header:
-            self.observation_time_key_test.set('Keyword found - OK')
+            self.observation_time_key_test.set('   OK   ')
         else:
             self.observation_time_key_test.set('Keyword not found\nyou cannot proceed')
 
@@ -643,16 +814,44 @@ class DataTargetWindow(MainWindow):
 
     def check_filter(self):
 
-        if self.filter.get() == 'default':
+        if self.filter.get() not in filter_map:
+
+            for filter in filter_translations:
+                if self.filter.get() in filter_translations[filter]:
+                    self.filter.set(filter)
+
+        if self.filter.get() not in filter_map:
+
+            for key in self.log.get_param('filter_key').split(','):
+                if key in self.science_header:
+                    self.filter.set(self.science_header[key])
+                    break
+
+            for filter in filter_translations:
+                if self.filter.get() in filter_translations[filter]:
+                    self.filter.set(filter)
+
+        if self.filter.get() not in filter_map:
+
+            self.filter.set(self.log.get_param('filter'))
+
+            for filter in filter_translations:
+                if self.filter.get() in filter_translations[filter]:
+                    self.filter.set(filter)
+
+        if self.filter.get() not in filter_map:
+            self.filter.set('No filter chosen')
             self.filter_test.set('Filter not valid\nyou cannot proceed')
         else:
-            self.filter_test.set('OK')
+            self.filter_test.set('   OK   ')
 
         self.update_save_button()
 
     def update_save_button(self, *event):
 
-        if (self.science_files > 0 and 'OK' in self.target_ra_dec_test.get() and
+        if (self.science_files > 0 and
+                'OK' in self.location_test.get() and
+                'OK' in self.target_ra_dec_test.get() and
                 'OK' in self.exposure_time_key_test.get() and
                 'OK' in self.observation_date_key_test.get() and
                 'OK' in self.observation_time_key_test.get() and
@@ -665,20 +864,69 @@ class DataTargetWindow(MainWindow):
             self.save_and_return_button.disable()
             self.save_and_proceed_button.disable()
 
+    def crop_to_selected_area(self):
+
+        x1, x2 = self.initial_figure.ax.get_xlim()
+        y1, y2 = self.initial_figure.ax.get_ylim()
+
+        self.crop_x1.set(int(max(0, x1)))
+        self.crop_x2.set(int(min(x2, len(self.science_data[0]))))
+        self.crop_y1.set(int(max(0, y1)))
+        self.crop_y2.set(int(min(y2, len(self.science_data))))
+
+        self.update_preview()
+
+    def update_preview(self):
+
+        data_frame = np.ones_like(self.science_data) * self.science_data
+
+        data_frame = data_frame[self.crop_y1.get(): self.crop_y2.get()]
+        data_frame = data_frame[:, self.crop_x1.get(): self.crop_x2.get()]
+
+        bin_fits = self.bin_fits.get()
+        if bin_fits > 1:
+            data_frame = bin_frame(data_frame, bin_fits)
+
+        try:
+            os.remove('.test_size.fits')
+        except:
+            pass
+
+        hdu= pf.CompImageHDU(header=self.science_header, data=np.array(data_frame, dtype=np.int32))
+        plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '.test_size.fits')
+
+        self.final_figure_size.set(
+            'Image after reduction: {0} MB'.format(round(os.stat('.test_size.fits').st_size/1024.0/1024.0, 2))
+        )
+
+        os.remove('.test_size.fits')
+
+        self.final_figure.load_fits(hdu, input_name='This is only an example of the reduction output.  '
+                                                    'Select the area to crop on the left image.')
+        # self.final_figure.draw()
+
     def save(self):
 
         self.log.set_param('observation_files', self.observation_files.get())
         self.log.set_param('bias_files', self.bias_files.get())
         self.log.set_param('dark_files', self.dark_files.get())
+        self.log.set_param('dark_flat_files', self.dark_flat_files.get())
         self.log.set_param('flat_files', self.flat_files.get())
         self.log.set_param('bin_fits', self.bin_fits.get())
-        self.log.set_param('crop_fits', self.crop_fits.get())
+        self.log.set_param('crop_x1', self.crop_x1.get())
+        self.log.set_param('crop_x2', self.crop_x2.get())
+        self.log.set_param('crop_y1', self.crop_y1.get())
+        self.log.set_param('crop_y2', self.crop_y2.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())
         self.log.set_param('manual_target_ra_dec', self.manual_target_ra_dec.get())
         self.log.set_param('simbad_target_name', self.simbad_target_name.get())
         self.log.set_param('target_ra_dec', self.target_ra_dec.get())
         self.log.set_param('target_name', self.target_name.get())
+        self.log.set_param('location_choice', self.location_choice.get())
+        self.log.set_param('auto_location', self.auto_location.get())
+        self.log.set_param('manual_location', self.manual_location.get())
+        self.log.set_param('location', self.location.get())
         self.log.set_param('time_stamp', self.time_stamp.get())
         self.log.set_param('exposure_time_key', self.exposure_time_key.get())
         self.log.set_param('observation_date_key', self.observation_date_key.get())

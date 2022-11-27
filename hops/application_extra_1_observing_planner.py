@@ -1,35 +1,18 @@
 
-import os
-import glob
-import time
 import datetime
 import numpy as np
-import matplotlib
-from matplotlib.cm import Greys, Greys_r
-import matplotlib.patches as mpatches
-import hops.pylightcurve3 as plc
-from matplotlib.backend_bases import MouseEvent as mpl_MouseEvent
-from astroquery.simbad import Simbad
+import pylightcurve41 as plc
 
 from hops.application_windows import MainWindow
-
-from scipy.optimize import curve_fit as scipy_curve_fit
-import warnings
-
-def curve_fit(*args, **kwargs):
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message='Covariance of the parameters could not be estimated')
-        return scipy_curve_fit(*args, **kwargs)
 
 
 def test_coordinates2(ra_string, dec_string):
 
     try:
-        coord = plc.Target(plc.Hours(ra_string), plc.Degrees(dec_string))
+        plc.FixedTarget(plc.Hours(ra_string), plc.Degrees(dec_string))
         return [True, 'Coordinates\naccepted']
     except:
         return [False, 'Wrong\ncoordinates']
-
 
 
 def test_date(year_month_string):
@@ -166,16 +149,12 @@ class ObservingPlannerWindow(MainWindow):
     def search_object(self):
 
         try:
-            result_table = Simbad.query_object(self.target_search.get())[0]
+            target = plc.simbad_search_by_name(self.target_search.get())
 
-            if result_table:
-                try:
-                    xx = result_table['MAIN_ID'].decode("utf-8")
-                except:
-                    xx = result_table['MAIN_ID']
-                self.target.set(xx)
-                self.target_ra.set(str(result_table['RA']))
-                self.target_dec.set(str(result_table['DEC']))
+            if target:
+                self.target.set(target.name)
+                self.target_ra.set(target.ra.hms())
+                self.target_dec.set(target.dec.dms_coord())
             else:
                 self.target_ra.set('')
                 self.target_dec.set('')
@@ -190,9 +169,9 @@ class ObservingPlannerWindow(MainWindow):
         self.update_window()
 
     def plot(self):
-        self.ax1.cla()
+            self.ax1.cla()
 
-        try:
+        # try:
 
             name = self.target.get()
             if name == 'No results':
@@ -213,92 +192,17 @@ class ObservingPlannerWindow(MainWindow):
                           self.target_ra.get(), self.target_dec.get(), self.obs_year_month.get(), self.ax1,
                           name, self.observatory.get())
 
-        except:
-            pass
+        # except:
+        #     pass
 
-        self.figure.draw()
-
-    def target_azimuth_altitude(self, target_ra, target_dec, observatory_latitude, sidereal_time):
-
-        observatory_latitude *= np.pi / 180
-        target_dec *= np.pi / 180
-
-        ha = sidereal_time - target_ra / 15
-        if ha < 0:
-            ha += 24
-
-        altitude = np.arcsin(np.clip(np.sin(target_dec) * np.sin(observatory_latitude)
-                                     + np.cos(target_dec) * np.cos(observatory_latitude) * np.cos(
-            ha * 15 * np.pi / 180), -1, 1))
-
-        azimuth = np.pi - np.arccos(np.clip((np.sin(target_dec) - np.sin(altitude) * np.sin(observatory_latitude)) /
-                                            (np.cos(altitude) * np.cos(observatory_latitude)), -1, 1))
-
-        if ha >= 12:
-            azimuth = 2 * np.pi - azimuth
-
-        return azimuth * 180 / np.pi, altitude * 180 / np.pi
-
-    def get_target_events(self, target_ra, target_dec, observatory_latitude, horizon):
-
-        # horizon
-
-        horizon_list = []
-        for horizon_line in horizon.split('\n'):
-            if horizon_line != '':
-                horizon_list.append(horizon_line.split())
-        if len(horizon_list) == 1:
-            def horizon(azimuth):
-                return float(horizon_list[0][0])
-        else:
-            horizon_list.append([360.0, horizon_list[0][0]])
-            horizon_data = np.swapaxes(np.array(horizon_list, dtype=float), 0, 1)
-            horizon = plc.interp1d(horizon_data[0], horizon_data[1])
-
-        # horizon
-
-        sidereal_time_list = list(np.arange(0, 24, 0.1)) + [24]
-        sidereal_time_altitude_list = []
-
-        for sidereal_time in sidereal_time_list:
-            azimuth, altitude = self.target_azimuth_altitude(target_ra, target_dec, observatory_latitude, sidereal_time)
-            sidereal_time_altitude_list.append([sidereal_time, altitude - horizon(azimuth)])
-
-        sidereal_time_altitude_list.sort()
-        sidereal_time_altitude_list = np.swapaxes(sidereal_time_altitude_list, 0, 1)
-        sidereal_time_altitude_function = plc.interp1d(np.array(sidereal_time_altitude_list[0]),
-                                                       np.array(sidereal_time_altitude_list[1]))
-
-        def target_horizon_diference(x, st):
-            return sidereal_time_altitude_function(st)
-
-        # find events
-
-        events = []
-
-        test_alt = sidereal_time_altitude_function(sidereal_time_list[0])
-        for sidereal_time in sidereal_time_list:
-            new_test_alt = sidereal_time_altitude_function(sidereal_time)
-            if test_alt * new_test_alt < 0:
-                popt, pcov = curve_fit(target_horizon_diference, [0], [0], p0=[sidereal_time - 0.1])
-                if test_alt < new_test_alt:
-                    events.append([popt[0], 'target_rise'])
-                else:
-                    events.append([popt[0], 'target_set'])
-            else:
-                pass
-
-            test_alt = new_test_alt
-
-        return events, sidereal_time_altitude_function
+            self.figure.draw()
 
     def avc_plot(self, latitude, longitude, tmzn, horizon, target_ra, target_dec, year_mont_string, ax, name,
                  observatory_name):
         ax.cla()
 
-        target = plc.Target(plc.Hours(target_ra), plc.Degrees(target_dec))
+        target = plc.FixedTarget(plc.Hours(target_ra), plc.Degrees(target_dec))
         observatory = plc.Observatory(plc.Degrees(latitude), plc.Degrees(longitude), tmzn, horizon)
-        observation = plc.Observation(target, observatory)
 
         year = int(year_mont_string.split()[0])
         month = int(year_mont_string.split()[1])
@@ -311,117 +215,59 @@ class ObservingPlannerWindow(MainWindow):
         else:
             days = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-        time_0 = plc.LT('{0}-{1}-1 12:00:00'.format(year, month), observatory)
-        jd_0 = time_0.jd
-
-        time_1 = plc.JD(jd_0 + days[month])
+        time_0 = plc.UTC('{0}-{1}-1 12:00:00'.format(year, month)) - plc.DTime(hours=tmzn)
+        jd_0 = time_0.jd()
 
         events = []
 
         # mid-day splits
 
         for jj in range(days[month] + 1):
-            events.append([plc.JD(time_0.jd + jj), 'mid-day'])
+            events.append([time_0 + plc.DTime(days=jj), 'mid-day'])
 
         # target rise/set events
 
-        events += observation.rise_set_events(time_0, time_1)
+        events += observatory.target_horizon_crossings(target, time_0, days[month])
 
         # sun rise/set events
 
         for jj in range(days[month]):
 
-            check_time = plc.JD(time_0.jd + jj)
-            check_st = check_time.lst(observatory).hours
+            check_time = time_0 + plc.DTime(days=jj)
 
-            sun = check_time.get_sun()
+            sun = plc.Sun(check_time)
+            fixed_sun = plc.FixedTarget(sun.ra, sun.dec)
 
-            # sun rise/set
+            # # sun rise/set
+            sun_events = observatory.target_horizon_crossings(fixed_sun, check_time, 1)
+            for i in range(len(sun_events)):
+                if sun_events[i][1] == 'rise':
+                    sun_events[i][1] = 'sun_rise'
+                elif sun_events[i][1] == 'set':
+                    sun_events[i][1] = 'sun_set'
 
-            if - (90 - observatory.latitude.deg_pm) < sun.dec.deg_pm < 90 - observatory.latitude.deg_pm:
-
-                rise_ha = np.arccos(- sun.dec.tan * observatory.latitude.tan) * 12 / np.pi
-
-                if rise_ha < 12:
-                    set_ha = rise_ha
-                    rise_ha = 24 - rise_ha
-                else:
-                    set_ha = 24 - rise_ha
-
-                rise_st = rise_ha + sun.ra.hours
-                if rise_st > 24:
-                    rise_st -= 24
-
-                set_st = set_ha + sun.ra.hours
-                if set_st > 24:
-                    set_st -= 24
-
-                if rise_st < check_st:
-                    next_rise_in_st_hours = 24 + rise_st - check_st
-                else:
-                    next_rise_in_st_hours = rise_st - check_st
-
-                if set_st < check_st:
-                    next_set_in_st_hours = 24 + set_st - check_st
-                else:
-                    next_set_in_st_hours = set_st - check_st
-
-                dt = next_rise_in_st_hours * (23.9344696 / 24)
-                if dt < 24:
-                    events.append([plc.JD(check_time.jd + dt / 24), 'sun_rise'])
-
-                dt = next_set_in_st_hours * (23.9344696 / 24)
-                if dt < 24:
-                    events.append([plc.JD(check_time.jd + dt / 24), 'sun_set'])
+            events += sun_events
 
             # sun -18 rise/set
 
-            if - (90 - observatory.latitude.deg_pm + 18.0) < sun.dec.deg_pm < 90 - (observatory.latitude.deg_pm + 18):
+            twilight_events = observatory.target_altitude_crossings(fixed_sun, check_time, 1, plc.Degrees(-18))
+            for i in range(len(twilight_events)):
+                if twilight_events[i][1] == 'rise':
+                    twilight_events[i][1] = 'sun_rise_18'
+                elif twilight_events[i][1] == 'set':
+                    twilight_events[i][1] = 'sun_set_18'
 
-                rise_ha = np.arccos(np.sin((-18.0) * np.pi / 180) / sun.dec.cos / observatory.latitude.cos
-                                    - sun.dec.tan * observatory.latitude.tan) * 12 / np.pi
-                if rise_ha < 12:
-                    set_ha = rise_ha
-                    rise_ha = 24 - rise_ha
-                else:
-                    set_ha = 24 - rise_ha
+            events += twilight_events
 
-                rise_st = rise_ha + sun.ra.hours
-                if rise_st > 24:
-                    rise_st -= 24
-
-                set_st = set_ha + sun.ra.hours
-                if set_st > 24:
-                    set_st -= 24
-
-                if rise_st < check_st:
-                    next_rise_in_st_hours = 24 + rise_st - check_st
-                else:
-                    next_rise_in_st_hours = rise_st - check_st
-
-                if set_st < check_st:
-                    next_set_in_st_hours = 24 + set_st - check_st
-                else:
-                    next_set_in_st_hours = set_st - check_st
-
-                dt = next_rise_in_st_hours * (23.9344696 / 24)
-                if dt < 24:
-                    events.append([plc.JD(check_time.jd + dt / 24), 'sun_rise_18'])
-
-                dt = next_set_in_st_hours * (23.9344696 / 24)
-                if dt < 24:
-                    events.append([plc.JD(check_time.jd + dt / 24), 'sun_set_18'])
-
-        events2 = [[ff[0].jd, ff[0], ff[1]] for ff in events]
+        events2 = [[ff[0].jd(), ff[0], ff[1]] for ff in events]
         events2.sort(key=lambda ff: ff[0])
 
-        #
-        maxalt = str(round(observation.max_altitude.deg_pm, 1))
+        # for i in events2:
+        #     print(i)
 
         ax.xaxis.tick_top()
 
-        ax.set_title(observatory_name + '\n' + name + '   ' + months[month] + ' ' + str(year) +
-                     '    max. alt. = ' + maxalt + ' degrees')
+        ax.set_title(observatory_name + '\n' + name + '   ' + months[month] + ' ' + str(year))
         ax.set_xlim((0, 1))
         ax.set_xlabel('HOUR (UTC{0:+.1f})'.format(tmzn))
         ax.set_xticks(np.arange(0, 24.5, 1))
@@ -434,14 +280,10 @@ class ObservingPlannerWindow(MainWindow):
                        labelright=False, labelleft=True)
         ax.grid(True, axis='y', linestyle='--')
 
-        check_full_moon = plc.UTC('2000-1-21 04:41:00')
-
         for jj, ii in enumerate(events2[:-1]):
 
-            moonphase = (np.sin((float(ii[0] + 0.5) - float(check_full_moon.jd)) * np.pi / 29.530589)) ** 2
-
             test_jd = 0.5 * (ii[0] + events2[jj + 1][0])
-            dt_jd = 0.5 * (events2[jj + 1][0] - ii[0])
+            check_time = plc.JD(test_jd )
 
             day = 1 + int(test_jd - jd_0)
 
@@ -451,17 +293,17 @@ class ObservingPlannerWindow(MainWindow):
                 time_range[1] = 24
 
             alpha = 1
-            if not observation.is_target_visible(plc.JD(ii[0] + dt_jd)):
+            if not observatory.is_target_visible(target, check_time):
                 color = 'w'
                 alpha = 0
             else:
-                sun_az, sun_alt = observation.sun_azimuth_altitude(plc.JD(ii[0] + dt_jd))
-                if sun_alt.deg_pm > 0:
+                sun_az, sun_alt = observatory.target_azimuth_altitude(plc.Sun(check_time), check_time)
+                if sun_alt.deg_coord() > 0:
                     color = 'y'
-                elif sun_alt.deg_pm > -18:
+                elif sun_alt.deg_coord() > -18:
                     color = 'r'
                 else:
-                    color = str(0.8 * (1 - moonphase))
+                    color = str(0.8 * plc.Moon(check_time).illumination())
 
             ax.plot(time_range, [day, day], linewidth=2.5, color=color, alpha=alpha)
 

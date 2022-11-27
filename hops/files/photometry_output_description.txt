@@ -36,11 +36,12 @@ uncertainties can be approximated by dividing the reported uncertainties with th
 --- PHOTOMETRY_a.txt ---
 Contains all the data related to the aperture photometry method. The columns contain
 the following information (in order):
-1. exposure start time in JD_UTC
-2. target x position in pixels
-3. comparison 1 x position in pixels
-. comparison 2 x position in pixels
-. comparison 3 x position in pixels
+1. file name
+2. exposure start time in JD_UTC
+3. target x position in pixels
+4. comparison 1 x position in pixels
+5 comparison 2 x position in pixels
+6 comparison 3 x position in pixels
 ...
 . target y position in pixels
 . comparison 1 y position in pixels
@@ -71,9 +72,12 @@ the following information (in order):
 --- PHOTOMETRY_g.txt ---
 Contains all the data related to the PSF fitting photometry method. The columns contain
 the following information (in order):
-1. exposure start time in JD_UTC
-2. target x position in pixels
-3. comparison 1 x position in pixels
+1. file name
+2. exposure start time in JD_UTC
+3. target x position in pixels
+4. comparison 1 x position in pixels
+5 comparison 2 x position in pixels
+6 comparison 3 x position in pixels
 . comparison 2 x position in pixels
 . comparison 3 x position in pixels
 ...
