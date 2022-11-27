@@ -54,7 +54,7 @@ class ReductionWindow(MainWindow):
 
         t0 = time.time()
         _ = plc.mean_std_from_median_mad(test_fits_data.data)
-        self.fr_time = int(200 * (time.time()-t0))
+        self.fr_time = int(2000 * (time.time()-t0))
 
         self.progress_figure = self.FitsWindow(input=test_fits_data, input_name=self.science_files[0])
         self.progress_bias = self.Progressbar(task="Loading bias frames")
@@ -387,6 +387,11 @@ class ReductionWindow(MainWindow):
             if timing:
                 print('Reduction, binning and cropping: ', time.time()-t0)
 
+            if self.science_counter == 1:
+                t0 = time.time()
+                _ = plc.mean_std_from_median_mad(data_frame)
+                self.fr_time = int(2000 * (time.time()-t0))
+
             t0 = time.time()
             mean, std = plc.mean_std_from_median_mad(data_frame, samples=10000)
             if timing:
@@ -486,7 +491,6 @@ class ReductionWindow(MainWindow):
 
             if timing:
                 print('Saving: ', time.time()-t0)
-            # counter
 
             self.progress_science.update()
             self.science_counter += 1
@@ -494,7 +498,7 @@ class ReductionWindow(MainWindow):
             if self.science_counter >= len(self.science_files):
                 self.after(self.save)
             else:
-                if self.progress_science_loop.get() or self.science_counter == 0:
+                if self.progress_science_loop.get() or self.science_counter == 1:
                     self.progress_figure.load_fits(hdu, new_name)
 
                 self.after(self.reduce_science, time=self.fr_time)

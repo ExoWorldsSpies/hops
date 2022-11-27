@@ -1,5 +1,5 @@
 
-__all__ = ['AppWindow', 'MainWindow', 'AddOnWindow']
+__all__ = ['MainWindow', 'AddOnWindow']
 
 import os
 import time
@@ -85,11 +85,32 @@ class HOPSWindow:
 
         self.root.update()
 
-    def after(self, function, time=10):
+    def after(self, function=None, time=10):
 
-        xx = self.root.after(time, function)
-        self.jobs.append(xx)
-        self.update_idletasks()
+        if function:
+
+            def nested_after(function1, function2):
+
+                def xx():
+                    function1()
+                    self.root.after(time, function2)
+
+                return xx
+
+            def internal_command():
+
+                if isinstance(function, list):
+                    functions = [nested_after(function[-2], function[-1])]
+                    for i in range(len(function) - 2):
+                        functions.append(nested_after(function[-i-3], functions[-1]))
+                    self.root.after(time, functions[-1])
+
+                else:
+                    function()
+
+            xx = self.root.after(time, internal_command)
+            self.jobs.append(xx)
+            self.update_idletasks()
 
     def update_idletasks(self):
 
@@ -165,29 +186,7 @@ class HOPSWindow:
 
         self.mainloop_on = True
 
-        if f_after:
-
-            def nested_after(function1, function2):
-
-                def xx():
-                    function1()
-                    self.after(function2)
-
-                return xx
-
-            def internal_command():
-
-                if isinstance(f_after, list):
-                    functions = [nested_after(f_after[-2], f_after[-1])]
-                    for i in range(len(f_after)-2):
-
-                        functions.append(nested_after(f_after[-i-3], functions[-1]))
-                    self.after(functions[-1])
-
-                else:
-                    f_after()
-
-            self.after(internal_command)
+        self.after(f_after)
 
         self.root.mainloop()
 
@@ -861,6 +860,8 @@ class HOPSFitsWindow(HOPSWidget):
             self.canvas.callbacks.connect('motion_notify_event', self.move)
             self.canvas.callbacks.connect('button_press_event', self.pick)
             self.canvas.callbacks.connect('button_release_event', self.pick)
+        else:
+            self.canvas.stop_event_loop
 
         if input:
             self.load_fits(input, input_name, input_options)
@@ -1127,14 +1128,6 @@ class HOPSFitsWindow(HOPSWidget):
 
     def draw(self, update_level=1):
         self.canvas.draw()
-        # if update_level == 0:
-        #     pass
-        # elif update_level == 1:
-        #     self.window.update_idletasks()
-        # elif update_level == 2:
-        #     self.window.update()
-
-        self.after(self.canvas.draw)
 
     def disable(self):
         for child in self.widget.winfo_children():

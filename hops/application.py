@@ -171,7 +171,8 @@ class HOPS(MainWindow):
 
         structure.append([])
 
-        structure.append([[self.my_profile_window.Button(text='SAVE CHANGES & CLOSE WINDOW', command=self.update_local_log_profile), 0, 6]])
+        structure.append([[self.my_profile_window.Button(text='SAVE CHANGES & CLOSE WINDOW',
+                                                         command=self.update_local_log_profile), 0, 6]])
         structure.append([])
 
         self.my_profile_window.setup_window(structure)
