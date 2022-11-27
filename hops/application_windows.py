@@ -27,7 +27,7 @@ except ImportError:
 from matplotlib.cm import Greys, Greys_r
 from astropy.io import fits as pf
 
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 from hops.hops_tools.fits import get_fits_data
 from hops.application_log import HOPSLog
 

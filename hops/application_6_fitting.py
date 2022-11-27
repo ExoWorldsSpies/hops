@@ -3,9 +3,9 @@ import os
 import glob
 import numpy as np
 import shutil
-import pylightcurve41 as plc
 import matplotlib.image as mpimg
 import matplotlib.gridspec as gridspec
+import hops.pylightcurve41 as plc
 
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import MouseEvent as mpl_MouseEvent

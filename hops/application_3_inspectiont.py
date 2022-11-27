@@ -1,7 +1,7 @@
 
 import os
 import numpy as np
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 import matplotlib.patches as mpatches
 
 from matplotlib.backend_bases import MouseEvent as mpl_MouseEvent

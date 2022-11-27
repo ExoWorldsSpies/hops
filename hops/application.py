@@ -5,7 +5,7 @@ import os
 import glob
 import datetime
 import webbrowser
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 
 from .application_log import HOPSLog
 from .application_windows import MainWindow

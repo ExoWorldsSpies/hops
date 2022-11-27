@@ -6,9 +6,9 @@ import shutil
 import warnings
 import matplotlib
 import webbrowser
-import pylightcurve41 as plc
 import matplotlib.patches as mpatches
 import matplotlib.gridspec as gridspec
+import hops.pylightcurve41 as plc
 
 from astropy.io import fits as pf
 from matplotlib.cm import Greys, Greys_r

@@ -1,7 +1,7 @@
 
 import datetime
 import numpy as np
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 
 from hops.application_windows import MainWindow
 

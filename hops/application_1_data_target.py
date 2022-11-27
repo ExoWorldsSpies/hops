@@ -1,7 +1,8 @@
 
 import os
 import numpy as np
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
+
 from astropy.io import fits as pf
 
 from hops.hops_tools.fits import *

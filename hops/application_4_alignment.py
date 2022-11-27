@@ -2,7 +2,7 @@
 import os
 import time
 import numpy as np
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 import matplotlib.patches as mpatches
 
 from astropy.io import fits as pf

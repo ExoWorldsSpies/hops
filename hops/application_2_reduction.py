@@ -3,7 +3,7 @@ import os
 import time
 import numpy as np
 import shutil
-import pylightcurve41 as plc
+import hops.pylightcurve41 as plc
 
 from astropy.io import fits as pf
 
