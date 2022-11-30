@@ -50,6 +50,9 @@ def copy_yaml(dictionary):
 def open_fits(path):
     with pf.open(path, memmap=False) as hdulist:
         internal_copy = copy_fits(hdulist)
+        for i in internal_copy:
+            while i.header[-1] == '':
+                i.header = i.header[:-1]
     internal_copy.verify('fix')
     return internal_copy
 
