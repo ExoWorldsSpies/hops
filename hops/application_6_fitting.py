@@ -437,7 +437,6 @@ class FittingWindow(MainWindow):
                 self.periastron.disable()
 
         except:
-            print(self.log.get_param('location'))
             if self.log.get_param('location') == '+dd:mm:ss +dd:mm:ss':
                 self.showinfo('Test failed', 'Test failed! Please update the location of your telescope '
                                              'in the SELECT DATA & TARGET window.')
