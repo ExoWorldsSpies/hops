@@ -76,7 +76,9 @@ class FittingWindow(MainWindow):
         if self.log.get_param('light_curve_file') not in photometry_files:
             self.log.set_param('light_curve_file', 'Choose Light-curve file')
         
-        self.light_curve_file = self.DropDown(initial=self.log.get_param('light_curve_file'), options=photometry_files,
+        self.light_curve_file = self.DropDown(initial=self.log.get_param('light_curve_file'),
+                                              instance=str,
+                                              options=photometry_files,
                                               width=40, command=self.update_lc)
 
         self.iterations = self.Entry(value=self.log.get_param('iterations'), instance=int)
@@ -246,6 +248,7 @@ class FittingWindow(MainWindow):
         # extra windows
 
         self.export_window_database = self.export_window.DropDown(initial='ExoClock', options=['ExoClock', 'ETD'],
+                                                                  instance=str,
                                                                   command=self.export_window_update)
         self.export_window_camera_gain = self.export_window.Entry(value='1', instance=float)
         self.export_window_time_shift = 0

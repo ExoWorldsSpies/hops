@@ -114,7 +114,7 @@ class PhotometryWindow(MainWindow):
         self.show_good_comparisons = self.CheckButton(text='Show stars with flux similar\nto the target (+/- %):',
                                                       initial=self.log.get_param('show_good_comparisons'),
                                                       command=self.update_window)
-        self.show_good_comparisons_percent = self.DropDown(initial=float(self.log.get_param('show_good_comparisons_percent')),
+        self.show_good_comparisons_percent = self.DropDown(initial=self.log.get_param('show_good_comparisons_percent'),
                                                            options=[10, 20, 30, 40, 50], instance=float,
                                                            command=self.update_window, width=8)
 
@@ -265,8 +265,9 @@ class PhotometryWindow(MainWindow):
         photometry_folders = sorted(photometry_folders, key=lambda x: photometry_order(x))
         photometry_folders = ['Load options from previous run'] + photometry_folders
         self.photometry_folder_to_load = self.DropDown(initial='Load options from previous run',
-                                               options=photometry_folders,
-                                               width=40, command=self.load_options)
+                                                       instance='str',
+                                                       options=photometry_folders,
+                                                       width=40, command=self.load_options)
 
         self.run_message = self.Label(text='')
 

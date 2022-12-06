@@ -545,10 +545,14 @@ class HOPSCheckButton(HOPSWidget):
 
 class HOPSDropDown(HOPSWidget):
 
-    def __init__(self, window, initial=' ', options=[], instance=str, command=None, width=None):
+    def __init__(self, window, initial, options, instance, command=None, width=None):
 
-        if initial not in options:
-            raise RuntimeError('DropDown menu: Not valid initial value ({0}).'.format(initial))
+        try:
+            initial = instance(initial)
+            if initial not in options:
+                initial = options[0]
+        except:
+            initial = options[0]
 
         self.variable = StringVar(window.root, value=initial)
         self.instance = instance

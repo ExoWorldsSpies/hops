@@ -111,6 +111,7 @@ class DataTargetWindow(MainWindow):
         self.observation_time_key_test = self.Label(text=' ')
 
         self.time_stamp = self.DropDown(initial=self.log.get_param('time_stamp'),
+                                        instance=str,
                                         options=['exposure start', 'mid-exposure', 'exposure end'])
 
         self.select_target_button = self.Button(text='Select/Change target', command=self.target_window.show)
@@ -123,10 +124,9 @@ class DataTargetWindow(MainWindow):
         self.location_test = self.Label(text='')
 
         filters = ['No filter chosen'] + list(filter_map.keys())
-        try:
-            self.filter = self.DropDown(initial=self.log.get_param('filter') , options=filters, command=self.check_filter)
-        except:
-            self.filter = self.DropDown(initial='No filter chosen' , options=filters, command=self.check_filter)
+        self.filter = self.DropDown(initial=self.log.get_param('filter'),
+                                        instance=str,
+                                        options=filters, command=self.check_filter)
         self.filter_test = self.Label(text=' ')
 
         self.show_advanced_settings_button = self.Button(text='Advanced settings',
@@ -280,16 +280,12 @@ class DataTargetWindow(MainWindow):
 
         # advanced settings window
 
-        try:
-            initial_bin = self.log.get_param('bin_fits')
-            initial_bin = max(1, initial_bin)
-            initial_bin = min(initial_bin, 4)
-        except:
-            print('WARNING the bin_fits parameter should be 1, 2, 3 or 4. Re-setting it to 1.')
-            initial_bin = 1
-
-        self.bin_fits = self.advanced_settings_window.DropDown(initial=initial_bin, options=[1, 2, 3, 4],
+        self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
+                                                               options=[1, 2, 3, 4],
                                                                instance=int, command=self.update_preview)
+        self.crop_edge_pixels = self.advanced_settings_window.DropDown(initial=self.log.get_param('crop_edge_pixels'),
+                                                                       options=np.int_(np.arange(0, 50, 1)),
+                                                                       instance=int, command=self.update_preview)
 
         self.crop_x1 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x1'), instance=int)
         self.crop_x2 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x2'), instance=int)
@@ -310,15 +306,22 @@ class DataTargetWindow(MainWindow):
 
         self.advanced_settings_window.setup_window([
             [
-                [self.advanced_settings_window.Label(text='Binning (use 2 for coloured cameras)'), 0],
-                [self.bin_fits, 1],
-            ],
-            [
                 [self.advanced_settings_window.Label(
                     text='To crop the original image (on the left panel),\n'
                          'zoom in to the area you want to select and then press "Select area".'
                 ), 0],
                 [self.advanced_settings_window.Button(text='Select area', command=self.crop_to_selected_area), 1]
+            ],
+            [
+                [self.advanced_settings_window.Label(
+                    text='Remove pixels from the edge of the image,\n'
+                         'useful for cameras with GPS data in the first rows/columns.'
+                ), 0],
+                [self.crop_edge_pixels, 1]
+            ],
+            [
+                [self.advanced_settings_window.Label(text='Binning (use 2 for coloured cameras)'), 0],
+                [self.bin_fits, 1],
             ],
             [],
             [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3]],
@@ -884,10 +887,12 @@ class DataTargetWindow(MainWindow):
         data_frame = data_frame[self.crop_y1.get(): self.crop_y2.get()]
         data_frame = data_frame[:, self.crop_x1.get(): self.crop_x2.get()]
 
-        bin_fits = self.bin_fits.get()
-        if bin_fits > 1:
-            data_frame = bin_frame(data_frame, bin_fits)
+        if self.crop_edge_pixels.get() > 0:
+            data_frame = data_frame[self.crop_edge_pixels.get():-self.crop_edge_pixels.get(),
+                                    self.crop_edge_pixels.get():-self.crop_edge_pixels.get()]
 
+        if self.bin_fits.get() > 1:
+            data_frame = bin_frame(data_frame, self.bin_fits.get())
         try:
             os.remove('.test_size.fits')
         except:
