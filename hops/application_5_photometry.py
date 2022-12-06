@@ -1328,22 +1328,18 @@ class PhotometryProgressWindow(MainWindow):
         visible_fov_x_max = self.log.get_param('max_x')
         visible_fov_y_max = self.log.get_param('max_y')
 
-        fov = self.FitsWindow(input=self.first_fits[1], input_options=self.log.get_param('photometry_fov_options'),
-                              subplots_adjust=(0.01, 0.99, 0.05, 0.89))
-        options = self.log.get_param('photometry_fov_options')
+        fov = self.FitsWindow(input=self.first_fits[1], subplots_adjust=(0.01, 0.99, 0.05, 0.89))
 
         fov.ax.add_patch(mpatches.Rectangle((visible_fov_x_min + 1, visible_fov_y_min + 1),
                                              visible_fov_x_max - visible_fov_x_min - 2,
                                              visible_fov_y_max - visible_fov_y_min - 2,
                                              ec='r', fill=False))
 
-        text_y_drift = [-1,  1][int(options[3])]
-        text_x_drift = [1,  -1][int(options[4])]
         for target in range(self.targets):
 
             if target == 0:
-                fov.ax.text(self.targets_x_position[target] + text_x_drift * self.targets_aperture[target],
-                            self.targets_y_position[target] + text_y_drift * self.targets_aperture[target],
+                fov.ax.text(self.targets_x_position[target] + self.targets_aperture[target],
+                            self.targets_y_position[target] + self.targets_aperture[target],
                             '$T$({0})'.format(self.targets_aperture[target]), color='r', fontsize=8, va='top', ha='left')
                 circle = mpatches.Circle((self.targets_x_position[target], self.targets_y_position[target]),
                                          self.targets_aperture[target],
@@ -1358,8 +1354,8 @@ class PhotometryProgressWindow(MainWindow):
                     label = None
 
                 if self.progress_active[target].get():
-                    fov.ax.text(self.targets_x_position[target] + text_x_drift * self.targets_aperture[target],
-                                self.targets_y_position[target] + text_y_drift * self.targets_aperture[target],
+                    fov.ax.text(self.targets_x_position[target] + self.targets_aperture[target],
+                                self.targets_y_position[target] + self.targets_aperture[target],
                                 '$C_{0}$({1})'.format(target, self.targets_aperture[target]), color='#07fefc', fontsize=8, va='top', ha='left')
                     circle = mpatches.Circle((self.targets_x_position[target], self.targets_y_position[target]),
                                              self.targets_aperture[target],
@@ -1367,8 +1363,8 @@ class PhotometryProgressWindow(MainWindow):
                     fov.ax.add_patch(circle)
 
                 else:
-                    fov.ax.text(self.targets_x_position[target] + text_x_drift * self.targets_aperture[target],
-                                self.targets_y_position[target] + text_y_drift * self.targets_aperture[target],
+                    fov.ax.text(self.targets_x_position[target] + self.targets_aperture[target],
+                                self.targets_y_position[target] + self.targets_aperture[target],
                                 '$C_{0}$({1}) - Inactive'.format(target, self.targets_aperture[target]), color='#07fefc', fontsize=8, va='top', ha='left')
                     circle = mpatches.Circle((self.targets_x_position[target], self.targets_y_position[target]),
                                              self.targets_aperture[target],
