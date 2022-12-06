@@ -923,6 +923,7 @@ class DataTargetWindow(MainWindow):
         self.log.set_param('crop_x2', self.crop_x2.get())
         self.log.set_param('crop_y1', self.crop_y1.get())
         self.log.set_param('crop_y2', self.crop_y2.get())
+        self.log.set_param('crop_edge_pixels', self.crop_edge_pixels.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())
         self.log.set_param('manual_target_ra_dec', self.manual_target_ra_dec.get())
