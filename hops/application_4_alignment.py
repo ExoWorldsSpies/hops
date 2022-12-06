@@ -299,6 +299,9 @@ class AlignmentWindow(MainWindow):
 
         else:
 
+            self.settings_to_check = []
+            self.setting_checking = 0
+
             if self.test_level == 1:
                 self.stars = find_single_star(self.fits[1].data, self.x0, self.y0,
                                               window=self.shift_tolerance/self.star_std, mean=self.mean, std=self.std,
@@ -306,6 +309,10 @@ class AlignmentWindow(MainWindow):
                 if self.stars:
                     self.stars.append(2 * np.pi * self.stars[2] * self.stars[4] * self.stars[5])
                     self.stars = [self.stars]
+                    self.settings_to_check.append([self.stars[0][0], self.stars[0][1], self.u0, self.stars[0]])
+                    self.comparisons_to_check = self.comparisons
+
+                self.check_star()
 
             elif self.test_level == 2:
                 self.skip_time = time.time()
@@ -318,41 +325,116 @@ class AlignmentWindow(MainWindow):
                                                 star_std=self.star_std, verbose=True,
                                                 order_by_distance_and_flux=self.f0)[0]
                 self.progress_all_stars.set(' ')
-
-            elif self.test_level == 4:
-                if self.askyesno('HOPS - Alignment', 'Stars not found close to their previous positions.\n'
-                                                     'Do you want to skip this frame?'):
-                    self.after(self.plot_current)
-                self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
-                                                star_std=self.star_std, order_by_flux=self.f0, verbose=True)[0]
-                self.progress_all_stars.set(' ')
-
-            if self.stars:
-
-                self.settings_to_check = []
-
-                if self.test_level == 1:
-                    self.settings_to_check.append([self.stars[0][0], self.stars[0][1], self.u0, self.stars[0]])
-                    self.setting_checking = 0
-                    self.comparisons_to_check = self.comparisons
-                elif self.test_level == 2:
+                if self.stars:
                     for star in self.stars:
                         self.settings_to_check.append([star[0], star[1], self.u0, star])
                     self.comparisons_to_check = self.comparisons_snr
-                elif self.test_level == 3:
+
+                self.after(self.check_star)
+
+            elif self.test_level == 3:
+                if self.stars:
                     for star in self.stars:
                         for rotation in self.small_angles:
                             self.settings_to_check.append([star[0], star[1], rotation, star])
-                elif self.test_level == 4:
-                    for star in self.stars:
-                        self.settings_to_check.append([star[0], star[1], self.u0, star])
-                elif self.test_level == 5:
+
+                self.after(self.check_star)
+
+            elif self.test_level == 4:
+                if self.askyesno('HOPS - Alignment', 'Small drift or meridian flip not detected.\n'
+                                                     'Do you want to skip this frame?'):
+                    self.plot_current()
+                else:
+                    self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
+                                                star_std=self.star_std, order_by_flux=self.f0, verbose=True)[0]
+                    self.progress_all_stars.set(' ')
+
+                    if self.stars:
+                        for star in self.stars:
+                            self.settings_to_check.append([star[0], star[1], self.u0, star])
+
+                    self.after(self.check_star)
+
+            elif self.test_level == 5:
+                if self.stars:
                     for star in self.stars:
                         for rotation in self.large_angles:
                             self.settings_to_check.append([star[0], star[1], rotation, star])
 
-                self.setting_checking = 0
                 self.after(self.check_star)
+
+            #
+            # else:
+            #     if self.test_level == 1:
+            #         self.test_level = 2
+            #         self.progress_figure.draw()
+            #         self.progress_all_stars.set('Analysing frame...')
+            #         self.progress_alignment.show_message('Testing small shift...')
+            #         self.after(self.detect_stars)
+            #     elif self.test_level == 2:
+            #         self.test_level = 3
+            #         self.progress_alignment.show_message('Testing small shift & rotation...')
+            #         self.after(self.detect_stars)
+            #     elif self.test_level == 3:
+            #         self.test_level = 4
+            #         self.progress_all_stars.set('Analysing frame...')
+            #         self.progress_alignment.show_message('Testing large shift...')
+            #         self.after(self.detect_stars)
+            #     elif self.test_level == 4:
+            #         self.test_level = 5
+            #         self.progress_alignment.show_message('Testing large shift & rotation...')
+            #         self.after(self.detect_stars)
+            #     else:
+            #         self.after(self.plot_current)
+
+    def check_star(self):
+
+        if self.exit:
+            self.after(self.plot_current)
+
+        else:
+
+            if self.setting_checking < len(self.settings_to_check):
+
+                x, y, u, star = self.settings_to_check[self.setting_checking]
+                self.alignment_log('Checking star at: ', x, y, ', with rotation:', u)
+
+                if self.test_level > 1 and x != self.circle.center[0]:
+                    self.circle.set_center((x, y))
+                    self.progress_figure.draw()
+
+                test = 0
+
+                for comp in self.comparisons_to_check:
+
+                    check_x = int(x + comp[0] * np.cos(u + comp[1]))
+                    check_y = int(y + comp[0] * np.sin(u + comp[1]))
+                    if 0 < check_x < self.x_length and 0 < check_y < self.y_length:
+                        check_sum = np.sum(self.fits[1].data[check_y - self.int_psf:check_y + self.int_psf + 1,
+                                           check_x - self.int_psf:check_x + self.int_psf + 1])
+                        check_lim = (self.fits[1].header[self.log.mean_key] +
+                                     3 * self.fits[1].header[self.log.std_key]) * ((2 * self.int_psf + 1) ** 2)
+                        if check_sum > check_lim:
+                            test += 1
+                        else:
+                            test -= 1
+                    self.alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
+
+                    if abs(test) > self.check_num:
+                        break
+
+                if test >= self.check_num:
+                    self.stars_detected = True
+                    if self.test_level > 1:
+                        self.rotation_detected = True
+                    self.x0 = x
+                    self.y0 = y
+                    self.u0 = u
+                    self.f0 = star[-1]
+                    self.after(self.plot_current)
+                else:
+                    self.setting_checking += 1
+                    self.after(self.check_star)
             else:
                 if self.test_level == 1:
                     self.test_level = 2
@@ -374,80 +456,7 @@ class AlignmentWindow(MainWindow):
                     self.progress_alignment.show_message('Testing large shift & rotation...')
                     self.after(self.detect_stars)
                 else:
-                    self.after(self.plot_current)
-
-    def check_star(self):
-
-        if self.exit:
-            self.after(self.plot_current)
-
-        else:
-
-            x, y, u, star = self.settings_to_check[self.setting_checking]
-            self.alignment_log('Checking star at: ', x, y, ', with rotation:', u)
-
-            if self.redraw >= 1:
-                self.circle.set_center((x, y))
-                self.progress_figure.draw()
-                self.redraw = 0
-            else:
-                self.redraw += 0.01
-
-            test = 0
-
-            for comp in self.comparisons_to_check:
-
-                check_x = int(x + comp[0] * np.cos(u + comp[1]))
-                check_y = int(y + comp[0] * np.sin(u + comp[1]))
-                if 0 < check_x < self.x_length and 0 < check_y < self.y_length:
-                    check_sum = np.sum(self.fits[1].data[check_y - self.int_psf:check_y + self.int_psf + 1,
-                                       check_x - self.int_psf:check_x + self.int_psf + 1])
-                    check_lim = (self.fits[1].header[self.log.mean_key] +
-                                 3 * self.fits[1].header[self.log.std_key]) * ((2 * self.int_psf + 1) ** 2)
-                    if check_sum > check_lim:
-                        test += 1
-                    else:
-                        test -= 1
-                self.alignment_log('Check ref. star at: ', check_x, check_y, ', Test: ', test)
-
-                if abs(test) > self.check_num:
-                    break
-
-            if test >= self.check_num:
-                self.stars_detected = True
-                if self.test_level > 1:
-                    self.rotation_detected = True
-                self.x0 = x
-                self.y0 = y
-                self.u0 = u
-                self.f0 = star[-1]
-                self.after(self.plot_current)
-            else:
-                self.setting_checking += 1
-                if self.setting_checking < len(self.settings_to_check):
-                    self.after(self.check_star)
-                else:
-                    if self.test_level == 1:
-                        self.test_level = 2
-                        self.progress_figure.draw()
-                        self.progress_all_stars.set('Analysing frame...')
-                        self.progress_alignment.show_message('Testing small shift...')
-                        self.after(self.detect_stars)
-                    elif self.test_level == 2:
-                        self.test_level = 3
-                        self.progress_alignment.show_message('Testing small shift & rotation...')
-                        self.after(self.detect_stars)
-                    elif self.test_level == 3:
-                        self.test_level = 4
-                        self.progress_all_stars.set('Analysing frame...')
-                        self.progress_alignment.show_message('Testing large shift...')
-                        self.after(self.detect_stars)
-                    elif self.test_level == 4:
-                        self.test_level = 5
-                        self.progress_alignment.show_message('Testing large shift & rotation...')
-                        self.after(self.detect_stars)
-                    else:
-                        self.after(self.plot_current)
+                    self.plot_current()
 
     def plot_current(self):
 

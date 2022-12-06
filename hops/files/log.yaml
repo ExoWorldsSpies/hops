@@ -1,8 +1,8 @@
 burn_limit: 65536
 min_calibration_stars_number: 5
-rotation_tolerance: 0.1
+rotation_tolerance: 0.02
 search_window_std: 5
-shift_tolerance_p: 20
+shift_tolerance_p: 10
 min_x: 0
 min_y: 0
 max_x: 0

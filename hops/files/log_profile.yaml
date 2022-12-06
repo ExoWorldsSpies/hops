@@ -35,9 +35,9 @@ pixel_height: ''
 observation_files: Autosave
 bias_files: bias
 dark_files: dark
-dark_flat_files: dark
+dark_flat_files: ---
 flat_files: flat
-___6: ''
+crop_edge_pixels: 0
 ___7: ''
 ___8: ''
 observatory_time_zone: '0'

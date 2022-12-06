@@ -145,7 +145,7 @@ class HOPS(MainWindow):
         structure = [
             [[self.my_profile_window.Label(text='Header Keywords for useful information,\nif included in the FITS header:'), 0, 2],
              [self.my_profile_window.Label(text='Default values for useful information,\nif not included in the FITS header:'), 2, 2],
-             [self.my_profile_window.Label(text='\nDefault file names:'), 4, 2]
+             [self.my_profile_window.Label(text='\nDefault values:'), 4, 2]
              ],
             [],
         ]
@@ -167,7 +167,7 @@ class HOPS(MainWindow):
                 structure[row].append([self.my_profile_labels[header], column * 2])
                 structure[row].append([self.my_profile_entries[header], column * 2 + 1])
 
-        structure[8].append([self.my_profile_window.Label(text='Information used only by the scheduler:'), 4, 2])
+        structure[9].append([self.my_profile_window.Label(text='Information used only by the scheduler:'), 4, 2])
 
         structure.append([])
 

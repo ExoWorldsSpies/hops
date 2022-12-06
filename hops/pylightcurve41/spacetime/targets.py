@@ -55,8 +55,8 @@ class _Target:
 
         _request_target(other)
 
-        return arccos(self.dec.sin() * other.dec.sin() +
-                      self.dec.cos() * other.dec.cos() * (self.ra - other.ra).cos())
+        return arccos(min(1, self.dec.sin() * other.dec.sin() +
+                          self.dec.cos() * other.dec.cos() * (self.ra - other.ra).cos()))
 
 
 class FixedTarget(_Target):

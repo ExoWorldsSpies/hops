@@ -255,7 +255,14 @@ class PhotometryWindow(MainWindow):
         self.fits_figure.ax.legend(loc=(0, 1.01))
 
         photometry_folders = (glob.glob(os.path.join('{0}*'.format(self.log.photometry_directory_base))))
-        photometry_folders = sorted(photometry_folders, key=lambda x: float(x.split('_')[1]))
+
+        def photometry_order(path):
+            try:
+                return float(path.split('_')[1])
+            except:
+                return 1
+
+        photometry_folders = sorted(photometry_folders, key=lambda x: photometry_order(x))
         photometry_folders = ['Load options from previous run'] + photometry_folders
         self.photometry_folder_to_load = self.DropDown(initial='Load options from previous run',
                                                options=photometry_folders,
