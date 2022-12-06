@@ -380,6 +380,10 @@ class ReductionWindow(MainWindow):
             data_frame = data_frame[crop_y1: crop_y2]
             data_frame = data_frame[:, crop_x1: crop_x2]
 
+            crop_edge_pixels = int(self.log.get_param('crop_edge_pixels'))
+            if crop_edge_pixels > 0:
+                data_frame = data_frame[crop_edge_pixels: -crop_edge_pixels, crop_edge_pixels: -crop_edge_pixels]
+
             bin_fits = self.log.get_param('bin_fits')
             if bin_fits > 1:
                 data_frame = bin_frame(data_frame, bin_fits)
