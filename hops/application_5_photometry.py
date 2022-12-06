@@ -327,13 +327,20 @@ class PhotometryWindow(MainWindow):
 
             other_log = self.log.open_yaml(os.path.join(self.photometry_folder_to_load.get(), 'log.yaml'))
 
-            self.use_variable_aperture.set(other_log['use_variable_aperture'])
-            self.use_geometric_center.set(other_log['use_geometric_center'])
-            self.sky_inner_aperture.set(other_log['sky_inner_aperture'])
-            self.sky_outer_aperture.set(other_log['sky_outer_aperture'])
-            self.saturation.set(other_log['saturation'])
-            self.show_good_comparisons.set(other_log['show_good_comparisons'])
-            self.show_good_comparisons_percent.set(other_log['show_good_comparisons_percent'])
+            for parameter in [
+                [self.use_variable_aperture, 'use_variable_aperture'],
+                [self.use_geometric_center, 'use_geometric_center'],
+                [self.sky_inner_aperture, 'sky_inner_aperture'],
+                [self.sky_outer_aperture, 'sky_outer_aperture'],
+                [self.saturation, 'saturation'],
+                [self.show_good_comparisons, 'show_good_comparisons'],
+                [self.show_good_comparisons_percent, 'show_good_comparisons_percent']
+            ]:
+
+                try:
+                    parameter[0].set(other_log[parameter[1]])
+                except:
+                    parameter[0].set(self.log.get_param(parameter[1]))
 
             self.targets_indication.set(0)
             try:
@@ -1299,16 +1306,19 @@ class PhotometryProgressWindow(MainWindow):
         self.return_to_photomertry_button.disable()
         self.proceed_button.disable()
 
-        photometry_directory = self.log.photometry_directory_base + '_1'
+        photometry_folders = (glob.glob(os.path.join('{0}*'.format(self.log.photometry_directory_base))))
 
-        if not os.path.isdir(photometry_directory):
-            os.mkdir(photometry_directory)
-        else:
-            fi = 2
-            while os.path.isdir('{0}_{1}'.format(self.log.photometry_directory_base, str(fi))):
-                fi += 1
-            photometry_directory = '{0}_{1}'.format(self.log.photometry_directory_base, str(fi))
-            os.mkdir(photometry_directory)
+        def photometry_order(path):
+            try:
+                return float(path.split('_')[1])
+            except:
+                return 1
+
+        photometry_directory = '{0}_{1}'.format(
+            self.log.photometry_directory_base,
+            int(np.max([0] + [photometry_order(ff) for ff in photometry_folders]) + 1)
+        )
+        os.mkdir(photometry_directory)
 
         # save fov
 

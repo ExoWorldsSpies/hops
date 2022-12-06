@@ -408,7 +408,6 @@ class FittingWindow(MainWindow):
             self.plot_results_to_axes(planet, fitting, self.ax1, self.ax2, self.title1, self.title2, self.title3, 'Raw')
             self.preview_figure.draw()
             self.activate()
-            # self.fitting_button.activate()
             self.manual_planet.activate()
             if self.manual_planet.get():
                 self.planet.activate()
@@ -436,12 +435,17 @@ class FittingWindow(MainWindow):
                 self.eccentricity.disable()
                 self.inclination.disable()
                 self.periastron.disable()
-            # self.preview_figure.figure.savefig(
-            #     os.path.join(os.path.split(self.light_curve_file.get())[0], 'test_fitting_{0}.png'.format(plc.now().iso())),
-            #     dpi=300, transparent=False)
 
         except:
-            self.showinfo('Test failed', 'Test failed! Please change the input parameters.')
+            print(self.log.get_param('location'))
+            if self.log.get_param('location') == '+dd:mm:ss +dd:mm:ss':
+                self.showinfo('Test failed', 'Test failed! Please update the location of your telescope '
+                                             'in the SELECT DATA & TARGET window.')
+            elif self.auto_planet.get() == 'None':
+                self.showinfo('Test failed', 'Test failed! Please update the target coordinates in the '
+                                             'SELECT DATA & TARGET window or add the planet parameters manually.')
+            else:
+                self.showinfo('Test failed', 'Test failed! Please change the input parameters.')
             self.activate()
             self.fitting_button.disable()
 

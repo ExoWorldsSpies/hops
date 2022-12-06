@@ -318,8 +318,8 @@ class HOPS(MainWindow):
 
         if self.log.get_param('data_target_complete'):
 
-            self.data_target_complete.set('Data:     {0}\nTarget:    {1} '.format(
-                self.log.get_param('directory_short'), self.log.get_param('target_name')))
+            self.data_target_complete.set('Data:     {0}\nTarget:     {1}\nLocation:     {2}'.format(
+                self.log.get_param('directory_short'), self.log.get_param('target_name'), self.log.get_param('location')))
 
             self.reduction_button.activate()
             trash = 0
