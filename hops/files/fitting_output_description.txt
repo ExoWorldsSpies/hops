@@ -1,11 +1,54 @@
 
 --- results.txt ---
-Contains the fitting results, where N0, L0, Q0 are the 0th, 1st and 2nd order systematics,
-fitted on the light curve at the same time as the transit, ldc1, ldc2, ldc3, ldc4 are the limb darkening
-coefficients calculated for the specific filter and stellar properties given during the fitting process,
-rp is the planet to star radius ratio (no units), a is the semi-major axis relatively to the stellar radius
-(no units), e is the eccentricity (no units), i is the inclination (degrees), w is the argument of periastron
-(degrees) and mt is the mid-transit time (BJD_TDB).
+Contains the fitting results for the parameters involved.
+
+Columns:
+variable                    Name of the variable
+fix/fit                     Indication of wheather the parameter was fixed (fix) of fitted on the data (fit)
+value                       Value of the parameter used in the final model
+uncertainty                 Uncertainty of the parameter (only for parameters that were fitted)
+initial                     Initial value of the parameter in the MCMC (only for parameters that were fitted)
+min. allowed                Minimum allowed value of the parameter in the MCMC (only for parameters that were fitted)
+max. allowed                Maximumm allowed value of the parameter in the MCMC (only for parameters that were fitted)
+
+Parameters:
+c0                          no units - Normalisation factor
+c1                          no units - Linear coefficient of the de-trending function
+c2                          no units - Quadratic coefficient of the de-trending function (valid only for quadratic de-trending)
+LDC1                        no units - First limb-darkening coefficient
+LDC2                        no units - Second limb-darkening coefficient
+LDC3                        no units - Third limb-darkening coefficient
+LDC4                        no units - Forth limb-darkening coefficient
+rp                          no units - Planet-to-star radius ratio
+P                           days     - Orbital period
+a                           no units - Orbital semi-major axis relatively to the stellar radius
+e                           no units - Orbital eccentricity
+i                           degrees  - Orbital inclination
+w                           degrees  - Orbital argument of periastron
+T_mid                       BJD_TDB  - Transit mid-time
+
+Pre-fit:
+Number of outliers removed  Number of outlying points detected and removed.
+Uncertainties scale factor  Originally the uncertainties are SQRT(FLUX + 2*SKY)
+                            however these may be underestimated or overestimated due to
+                            the gain of the camera. During the fitting, the uncertainties
+                            are scaled based on the RMS of the residuals of the best-fit model.
+
+Residuals:
+Mean                        Mean value of the residuals
+STD                         Standard deviation of the residuals
+RMS                         Root mean square of the residuals
+Chi squared                 Chi squared of the residuals
+Reduced chi squared         Reduced chi squared of the residuals
+Max auto-correlation        Maximum value of the autocorrelation function of the normalised residuals
+Max auto-correlation flag   Flag indicating weather the maximum value of the autocorrelation function is higher than what is expected from a gaussian distribution
+Shapiro test                1 - shapiro statistic on the residuals
+Shapiro test flag           Flag indicating weather the shapiro test is higher than what is expected from a gaussian distribution
+
+Detrended Residuals:
+Mean                        Mean value of the de-trended residuals (de-trended data - de-trended model)
+STD                         Standard deviation of the de-trended residuals (de-trended data - de-trended model)
+RMS                         Root mean square of the de-trended residuals (de-trended data - de-trended model)
 
 --- model.txt ---
 Contains the data and the final model. The columns contain the following information (in order):
