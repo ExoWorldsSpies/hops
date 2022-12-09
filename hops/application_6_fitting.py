@@ -439,7 +439,7 @@ class FittingWindow(MainWindow):
                 self.inclination.disable()
                 self.periastron.disable()
 
-        except:
+        except Exception as e:
             if self.log.get_param('location') == '+dd:mm:ss +dd:mm:ss':
                 self.showinfo('Test failed', 'Test failed! Please update the location of your telescope '
                                              'in the SELECT DATA & TARGET window.')
@@ -447,7 +447,8 @@ class FittingWindow(MainWindow):
                 self.showinfo('Test failed', 'Test failed! Please update the target coordinates in the '
                                              'SELECT DATA & TARGET window or add the planet parameters manually.')
             else:
-                self.showinfo('Test failed', 'Test failed! Please change the input parameters.')
+                self.showinfo('Test failed', 'Test failed! Please change the input parameters.'
+                                             '\nMessage: {0}'.format(e))
             self.activate()
             self.fitting_button.disable()
 

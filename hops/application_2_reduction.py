@@ -169,6 +169,8 @@ class ReductionWindow(MainWindow):
             fits = self.get_fits_data(self.bias_files[self.bias_counter])
             self.bias_frames.append(np.ones_like(fits.data) * fits.data)
 
+            print('{0}: median = {1}'.format(self.bias_files[self.bias_counter], np.nanmedian(self.bias_frames[-1])))
+
             self.progress_bias.update()
             self.bias_counter += 1
 
@@ -214,6 +216,8 @@ class ReductionWindow(MainWindow):
             dark_frame = np.ones_like(fits.data) * fits.data
             self.dark_frames.append((dark_frame - self.master_bias) / fits.header[self.log.get_param('exposure_time_key')])
 
+            print('{0}: median = {1}'.format(self.dark_files[self.dark_counter], np.nanmedian(self.dark_frames[-1])))
+
             self.progress_dark.update()
             self.dark_counter += 1
 
@@ -257,6 +261,8 @@ class ReductionWindow(MainWindow):
             fits = self.get_fits_data(self.darkf_files[self.darkf_counter])
             darkf_frame = np.ones_like(fits.data) * fits.data
             self.darkf_frames.append((darkf_frame - self.master_bias) / fits.header[self.log.get_param('exposure_time_key')])
+
+            print('{0}: median = {1}'.format(self.darkf_files[self.darkf_counter], np.nanmedian(self.darkf_frames[-1])))
 
             self.progress_darkf.update()
             self.darkf_counter += 1
@@ -303,6 +309,8 @@ class ReductionWindow(MainWindow):
             self.flat_frames.append(
                 flat_frame - self.master_bias - fits.header[self.log.get_param('exposure_time_key')] * self.master_darkf)
 
+            print('{0}: median = {1}'.format(self.flat_files[self.flat_counter], np.nanmedian(self.flat_frames[-1])))
+
             self.progress_flat.update()
             self.flat_counter += 1
 
@@ -320,7 +328,6 @@ class ReductionWindow(MainWindow):
         else:
 
             if len(self.flat_frames) > 0:
-                print('Median of each Flat: ', ' '.join([str(round(np.nanmedian(ff))) for ff in self.flat_frames]))
                 if self.log.get_param('master_flat_method') == 'mean':
                     flat_frames = [ff / np.nanmean(ff) for ff in self.flat_frames]
                     self.master_flat = np.nanmean(flat_frames, 0)
