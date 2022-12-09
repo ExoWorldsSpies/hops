@@ -265,7 +265,7 @@ class PhotometryWindow(MainWindow):
         photometry_folders = sorted(photometry_folders, key=lambda x: photometry_order(x))
         photometry_folders = ['Load options from previous run'] + photometry_folders
         self.photometry_folder_to_load = self.DropDown(initial='Load options from previous run',
-                                                       instance='str',
+                                                       instance=str,
                                                        options=photometry_folders,
                                                        width=40, command=self.load_options)
 
