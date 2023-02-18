@@ -1424,7 +1424,7 @@ class PhotometryProgressWindow(MainWindow):
             self.results['jd'][valid_gauss], gauss_lc[valid_gauss], gauss_lc_error[valid_gauss]
         ], 0, 1))
 
-        targets_results = [self.results['file_names'][valid_gauss], self.results['jd'][valid_aperture]]
+        targets_results = [self.results['file_names'][valid_aperture], self.results['jd'][valid_aperture]]
 
         for array in ['aperture_x_position', 'aperture_y_position', 'aperture_flux',
                       'aperture_flux_error', 'aperture_sky', 'aperture_sky_error']:
