@@ -1,1 +1,1 @@
-python {{x}}
+python "{{x}}"
