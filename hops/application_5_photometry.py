@@ -157,7 +157,7 @@ class PhotometryWindow(MainWindow):
             except:
                 self.targets_y_position.append(self.Label(text=0.0, instance=float))
 
-            self.targets_peak.append(self.Label(text=0.0, instance=float))
+            self.targets_peak.append(self.Label(text=0.0, instance=int))
             self.targets_max_hwhm.append(self.Label(text=0.0, instance=float))
             self.targets_total_flux.append(self.Label(text=0.0, instance=float))
             try:

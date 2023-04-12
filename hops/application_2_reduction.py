@@ -189,11 +189,11 @@ class ReductionWindow(MainWindow):
 
             if len(self.bias_frames) > 0:
                 if self.log.get_param('master_bias_method') == 'median':
-                    self.master_bias = np.nanmedian(self.bias_frames, 0)
+                    self.master_bias = np.array([np.nanmedian([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
                 elif self.log.get_param('master_bias_method') == 'mean':
-                    self.master_bias = np.nanmean(self.bias_frames, 0)
+                    self.master_bias = np.array([np.nanmean([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
                 else:
-                    self.master_bias = np.nanmedian(self.bias_frames, 0)
+                    self.master_bias = np.array([np.nanmedian([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
             else:
                 self.master_bias = 0.0
 
@@ -235,11 +235,11 @@ class ReductionWindow(MainWindow):
 
             if len(self.dark_frames) > 0:
                 if self.log.get_param('master_dark_method') == 'median':
-                    self.master_dark = np.nanmedian(self.dark_frames, 0)
+                    self.master_dark = np.array([np.nanmedian([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
                 elif self.log.get_param('master_dark_method') == 'mean':
-                    self.master_dark = np.nanmean(self.dark_frames, 0)
+                    self.master_dark = np.array([np.nanmean([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
                 else:
-                    self.master_dark = np.nanmedian(self.dark_frames, 0)
+                    self.master_dark = np.array([np.nanmedian([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
             else:
                 self.master_dark = 0.0
 
@@ -281,11 +281,11 @@ class ReductionWindow(MainWindow):
 
             if len(self.darkf_frames) > 0:
                 if self.log.get_param('master_darkf_method') == 'median':
-                    self.master_darkf = np.nanmedian(self.dark_frames, 0)
+                    self.master_darkf = np.array([np.nanmedian([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
                 elif self.log.get_param('master_darkf_method') == 'mean':
-                    self.master_darkf = np.nanmean(self.darkf_frames, 0)
+                    self.master_darkf = np.array([np.nanmean([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
                 else:
-                    self.master_darkf = np.nanmedian(self.darkf_frames, 0)
+                    self.master_darkf = np.array([np.nanmedian([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
             else:
                 self.master_darkf = self.master_dark
 
@@ -330,10 +330,10 @@ class ReductionWindow(MainWindow):
             if len(self.flat_frames) > 0:
                 if self.log.get_param('master_flat_method') == 'mean':
                     flat_frames = [ff / np.nanmean(ff) for ff in self.flat_frames]
-                    self.master_flat = np.nanmean(flat_frames, 0)
+                    self.master_flat = np.array([np.nanmean([xx[ff] for xx in flat_frames], 0) for ff in range(len(flat_frames[0]))])
                 else:
                     flat_frames = [ff / np.nanmedian(ff) for ff in self.flat_frames]
-                    self.master_flat = np.nanmedian(flat_frames, 0)
+                    self.master_flat = np.array([np.nanmedian([xx[ff] for xx in flat_frames], 0) for ff in range(len(flat_frames[0]))])
                 print('Median Flat: ', round(np.nanmedian(self.master_flat), 3))
                 self.master_flat = self.master_flat / np.nanmedian(self.master_flat)
                 self.master_flat = np.where(self.master_flat == 0, 1, self.master_flat)
@@ -361,31 +361,38 @@ class ReductionWindow(MainWindow):
             science_file = self.science_files[self.science_counter]
 
             # correct it with master bias_files, master dark_files and master flat_files
+            t00 = time.time()
             t0 = time.time()
             fits = self.get_fits_data(science_file)
+
+            if timing:
+                print('Loading: ', time.time()-t0)
+
+            t0 = time.time()
 
             exp_time = float(fits.header[self.log.get_param('exposure_time_key')])
             data_frame = np.ones_like(fits.data) * fits.data
             data_frame = (data_frame - self.master_bias - exp_time * self.master_dark) / self.master_flat
             data_frame[np.where(np.isnan(data_frame))] = 0
 
-            crop_x1 = self.log.get_param('crop_x1')
-            crop_x2 = self.log.get_param('crop_x2')
-            crop_y1 = self.log.get_param('crop_y1')
-            crop_y2 = self.log.get_param('crop_y2')
+            if timing:
+                print('Reduction: ', time.time()-t0)
 
-            crop_x1 = int(max(0, crop_x1))
-            crop_x2 = int(min(crop_x2, len(data_frame[0])))
-            crop_y1 = int(max(0, crop_y1))
-            crop_y2 = int(min(crop_y2, len(data_frame)))
+            t0 = time.time()
+
+            crop_x1 = int(max(0, self.log.get_param('crop_x1')))
+            crop_x2 = int(min(self.log.get_param('crop_x2'), len(data_frame[0])))
+            crop_y1 = int(max(0, self.log.get_param('crop_y1')))
+            crop_y2 = int(min(self.log.get_param('crop_y2'), len(data_frame)))
 
             if crop_x2 == 0:
                 crop_x2 = len(data_frame[0])
             if crop_y2 == 0:
                 crop_y2 = len(data_frame)
 
-            data_frame = data_frame[crop_y1: crop_y2]
-            data_frame = data_frame[:, crop_x1: crop_x2]
+            if not (np.array([crop_x1, crop_x2, crop_y1, crop_y2]) == np.array([0, len(data_frame[0]), 0, len(data_frame)])).all():
+                data_frame = data_frame[crop_y1: crop_y2]
+                data_frame = data_frame[:, crop_x1: crop_x2]
 
             crop_edge_pixels = int(self.log.get_param('crop_edge_pixels'))
             if crop_edge_pixels > 0:
@@ -396,9 +403,9 @@ class ReductionWindow(MainWindow):
                 data_frame = bin_frame(data_frame, bin_fits)
 
             if timing:
-                print('Reduction, binning and cropping: ', time.time()-t0)
+                print('Binning and cropping: ', time.time()-t0)
 
-            if self.science_counter == 1:
+            if self.science_counter == 0:
                 t0 = time.time()
                 _ = plc.mean_std_from_median_mad(data_frame)
                 self.fr_time = int(2000 * (time.time()-t0))
@@ -434,15 +441,13 @@ class ReductionWindow(MainWindow):
                                                           mad_filter=5.0, min_value=2)
                     mean, std = distribution[2], distribution[3]
                     if timing:
-                        print('Frame distribution: ', time.time()-t0)
+                        print('SKY: ', time.time()-t0)
                 except:
                     pass
 
             t0 = time.time()
-            psf = fast_psf_find(data_frame, mean, std, 0.95 * self.log.get_param('burn_limit'))
-            if timing:
-                print('Fast PSF: ', time.time()-t0)
 
+            psf = fast_psf_find(data_frame, mean, std, 0.95 * self.log.get_param('burn_limit'))
             if np.isnan(psf):
                 psf = self.psf + 10
                 skip = True
@@ -450,7 +455,11 @@ class ReductionWindow(MainWindow):
                 self.psf = psf
                 skip = False
 
+            if timing:
+                print('PSF: ', time.time()-t0)
+
             t0 = time.time()
+
             if self.log.get_param('observation_date_key') == self.log.get_param('observation_time_key'):
                 observation_time = ' '.join(fits.header[self.log.get_param('observation_date_key')].split('T'))
             else:
@@ -502,6 +511,7 @@ class ReductionWindow(MainWindow):
 
             if timing:
                 print('Saving: ', time.time()-t0)
+                print('Total: ', time.time()-t00)
 
             self.progress_science.update()
             self.science_counter += 1

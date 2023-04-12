@@ -1,10 +1,27 @@
 __all__ = ['find_all_stars', 'find_single_star', 'find_centroids', 'fast_psf_find', 'pixel_to_aperture_overlap']
 
 import sys
+import time
+
 import numpy as np
 import warnings
 
 import hops.pylightcurve41 as plc
+
+count = 0
+
+def two_d_gaussian(x_array, y_array, model_norm, model_floor, model_x_mean, model_y_mean, model_x_sigma, model_y_sigma, model_theta):
+
+    xt_array = x_array - model_x_mean
+    yt_array = y_array - model_y_mean
+    coss = np.cos(model_theta)
+    sinn = np.sin(model_theta)
+
+    # global count
+    # count +=  1
+    # print(count)
+
+    return model_floor + model_norm * np.exp(-0.5 * ( ((-xt_array * sinn + yt_array * coss) / (model_x_sigma * model_y_sigma))**2 + ((xt_array * coss + yt_array * sinn) / model_x_sigma)**2))
 
 
 def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std, snr=3,
@@ -13,6 +30,10 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std,
     star = None
     star_std = int(round(star_std))
     try:
+        # t0 = time.time()
+
+        bright = data_array[centroid_y][centroid_x]
+
         search_window = int(round(6 * star_std))
         y_min = int(max(int(centroid_y) - search_window, 0))
         y_max = int(min(int(centroid_y) + search_window, len(data_array) - 1))
@@ -22,11 +43,31 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std,
         datax, datay = np.meshgrid(np.arange(x_min, x_max + 1) + 0.5,
                                    np.arange(y_min, y_max + 1) + 0.5)
 
-        dataz = data_array[y_min: y_max + 1, x_min: x_max + 1]
+        datax = datax.flatten()
+        datay = datay.flatten()
+        dataz = data_array[y_min: y_max + 1, x_min: x_max + 1].flatten()
+        datae = np.sqrt(np.abs(dataz) + 1)
 
-        popt, pcov = plc.fit_two_d_gaussian(datax, datay, dataz, point_xy=(centroid_x, centroid_y),
-                                        sigma=star_std, positive=True, floor=mean, maxfev=1000,
-                                        symmetric=force_circles)
+        # print('0', 1000*(time.time() - t0))
+        # t0 = time.time()
+
+        initials = [bright - mean, mean,           centroid_x + 0.5, centroid_y + 0.5, star_std,       star_std,       0]
+        bounds_1 = [0,             mean - 3 * std, x_min,            y_min,            0,              0,              -np.pi/2]
+        bounds_2 = [np.max(dataz), mean + 3 * std, x_max,            y_max,            100 * star_std, 100 * star_std, np.pi/2]
+
+        # print('1', 1000*(time.time() - t0))
+        # t0 = time.time()
+
+        def function_to_fit(xy_array, model_norm, model_floor, model_x_mean, model_y_mean, model_x_sigma, model_y_sigma, model_theta):
+            return two_d_gaussian(datax, datay, model_norm, model_floor, model_x_mean, model_y_mean, model_x_sigma, model_y_sigma, model_theta)
+
+        popt, pcov = plc.curve_fit(function_to_fit, [0], dataz, p0=initials, maxfev=100,
+                                   sigma=datae,
+                                   bounds=(np.array(bounds_1), np.array(bounds_2))
+                                   )
+
+        # print('2', 1000*(time.time() - t0))
+        # t0 = time.time()
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -35,6 +76,8 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, star_std,
                     if np.inf not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
                         if 0 not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
                             star = (popt, pcov)
+
+        # print('3', 1000*(time.time() - t0))
 
     except:
         pass
@@ -124,6 +167,7 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
             return None, None
 
     stars = []
+    stars_ids = []
     psf_x = []
     psf_x_err = []
     psf_y = []
@@ -137,33 +181,39 @@ def find_all_stars(data_array, x_low=0, x_upper=None, y_low=0, y_upper=None, x_c
 
         if star:
 
-            if force_circles:
-                star = [star[0], star[1]]
-                star[0] = list(star[0])
-                star[0].append(star[0][4])
+            star_id = '{0}_{1}'.format(int(star[0][2]), int(star[0][3]))
 
-            stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
-                          np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
-                          2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+            if star_id not in stars_ids:
 
-            if force_circles:
-                psf_x.append(star[0][4])
-                psf_x_err.append(np.sqrt(abs(star[1][4][4])))
-                psf_y.append(star[0][4])
-                psf_y_err.append(np.sqrt(abs(star[1][4][4])))
+                stars_ids.append(star_id)
 
-            else:
+                if force_circles:
+                    star = [star[0], star[1]]
+                    star[0] = list(star[0])
+                    star[0].append(star[0][4])
 
-                if star[0][4] > star[0][5]:
+                stars.append([star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
+                              np.sqrt((star[0][2] - x_centre) ** 2 + (star[0][3] - y_centre) ** 2),
+                              2 * np.pi * star[0][0] * star[0][4] * star[0][5]])
+
+                if force_circles:
                     psf_x.append(star[0][4])
                     psf_x_err.append(np.sqrt(abs(star[1][4][4])))
-                    psf_y.append(star[0][5])
-                    psf_y_err.append(np.sqrt(abs(star[1][5][5])))
-                else:
                     psf_y.append(star[0][4])
                     psf_y_err.append(np.sqrt(abs(star[1][4][4])))
-                    psf_x.append(star[0][5])
-                    psf_x_err.append(np.sqrt(abs(star[1][5][5])))
+
+                else:
+
+                    if star[0][4] > star[0][5]:
+                        psf_x.append(star[0][4])
+                        psf_x_err.append(np.sqrt(abs(star[1][4][4])))
+                        psf_y.append(star[0][5])
+                        psf_y_err.append(np.sqrt(abs(star[1][5][5])))
+                    else:
+                        psf_y.append(star[0][4])
+                        psf_y_err.append(np.sqrt(abs(star[1][4][4])))
+                        psf_x.append(star[0][5])
+                        psf_x_err.append(np.sqrt(abs(star[1][5][5])))
 
         if verbose:
             sys.stdout.write('\r\033[K')
@@ -224,16 +274,17 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
             test.append(data_array[bright[0] + i, bright[1]+j])
 
     test = np.array(test)
-
-    median_test = np.median(test, 0)
-    max_test = np.max(test, 0)
-    del test
-
     data_array_test = data_array[bright]
 
-    stars = np.where((max_test < burn_limit) & (max_test == data_array_test) & (median_test > mean + 2 * std))[0]
-    stars = np.swapaxes([data_array_test[stars], bright[1][stars] + x_low, bright[0][stars] + y_low], 0, 1)
+    min_test = np.sum(test > mean + 3 * std, 0) >= 0.5 * (2 * psf + 1)**2
+    max_test = np.max(test, 0)
 
+    centroids = np.where((max_test < burn_limit) * (max_test == data_array_test) * min_test)[0]
+    centroids = np.swapaxes([data_array_test[centroids], bright[1][centroids] + x_low, bright[0][centroids] + y_low], 0, 1)
+    centroids = np.int_(centroids)
+    centroids = np.array(sorted(centroids, key=lambda x: -x[0]))
+
+    del test
     del data_array_test
 
     # import matplotlib.pyplot as plt
@@ -247,49 +298,35 @@ def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_l
     # plt.savefig('test.pdf')
     # plt.show()
 
-    return stars
+    return centroids
 
 
 def fast_psf_find(data_array, mean, std, burn_limit, sample=10):
 
+    # t0 = time.time()
+
     psf = 2
 
-    stars = []
+    centroids = []
     snr = 53
 
-    while len(stars) < sample * 2 and snr >= 3:
-
-        limit = mean + snr * std
-
-        bright = np.where(data_array[psf:-psf, psf:-psf] > limit)
-        bright = (bright[0] + psf, bright[1] + psf)
-
-        test = []
-        for i in range(-psf, psf + 1):
-            for j in range(-psf, psf + 1):
-                test.append(data_array[bright[0] + i, bright[1]+j])
-
-        median_test = np.median(test, 0)
-        max_test = np.max(test, 0)
-        data_array_test = data_array[bright]
-
-        del test
-        stars = np.where((max_test < burn_limit) & (max_test == data_array_test) & (median_test > mean + 2 * std))[0]
-        stars = np.swapaxes([data_array_test[stars], bright[1][stars], bright[0][stars]], 0, 1)
-
-        stars = sorted(stars, key=lambda x: -x[0])
-
+    while len(centroids) < sample * 2 and snr >= 3:
+        centroids = find_centroids(data_array, -10, 10**10, -10, 10**10, mean, std, burn_limit, psf, snr)
         snr -= 10
+
+    # print('1', 1000*(time.time() - t0))
+    # t0 = time.time()
 
     psf_x = []
     psf_x_err = []
     psf_y = []
     psf_y_err = []
 
-    for centroid in stars:
+    for centroid in centroids:
         star = _star_from_centroid(data_array, centroid[1], centroid[2], mean, std, psf)
 
         if star:
+
             if star[0][4] > star[0][5]:
                 psf_x.append(star[0][4])
                 psf_x_err.append(np.sqrt(star[1][4][4]))
@@ -304,7 +341,12 @@ def fast_psf_find(data_array, mean, std, burn_limit, sample=10):
         if len(psf_x) == sample:
             break
 
+    # print('2', 1000*(time.time() - t0))
+    # t0 = time.time()
+
     psf = (plc.waverage(np.array(psf_x), np.array(psf_x_err))[0], plc.waverage(np.array(psf_y), np.array(psf_y_err))[0])
+
+    # print('3', 1000*(time.time() - t0))
 
     return max(psf)
 

@@ -1,6 +1,7 @@
 
 import os
 import time
+import twirl
 import numpy as np
 import hops.pylightcurve41 as plc
 import matplotlib.patches as mpatches
@@ -59,7 +60,6 @@ class AlignmentWindow(MainWindow):
         self.stars_detected = None
         self.rotation_detected = None
         self.check_num = None
-        self.check_num_snr = None
         self.x0 = None
         self.y0 = None
         self.u0 = None
@@ -70,7 +70,6 @@ class AlignmentWindow(MainWindow):
         self.large_angles = None
         self.circle = None
         self.settings_to_check = None
-        self.comparisons_to_check = None
 
         # common definitions for all images
 
@@ -144,7 +143,7 @@ class AlignmentWindow(MainWindow):
                                             mean=metadata[self.log.mean_key], std=metadata[self.log.std_key],
                                             std_limit=3, burn_limit=self.burn_limit, star_std=metadata[self.log.psf_key],
                                             progressbar=self.progress_all_stars, progress_window=self,
-                                            verbose=True
+                                            verbose=True, order_by_flux=True
                                             )
 
             if self.exit:
@@ -178,69 +177,43 @@ class AlignmentWindow(MainWindow):
             frame_std = metadata[self.log.std_key]
             frame_star_psf = metadata[self.log.psf_key]
 
-            bright_stars = []
-            std_limit = 30
-            while len(bright_stars) < 100 and std_limit >= 5.0:
-                bright_stars = []
-                for star in stars:
-                    if star[2] + star[3] < 0.9 * self.burn_limit:
-                        if star[-1] > (2 * np.pi * (std_limit * frame_std) * frame_star_psf * frame_star_psf):
-                            self.alignment_log(star[0], star[1], star[-1],
-                                               2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
-                            bright_stars.append(star)
-                std_limit -= 10
+            min_flux = np.log10(np.min(stars[:, -1]))
+            max_flux = np.log10(np.max(stars[:, -1]))
 
-            if len(bright_stars) < self.min_calibration_stars_number:
-                bright_stars = []
-                std_limit = 30
-                while len(bright_stars) < 100 and std_limit >= 5.0:
-                    bright_stars = []
-                    for star in stars:
-                        if star[-1] > (2 * np.pi * (std_limit * frame_std) * frame_star_psf * frame_star_psf):
-                            self.alignment_log(star[0], star[1], star[-1],
-                                               2 * np.pi * (frame_mean + std_limit * frame_std) * (frame_star_psf ** 2))
-                            bright_stars.append(star)
-                    std_limit -= 10
-
-            weight_distance = 1.5
+            weight_distance = 2
             weight_flux = 1
+            stars = sorted(stars,
+                                    key=lambda x: - (weight_flux * ((np.log10(x[-1]) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - 4*x[-2]/min(fits[1].data.shape)))
+                                                  /(weight_distance + weight_flux)
+                           )
 
-            stars = sorted(bright_stars, key=lambda x: - ((weight_flux * (x[2] / self.burn_limit) - weight_distance * (x[-2] / len(fits[1].data[0])))/(weight_distance + weight_flux)))
+            self.x0 = stars[0][0]
+            self.y0 = stars[0][1]
+            self.u0 = 0.0
+            self.f0 = stars[0][-1]
 
-            x_ref_position = stars[0][0]
-            y_ref_position = stars[0][1]
-            f_ref = stars[0][-1]
+            self.x0_fits0 = 1.0 * self.x0
+            self.y0_fits0 = 1.0 * self.y0
+            self.u0_fits0 = 0.0
+            self.f0_fits0 = 1.0 * self.f0
 
             del stars[0]
+            weight_distance = 1
+            weight_flux = 3
+            stars = sorted(stars,
+                           key=lambda x: - (weight_flux * ((np.log10(x[-1]) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - min(1, x[-2]/min(fits[1].data.shape))))
+                                         /(weight_distance + weight_flux)
+                           )
 
             # take the rest as calibration stars and calculate their polar coordinates relatively to the first
-            calibration_stars_polar = []
+            self.comparisons = []
             for star in stars:
-                r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
+                r_position, u_position = plc.cartesian_to_polar(star[0], star[1], self.x0, self.y0)
                 if r_position > 5 * frame_star_psf:
-                    calibration_stars_polar.append([r_position, u_position])
+                    self.comparisons.append([r_position, u_position])
 
-            stars = sorted(stars, key=lambda x: -x[-1])
+            self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.comparisons) / 10.0)
 
-            calibration_stars_polar_snr = []
-            for star in stars:
-                r_position, u_position = plc.cartesian_to_polar(star[0], star[1], x_ref_position, y_ref_position)
-                if r_position > 5 * frame_star_psf:
-                    calibration_stars_polar_snr.append([r_position, u_position])
-
-            if len(calibration_stars_polar) <= self.min_calibration_stars_number:
-                self.check_num = len(calibration_stars_polar) - 0.5
-                self.check_num_snr = len(calibration_stars_polar) - 0.5
-            else:
-                self.check_num = max(self.min_calibration_stars_number - 0.5, len(calibration_stars_polar) / 10.0 - 0.5)
-                self.check_num_snr = max(self.min_calibration_stars_number - 0.5, len(calibration_stars_polar) / 20.0 - 0.5)
-
-            self.x0 = x_ref_position
-            self.y0 = y_ref_position
-            self.u0 = 0
-            self.f0 = f_ref
-            self.comparisons = calibration_stars_polar
-            self.comparisons_snr = calibration_stars_polar_snr
             fits.close()
 
             ustep = np.arcsin(float(frame_star_psf) / self.comparisons[int(len(self.comparisons) / 2)][0])
@@ -310,7 +283,6 @@ class AlignmentWindow(MainWindow):
                     self.stars.append(2 * np.pi * self.stars[2] * self.stars[4] * self.stars[5])
                     self.stars = [self.stars]
                     self.settings_to_check.append([self.stars[0][0], self.stars[0][1], self.u0, self.stars[0]])
-                    self.comparisons_to_check = self.comparisons
 
                 self.check_star()
 
@@ -322,70 +294,54 @@ class AlignmentWindow(MainWindow):
                                                 y_upper=self.y0 + self.shift_tolerance, x_centre=self.x0,
                                                 y_centre=self.y0, mean=self.mean,
                                                 std=self.std, burn_limit=self.burn_limit,
-                                                star_std=self.star_std, verbose=True,
+                                                star_std=self.star_std,
                                                 order_by_distance_and_flux=self.f0)[0]
                 self.progress_all_stars.set(' ')
                 if self.stars:
-                    for star in self.stars:
-                        self.settings_to_check.append([star[0], star[1], self.u0, star])
-                    self.comparisons_to_check = self.comparisons_snr
-
-                self.after(self.check_star)
-
-            elif self.test_level == 3:
-                if self.stars:
-                    for star in self.stars:
+                    for star in self.stars[:2]:
                         for rotation in self.small_angles:
                             self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.after(self.check_star)
 
-            elif self.test_level == 4:
-                if self.askyesno('HOPS - Alignment', 'Small drift or meridian flip not detected.\n'
-                                                     'Do you want to skip this frame?'):
-                    self.plot_current()
-                else:
-                    self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
-                                                star_std=self.star_std, order_by_flux=self.f0, verbose=True)[0]
-                    self.progress_all_stars.set(' ')
+            elif self.test_level == 3:
+                self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
+                                            star_std=self.star_std, order_by_flux=True, verbose=True)[0]
+                self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)
+                self.progress_all_stars.set(' ')
 
-                    if self.stars:
-                        for star in self.stars:
-                            self.settings_to_check.append([star[0], star[1], self.u0, star])
-
-                    self.after(self.check_star)
-
-            elif self.test_level == 5:
                 if self.stars:
-                    for star in self.stars:
-                        for rotation in self.large_angles:
+
+                    all_stars_dict = plc.open_dict('all_stars.pickle')
+                    all_stars = np.array(all_stars_dict['all_stars'])
+
+                    X = twirl.utils.find_transform(
+                        np.array([ff[:2] for ff in all_stars[:50]]),
+                        np.array([ff[:2] for ff in self.stars[:50]]),
+                        n=15, tolerance=2 * self.star_std)
+
+                    center, check = twirl.utils.affine_transform(X)(np.array([[self.x0_fits0, self.y0_fits0],
+                                                                    [self.x0_fits0 + 10, self.y0_fits0]
+                                                                    ]))
+
+                    for star in sorted(self.stars, key=lambda x: np.sqrt((x[0] - center[0])**2 + (x[1] - center[1])**2))[:5]:
+                        for rotation in self.small_angles + plc.cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
                             self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.after(self.check_star)
 
-            #
-            # else:
-            #     if self.test_level == 1:
-            #         self.test_level = 2
-            #         self.progress_figure.draw()
-            #         self.progress_all_stars.set('Analysing frame...')
-            #         self.progress_alignment.show_message('Testing small shift...')
-            #         self.after(self.detect_stars)
-            #     elif self.test_level == 2:
-            #         self.test_level = 3
-            #         self.progress_alignment.show_message('Testing small shift & rotation...')
-            #         self.after(self.detect_stars)
-            #     elif self.test_level == 3:
-            #         self.test_level = 4
-            #         self.progress_all_stars.set('Analysing frame...')
-            #         self.progress_alignment.show_message('Testing large shift...')
-            #         self.after(self.detect_stars)
-            #     elif self.test_level == 4:
-            #         self.test_level = 5
-            #         self.progress_alignment.show_message('Testing large shift & rotation...')
-            #         self.after(self.detect_stars)
-            #     else:
-            #         self.after(self.plot_current)
+            elif self.test_level == 4:
+                if self.askyesno('HOPS - Alignment', 'Stars not detected.\n'
+                                                     'Do you want to skip this frame?'):
+                    self.plot_current()
+                else:
+
+                    if self.stars:
+                        for star in self.stars:
+                            for rotation in self.large_angles:
+                                self.settings_to_check.append([star[0], star[1], rotation, star])
+
+                self.after(self.check_star)
 
     def check_star(self):
 
@@ -405,7 +361,7 @@ class AlignmentWindow(MainWindow):
 
                 test = 0
 
-                for comp in self.comparisons_to_check:
+                for comp in self.comparisons:
 
                     check_x = int(x + comp[0] * np.cos(u + comp[1]))
                     check_y = int(y + comp[0] * np.sin(u + comp[1]))
@@ -440,20 +396,16 @@ class AlignmentWindow(MainWindow):
                     self.test_level = 2
                     self.progress_figure.draw()
                     self.progress_all_stars.set('Analysing frame...')
-                    self.progress_alignment.show_message('Testing small shift...')
+                    self.progress_alignment.show_message('Testing small shift & rotation...')
                     self.after(self.detect_stars)
                 elif self.test_level == 2:
                     self.test_level = 3
-                    self.progress_alignment.show_message('Testing small shift & rotation...')
+                    self.progress_all_stars.set('Analysing frame...')
+                    self.progress_alignment.show_message('Testing large shift & rotation...')
                     self.after(self.detect_stars)
                 elif self.test_level == 3:
                     self.test_level = 4
-                    self.progress_all_stars.set('Analysing frame...')
-                    self.progress_alignment.show_message('Testing large shift...')
-                    self.after(self.detect_stars)
-                elif self.test_level == 4:
-                    self.test_level = 5
-                    self.progress_alignment.show_message('Testing large shift & rotation...')
+                    self.progress_alignment.show_message('Testing all shifts & rotations...')
                     self.after(self.detect_stars)
                 else:
                     self.plot_current()

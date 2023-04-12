@@ -130,7 +130,7 @@ class DataTargetWindow(MainWindow):
         self.filter_test = self.Label(text=' ')
 
         self.show_advanced_settings_button = self.Button(text='Advanced settings',
-                                                         command=self.advanced_settings_window.show)
+                                                         command=[self.update_preview, self.advanced_settings_window.show])
         self.show_observer_information_button = self.Button(text='Observer\'s information (optional)',
                                                             command=self.observer_information_window.show)
 
@@ -260,9 +260,13 @@ class DataTargetWindow(MainWindow):
             text='Use the LAT/LONG found in the file\'s header:',
             variable=self.location_choice, value=0, command=self.update_location)
         self.location_choice_1 = self.location_window.Radiobutton(
+            text='Use the LAT/LONG found in your profile:',
+            variable=self.location_choice, value=1, command=self.update_location)
+        self.location_choice_2 = self.location_window.Radiobutton(
             text='Provide the LAT/LONG of the location:\n(+/-dd:mm:ss +/-dd:mm:ss)\npositive LAT is NORTH\npositive LONG is EAST',
             variable=self.location_choice, value=2, command=self.update_location)
         self.auto_location = self.location_window.Label(text=self.log.get_param('auto_location'))
+        self.profile_location = self.location_window.Label(text=self.log.get_param('profile_location'))
         self.manual_location = self.location_window.Entry(value=self.log.get_param('manual_location'), command=self.update_location)
 
         self.location_window.setup_window([
@@ -270,7 +274,8 @@ class DataTargetWindow(MainWindow):
             [[self.location_window.Label(text='How would you like to choose your location? Select one of the two options:'), 0, 5]],
             [],
             [[self.location_choice_0, 1], [self.auto_location, 2, 2]],
-            [[self.location_choice_1, 1], [self.manual_location, 2, 2]],
+            [[self.location_choice_1, 1], [self.profile_location, 2, 2]],
+            [[self.location_choice_2, 1], [self.manual_location, 2, 2]],
             [],
             [[self.location_window.Button(text='  Cancel  ', command=self.location_window.hide), 2],
              [self.location_window.Button(text='  Choose  ', command=self.choose_location), 3]],
@@ -282,10 +287,10 @@ class DataTargetWindow(MainWindow):
 
         self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
                                                                options=[1, 2, 3, 4],
-                                                               instance=int, command=self.update_preview)
+                                                               instance=int, command=self.update_preview_final)
         self.crop_edge_pixels = self.advanced_settings_window.DropDown(initial=self.log.get_param('crop_edge_pixels'),
                                                                        options=np.int_(np.arange(0, 50, 1)),
-                                                                       instance=int, command=self.update_preview)
+                                                                       instance=int, command=self.update_preview_final)
 
         self.crop_x1 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x1'), instance=int)
         self.crop_x2 = self.advanced_settings_window.Entry(value=self.log.get_param('crop_x2'), instance=int)
@@ -455,6 +460,7 @@ class DataTargetWindow(MainWindow):
         self.location_choice.set(self.log.get_param('location_choice'))
         self.location.set(self.log.get_param('location'))
         self.auto_location.set(self.log.get_param('auto_location'))
+        self.profile_location.set(self.log.get_param('profile_location'))
         self.manual_location.set(self.log.get_param('manual_location'))
         self.simbad_target_name.set(self.log.get_param('simbad_target_name'))
         self.time_stamp.set(self.log.get_param('time_stamp'))
@@ -512,27 +518,6 @@ class DataTargetWindow(MainWindow):
                                                                 str(self.science_header[ii])))
                 self.header_list.update_list(header_list)
 
-                if self.crop_x2.get() == 0:
-                   self.crop_x2.set(len(self.science_data[0]))
-                if self.crop_y2.get() == 0:
-                   self.crop_y2.set(len(self.science_data))
-                self.initial_figure_size.set(
-                    'Image before reduction: {0} MB'.format(
-                        round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
-                    )
-                )
-                self.final_figure_size.set(
-                    'Image after reduction: {0} MB'.format(
-                        round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
-                    )
-                )
-                self.initial_figure.load_fits(fits_file, input_name=check[0])
-                self.initial_figure.adjust_size()
-                self.final_figure.load_fits(fits_file, input_name='This is only an example of the reduction output.  '
-                                                                  'Select the area to crop on the left image.')
-                self.final_figure.adjust_size()
-                self.update_preview()
-
                 self.update_exposure_time_key()
                 self.update_observation_date_key()
                 self.update_observation_time_key()
@@ -541,6 +526,63 @@ class DataTargetWindow(MainWindow):
                 self.update_location_options()
                 self.choose_location()
                 self.update_observing_info()
+
+    def update_preview(self):
+
+        check = find_fits_files(self.observation_files.get())
+        fits_file = get_fits_data(check[0])[0]
+
+        if self.crop_x2.get() == 0:
+           self.crop_x2.set(len(self.science_data[0]))
+        if self.crop_y2.get() == 0:
+           self.crop_y2.set(len(self.science_data))
+        self.initial_figure_size.set(
+            'Image before reduction: {0} MB'.format(
+                round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+            )
+        )
+        self.final_figure_size.set(
+            'Image after reduction: {0} MB'.format(
+                round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+            )
+        )
+        self.initial_figure.load_fits(fits_file, input_name=check[0])
+        self.initial_figure.adjust_size()
+        self.final_figure.load_fits(fits_file, input_name='This is only an example of the reduction output.  '
+                                                          'Select the area to crop on the left image.')
+        self.final_figure.adjust_size()
+        self.update_preview_final()
+
+    def update_preview_final(self):
+
+        data_frame = np.ones_like(self.science_data) * self.science_data
+
+        data_frame = data_frame[self.crop_y1.get(): self.crop_y2.get()]
+        data_frame = data_frame[:, self.crop_x1.get(): self.crop_x2.get()]
+
+        if self.crop_edge_pixels.get() > 0:
+            data_frame = data_frame[self.crop_edge_pixels.get():-self.crop_edge_pixels.get(),
+                         self.crop_edge_pixels.get():-self.crop_edge_pixels.get()]
+
+        if self.bin_fits.get() > 1:
+            data_frame = bin_frame(data_frame, self.bin_fits.get())
+        try:
+            os.remove('.test_size.fits')
+        except:
+            pass
+
+        hdu= pf.CompImageHDU(header=self.science_header, data=np.array(data_frame, dtype=np.int32))
+        plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '.test_size.fits')
+
+        self.final_figure_size.set(
+            'Image after reduction: {0} MB'.format(round(os.stat('.test_size.fits').st_size/1024.0/1024.0, 2))
+        )
+
+        os.remove('.test_size.fits')
+
+        self.final_figure.load_fits(hdu, input_name='This is only an example of the reduction output.  '
+                                                    'Select the area to crop on the left image.')
+        # self.final_figure.draw()
 
     def update_bias_files(self, *event):
 
@@ -716,6 +758,16 @@ class DataTargetWindow(MainWindow):
             except:
                 pass
 
+        self.profile_location.set('Not found')
+        self.location_choice_1['state'] = self.DISABLED
+        try:
+            observatory = plc.Observatory(plc.Degrees(self.log.get_param('observatory_lat')),
+                                          plc.Degrees(self.log.get_param('observatory_long')))
+            self.profile_location.set(observatory.coord())
+            self.location_choice_1['state'] = self.NORMAL
+        except:
+            pass
+
         self.update_location()
 
     def update_location(self, *event):
@@ -724,6 +776,11 @@ class DataTargetWindow(MainWindow):
 
             self.manual_location.disable()
             self.location.set(self.auto_location.get())
+
+        elif self.location_choice.get() == 1:
+
+            self.manual_location.disable()
+            self.location.set(self.profile_location.get())
 
         else:
 
@@ -878,38 +935,7 @@ class DataTargetWindow(MainWindow):
         self.crop_y1.set(int(max(0, y1)))
         self.crop_y2.set(int(min(y2, len(self.science_data))))
 
-        self.update_preview()
-
-    def update_preview(self):
-
-        data_frame = np.ones_like(self.science_data) * self.science_data
-
-        data_frame = data_frame[self.crop_y1.get(): self.crop_y2.get()]
-        data_frame = data_frame[:, self.crop_x1.get(): self.crop_x2.get()]
-
-        if self.crop_edge_pixels.get() > 0:
-            data_frame = data_frame[self.crop_edge_pixels.get():-self.crop_edge_pixels.get(),
-                                    self.crop_edge_pixels.get():-self.crop_edge_pixels.get()]
-
-        if self.bin_fits.get() > 1:
-            data_frame = bin_frame(data_frame, self.bin_fits.get())
-        try:
-            os.remove('.test_size.fits')
-        except:
-            pass
-
-        hdu= pf.CompImageHDU(header=self.science_header, data=np.array(data_frame, dtype=np.int32))
-        plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '.test_size.fits')
-
-        self.final_figure_size.set(
-            'Image after reduction: {0} MB'.format(round(os.stat('.test_size.fits').st_size/1024.0/1024.0, 2))
-        )
-
-        os.remove('.test_size.fits')
-
-        self.final_figure.load_fits(hdu, input_name='This is only an example of the reduction output.  '
-                                                    'Select the area to crop on the left image.')
-        # self.final_figure.draw()
+        self.update_preview_final()
 
     def save(self):
 

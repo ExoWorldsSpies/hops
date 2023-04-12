@@ -158,6 +158,7 @@ target_u_position: 0.0
 target_x_position: 0.0
 target_y_position: 0.0
 auto_location: +dd:mm:ss +dd:mm:ss
+profile_location: +dd:mm:ss +dd:mm:ss
 manual_location: +dd:mm:ss +dd:mm:ss
 location: +dd:mm:ss +dd:mm:ss
 location_choice: 0
