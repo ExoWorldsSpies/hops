@@ -4,6 +4,7 @@ __all__ = ['HOPS']
 import os
 import glob
 import datetime
+import traceback
 import webbrowser
 import hops.pylightcurve41 as plc
 
@@ -189,128 +190,208 @@ class HOPS(MainWindow):
 
     def select_data_target(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        data_target_window = DataTargetWindow(self.log)
-        data_target_window.run(f_after=data_target_window.check_dir)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            data_target_window = DataTargetWindow(self.log)
+            data_target_window.run(f_after=data_target_window.check_dir)
 
-        if self.log.get_param('proceed'):
-            self.run_reduction()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                self.run_reduction()
+
+        except:
+            print('\nData & Target failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def run_reduction(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        reduction_window = ReductionWindow(self.log)
-        reduction_window.run(f_before=reduction_window.progress_figure.adjust_size,
-                             f_after=reduction_window.run_reduction)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            reduction_window = ReductionWindow(self.log)
+            reduction_window.run(f_before=reduction_window.progress_figure.adjust_size,
+                                 f_after=reduction_window.run_reduction)
 
-        if self.log.get_param('proceed'):
-            self.inspect_frames()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                self.inspect_frames()
+
+        except:
+            print('\nReduction failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def inspect_frames(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        inspection_window = InspectiontWindow(self.log)
-        inspection_window.run(f_before=inspection_window.adjust_size)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            inspection_window = InspectiontWindow(self.log)
+            inspection_window.run(f_before=inspection_window.adjust_size)
 
-        if self.log.get_param('proceed'):
-            self.run_alignment()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                self.run_alignment()
+
+        except:
+            print('\nInspection failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def run_alignment(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        alignment_window = AlignmentWindow(self.log)
-        alignment_window.run(f_before=alignment_window.progress_figure.adjust_size,
-                             f_after=alignment_window.run_alignment)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            alignment_window = AlignmentWindow(self.log)
+            alignment_window.run(f_before=alignment_window.progress_figure.adjust_size,
+                                 f_after=alignment_window.run_alignment)
 
-        if self.log.get_param('proceed'):
-            self.photometry()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                self.photometry()
+
+        except:
+            print('\nAlignment failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def photometry(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        photometry_window = PhotometryWindow(self.log)
-        photometry_window.run(f_before=photometry_window.fits_figure.adjust_size)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            photometry_window = PhotometryWindow(self.log)
+            photometry_window.run(f_before=photometry_window.fits_figure.adjust_size)
 
-        if self.log.get_param('proceed'):
-            if self.log.get_param('proceed') == 'run_photometry':
-                self.run_photometry()
-            else:
-                self.fitting()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                if self.log.get_param('proceed') == 'run_photometry':
+                    self.run_photometry()
+                else:
+                    self.fitting()
+
+        except:
+            print('\nPhotometry failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def run_photometry(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        photometry_progress_window = PhotometryProgressWindow(self.log)
-        photometry_progress_window.run(
-            f_before=photometry_progress_window.progress_figure.adjust_size,
-            f_after=photometry_progress_window.run_photometry)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            photometry_progress_window = PhotometryProgressWindow(self.log)
+            photometry_progress_window.run(
+                f_before=photometry_progress_window.progress_figure.adjust_size,
+                f_after=photometry_progress_window.run_photometry)
 
-        if self.log.get_param('proceed'):
-            if self.log.get_param('proceed') == 'return_to_photometry':
-                self.photometry()
-            else:
-                self.fitting()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                if self.log.get_param('proceed') == 'return_to_photometry':
+                    self.photometry()
+                else:
+                    self.fitting()
+
+        except:
+            print('\nPhotometry failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def fitting(self):
 
-        self.log.set_param('proceed', False)
+        try:
 
-        self.disable()
+            self.log.set_param('proceed', False)
 
-        fitting_window = FittingWindow(self.log)
-        fitting_window.run(f_after=fitting_window.preview_figure.adjust_size)
+            self.disable()
 
-        self.activate()
-        self.update_window()
+            fitting_window = FittingWindow(self.log)
+            fitting_window.run(f_after=fitting_window.preview_figure.adjust_size)
 
-        if self.log.get_param('proceed'):
-            if self.log.get_param('proceed') == 'return_to_photometry':
-                self.photometry()
+            self.activate()
+            self.update_window()
+
+            if self.log.get_param('proceed'):
+                if self.log.get_param('proceed') == 'return_to_photometry':
+                    self.photometry()
+
+        except:
+            print('\nFitting failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def open_observing_planner(self):
 
-        self.disable()
+        try:
 
-        observing_planner_window = ObservingPlannerWindow(self.log)
-        observing_planner_window.run()
+            self.disable()
+    
+            observing_planner_window = ObservingPlannerWindow(self.log)
+            observing_planner_window.run()
+    
+            self.activate()
 
-        self.activate()
+        except:
+            print('\nObserving Planner failed:')
+            traceback.print_exc()
+            print()
+
+            self.activate()
+            self.update_window()
 
     def update_window(self):
 
