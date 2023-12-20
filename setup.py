@@ -7,10 +7,6 @@ from setuptools import setup
 name = 'hops'
 description = 'HOlomon Photometry Software - A software to analyse data from small ground-based telescopes'
 url = 'https://https://github.com/ExoWorldsSpies/hops'
-install_requires = ['requests', 'matplotlib>=3.3.3', 'numpy>=1.20.0', 'emcee>=3.0.2', 'seaborn',
-                    'astropy>=4.2', 'scipy>=1.5.2', 'astroquery>=0.4.1', 'pillow', 'quantities', 'pyyaml',
-                    'exotethys>=2.0.4', 'click', 'twirl==0.1.3'
-                    ]
 
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
@@ -61,7 +57,6 @@ setup(
                  'Programming Language :: Python :: 3.7',
                  ],
     packages=[name],
-    install_requires=install_requires,
     include_package_data=True,
     zip_safe=False,
 )
