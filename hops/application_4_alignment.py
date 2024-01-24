@@ -9,8 +9,11 @@ import matplotlib.patches as mpatches
 from astropy.io import fits as pf
 
 from hops.application_windows import MainWindow
-from hops.hops_tools.images_find_stars import *
+from hops.hops_tools.fits import get_fits_data_and_header
+from hops.hops_tools.image_analysis import image_find_stars
 
+import sys
+sys.setrecursionlimit(100000000)
 
 class AlignmentWindow(MainWindow):
 
@@ -20,8 +23,6 @@ class AlignmentWindow(MainWindow):
 
         # set variables, create and place widgets
 
-        self.bin_fits = self.log.get_param('bin_fits')
-        self.burn_limit = self.log.get_param('burn_limit') * self.bin_fits * self.bin_fits
         self.shift_tolerance_p = self.log.get_param('shift_tolerance_p')
         self.rotation_tolerance = self.log.get_param('rotation_tolerance')
         self.min_calibration_stars_number = int(self.log.get_param('min_calibration_stars_number'))
@@ -52,14 +53,16 @@ class AlignmentWindow(MainWindow):
         self.redraw = None
         self.stars = None
         self.science_file = None
-        self.fits = None
-        self.std = None
-        self.mean = None
-        self.star_std = None
+        self.fits_data = None
+        self.fits_header = None
         self.int_psf = None
         self.stars_detected = None
         self.rotation_detected = None
         self.check_num = None
+        self.target_x0 = None
+        self.target_y0 = None
+        self.target_r = None
+        self.target_u = None
         self.x0 = None
         self.y0 = None
         self.u0 = None
@@ -68,24 +71,22 @@ class AlignmentWindow(MainWindow):
         self.comparisons_snr = None
         self.small_angles = None
         self.large_angles = None
-        self.circle = None
         self.settings_to_check = None
 
         # common definitions for all images
 
-        fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))
+        fits_data, fits_header = get_fits_data_and_header(os.path.join(self.log.reduction_directory, self.science_files[0]))
 
         t0 = time.time()
-        _ = plc.mean_std_from_median_mad(fits[1].data)
+        _ = plc.mean_std_from_median_mad(fits_data)
         self.fr_time = int(200 * (time.time()-t0))
 
-        self.shift_tolerance = int(max(len(fits[1].data), len(fits[1].data[0])) * (self.shift_tolerance_p / 100.0))
-        self.y_length, self.x_length = fits[1].data.shape
-        self.circles_diameter = 0.02 * max(self.y_length, self.x_length)
+        self.shift_tolerance = int(max(fits_data.shape) * (self.shift_tolerance_p / 100.0))
+        self.circles_diameter = 12 * fits_header[self.log.psf_key]
 
         # progress window
 
-        self.progress_figure = self.FitsWindow(input=fits[1], input_name=self.science_files[0])
+        self.progress_figure = self.FitsWindow(fits_data=fits_data, fits_header=fits_header, input_name=self.science_files[0])
         self.progress_all_stars = self.Label(text='')
         self.progress_alignment = self.Progressbar(task="Aligning frames")
         self.progress_half_frame = self.CheckButton(text='Show smaller frame', initial=0)
@@ -134,26 +135,28 @@ class AlignmentWindow(MainWindow):
 
         else:
 
-            fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))
-            metadata = self.all_frames[self.science_files[0]]
+            fits_data, fits_header = get_fits_data_and_header(os.path.join(self.log.reduction_directory, self.science_files[0]))
 
-            self.progress_figure.load_fits(fits[1], self.science_files[0])
+            self.progress_figure.load_fits(fits_data, fits_header, self.science_files[0])
 
-            stars, psf = find_all_stars(fits[1].data,
-                                            mean=metadata[self.log.mean_key], std=metadata[self.log.std_key],
-                                            std_limit=3, burn_limit=self.burn_limit, star_std=metadata[self.log.psf_key],
-                                            progressbar=self.progress_all_stars, progress_window=self,
-                                            verbose=True, order_by_flux=True
-                                            )
-
-            if self.exit:
-                self.after(self.choose_calibration_stars)
+            stars = image_find_stars(fits_data, fits_header,
+                                     mean=fits_header[self.log.mean_key], std=fits_header[self.log.std_key],
+                                     burn_limit=fits_header[self.log.hops_saturation_key],
+                                     psf=fits_header[self.log.psf_key],
+                                     progress_window=self,
+                                     verbose=True
+                                     )
 
             stars = np.array(stars)
 
             self.log.save_local_log()
 
-            all_stars_dict = {'all_stars': stars}
+            all_stars_dict = {'all_stars': stars,
+                              'x-length': len(fits_data[0]),
+                              'y-length': len(fits_data),
+                              'psf': fits_header[self.log.psf_key],
+                              'burn_limit': fits_header[self.log.hops_saturation_key],
+                              }
             plc.save_dict(all_stars_dict, 'all_stars.pickle')
 
             self.progress_all_stars.set('Choosing calibrating stars...')
@@ -169,28 +172,23 @@ class AlignmentWindow(MainWindow):
 
             all_stars_dict = plc.open_dict('all_stars.pickle')
             stars = np.array(all_stars_dict['all_stars'])
+            psf = np.array(all_stars_dict['psf'])
+            burn_limit = all_stars_dict['burn_limit']
+            length = np.sqrt((all_stars_dict['x-length']/2)**2 + (all_stars_dict['y-length']/2)**2)
 
-            fits = pf.open(os.path.join(self.log.reduction_directory, self.science_files[0]), memmap=False)
-            metadata = self.all_frames[self.science_files[0]]
-
-            frame_mean = metadata[self.log.mean_key]
-            frame_std = metadata[self.log.std_key]
-            frame_star_psf = metadata[self.log.psf_key]
-
-            min_flux = np.log10(np.min(stars[:, -1]))
-            max_flux = np.log10(np.max(stars[:, -1]))
-
+            min_flux = np.log10(np.min(stars[:, 2]) - 1)
+            max_flux = np.log10(0.5 * burn_limit)
             weight_distance = 2
             weight_flux = 1
             stars = sorted(stars,
-                                    key=lambda x: - (weight_flux * ((np.log10(x[-1]) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - 4*x[-2]/min(fits[1].data.shape)))
-                                                  /(weight_distance + weight_flux)
+                           key=lambda x: - (weight_flux * ((np.log10(min(x[2], 0.5 * burn_limit)) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - np.sqrt((x[0] - all_stars_dict['x-length']/2)**2 + (x[1] - all_stars_dict['y-length']/2)**2)/length))
+                                         / (weight_distance + weight_flux)
                            )
 
             self.x0 = stars[0][0]
             self.y0 = stars[0][1]
             self.u0 = 0.0
-            self.f0 = stars[0][-1]
+            self.f0 = stars[0][7]
 
             self.x0_fits0 = 1.0 * self.x0
             self.y0_fits0 = 1.0 * self.y0
@@ -198,25 +196,32 @@ class AlignmentWindow(MainWindow):
             self.f0_fits0 = 1.0 * self.f0
 
             del stars[0]
+
+            stars = np.array(stars)
+            min_flux = np.log10(np.min(stars[:, 7]) - 1)
+            max_flux = np.log10(np.max(stars[:, 7]))
             weight_distance = 1
             weight_flux = 3
             stars = sorted(stars,
-                           key=lambda x: - (weight_flux * ((np.log10(x[-1]) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - min(1, x[-2]/min(fits[1].data.shape))))
-                                         /(weight_distance + weight_flux)
+                           key=lambda x: - (weight_flux * ((np.log10(x[7]) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - np.sqrt((x[0] - all_stars_dict['x-length']/2)**2 + (x[1] - all_stars_dict['y-length']/2)**2)/length))
+                                         / (weight_distance + weight_flux)
                            )
 
             # take the rest as calibration stars and calculate their polar coordinates relatively to the first
             self.comparisons = []
             for star in stars:
                 r_position, u_position = plc.cartesian_to_polar(star[0], star[1], self.x0, self.y0)
-                if r_position > 5 * frame_star_psf:
+                if r_position > 5 * psf:
                     self.comparisons.append([r_position, u_position])
 
             self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.comparisons) / 10.0)
+            if self.check_num < 10 and len(self.comparisons) >=0:
+                self.check_num = 10
 
-            fits.close()
+            if self.target_x0:
+                self.target_r, self.target_u = plc.cartesian_to_polar(self.target_x0, self.target_y0, self.x0, self.y0)
 
-            ustep = np.arcsin(float(frame_star_psf) / self.comparisons[int(len(self.comparisons) / 2)][0])
+            ustep = np.arcsin(psf / self.comparisons[int(len(self.comparisons) / 2)][0])
             self.small_angles = np.append(np.arange(-self.rotation_tolerance, self.rotation_tolerance, ustep),
                                           np.arange(-self.rotation_tolerance, self.rotation_tolerance, ustep) + np.pi)
 
@@ -245,20 +250,25 @@ class AlignmentWindow(MainWindow):
 
             self.stars = None
             self.science_file = self.science_files[self.science_counter]
-            self.fits = pf.open(os.path.join(self.log.reduction_directory, self.science_file), memmap=False, mode='update')
-            self.std = self.fits[1].header[self.log.std_key]
-            self.mean = self.fits[1].header[self.log.mean_key]
-            self.star_std = self.fits[1].header[self.log.psf_key]
-            self.int_psf = int(max(1, round(self.fits[1].header[self.log.psf_key])))
-            self.stars_detected = False
-            self.rotation_detected = False
+            self.alignment_log(self.science_file)
+            self.fits_data, self.fits_header = get_fits_data_and_header(os.path.join(self.log.reduction_directory,
+                                                                                     self.science_file))
+
+            if self.science_counter == 0:
+                t0 = time.time()
+                _ = plc.mean_std_from_median_mad(self.fits_data)
+                self.fr_time = int(2000 * (time.time()-t0))
+
+            self.y_length, self.x_length = self.fits_data.shape
+            self.fits_datax, self.fits_datay = np.meshgrid(np.arange(0, self.x_length) + 0.5,
+                                                           np.arange(0, self.y_length) + 0.5)
 
             self.progress_alignment.show_message(' ')
+            self.progress_figure.load_fits(self.fits_data, self.fits_header, self.science_file, draw=False,
+                                           show_half=self.progress_half_frame.get())
 
-            self.progress_figure.load_fits(self.fits[1], self.science_file, draw=False, show_half=self.progress_half_frame.get())
-            self.circle = mpatches.Circle((self.x0, self.y0), self.circles_diameter, ec='r', fill=False)
-            self.progress_figure.ax.add_patch(self.circle)
-
+            self.stars_detected = False
+            self.rotation_detected = False
             self.test_level = 1
             self.redraw = 0
             self.skip_time = 0
@@ -276,49 +286,62 @@ class AlignmentWindow(MainWindow):
             self.setting_checking = 0
 
             if self.test_level == 1:
-                self.stars = find_single_star(self.fits[1].data, self.x0, self.y0,
-                                              window=self.shift_tolerance/self.star_std, mean=self.mean, std=self.std,
-                                              burn_limit=self.burn_limit, star_std=self.star_std)
+
+                self.stars = image_find_stars(self.fits_data, self.fits_header,
+                                              x_low=self.x0 - 10 * self.fits_header[self.log.psf_key],
+                                              x_upper=self.x0 + 10 * self.fits_header[self.log.psf_key],
+                                              y_low=self.y0 - 10 * self.fits_header[self.log.psf_key],
+                                              y_upper=self.y0 + 10 * self.fits_header[self.log.psf_key],
+                                              x_centre=self.x0,
+                                              y_centre=self.y0,
+                                              mean=self.fits_header[self.log.mean_key],
+                                              std=self.fits_header[self.log.std_key],
+                                              burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                              psf=self.fits_header[self.log.psf_key],
+                                              order_by_flux=False
+                                              )
+
                 if self.stars:
-                    self.stars.append(2 * np.pi * self.stars[2] * self.stars[4] * self.stars[5])
-                    self.stars = [self.stars]
-                    self.settings_to_check.append([self.stars[0][0], self.stars[0][1], self.u0, self.stars[0]])
+                    for star in self.stars:
+                        self.settings_to_check.append([star[0], star[1], self.u0, star])
 
                 self.check_star()
 
             elif self.test_level == 2:
-                self.skip_time = time.time()
-                self.stars = find_all_stars(self.fits[1].data, x_low=self.x0 - self.shift_tolerance,
-                                                x_upper=self.x0 + self.shift_tolerance,
-                                                y_low=self.y0 - self.shift_tolerance,
-                                                y_upper=self.y0 + self.shift_tolerance, x_centre=self.x0,
-                                                y_centre=self.y0, mean=self.mean,
-                                                std=self.std, burn_limit=self.burn_limit,
-                                                star_std=self.star_std,
-                                                order_by_distance_and_flux=self.f0)[0]
-                self.progress_all_stars.set(' ')
-                if self.stars:
-                    for star in self.stars[:2]:
-                        for rotation in self.small_angles:
-                            self.settings_to_check.append([star[0], star[1], rotation, star])
 
-                self.after(self.check_star)
+                self.stars = image_find_stars(self.fits_data, self.fits_header,
+                                         mean=self.fits_header[self.log.mean_key], std=self.fits_header[self.log.std_key],
+                                         burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                         psf=self.fits_header[self.log.psf_key],
+                                         verbose=True, order_by_flux=True
+                                         )
 
-            elif self.test_level == 3:
-                self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.burn_limit,
-                                            star_std=self.star_std, order_by_flux=True, verbose=True)[0]
+                # self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.saturation,
+                #                             psf=self.psf, order_by_flux=True, verbose=True)
+
                 self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)
                 self.progress_all_stars.set(' ')
 
-                if self.stars:
+                if self.stars and len(self.stars) > 5:
 
                     all_stars_dict = plc.open_dict('all_stars.pickle')
                     all_stars = np.array(all_stars_dict['all_stars'])
 
+                    # for ii in all_stars[:20]:
+                    #     circle = mpatches.Circle((ii[0], ii[1]), 20, ec='r', fill=False)
+                    #     self.progress_figure.ax.add_patch(circle)
+                    # for ii in self.stars[:20]:
+                    #     circle = mpatches.Circle((ii[0], ii[1]), 30, ec='g', fill=False)
+                    #     self.progress_figure.ax.add_patch(circle)
+
                     X = twirl.utils.find_transform(
-                        np.array([ff[:2] for ff in all_stars[:50]]),
-                        np.array([ff[:2] for ff in self.stars[:50]]),
-                        n=15, tolerance=2 * self.star_std)
+                        np.array([[star[0], star[1]] for star in all_stars[:20]]),
+                        np.array([[star[0], star[1]] for star in self.stars[:20]]),
+                        n=20, tolerance=3 * self.fits_header[self.log.psf_key])
+
+                    # for ii in twirl.utils.affine_transform(X)(np.array([[star[0], star[1]] for star in all_stars[:20]])):
+                    #     circle = mpatches.Circle((ii[0], ii[1]), 40, ec='b', fill=False)
+                    #     self.progress_figure.ax.add_patch(circle)
 
                     center, check = twirl.utils.affine_transform(X)(np.array([[self.x0_fits0, self.y0_fits0],
                                                                     [self.x0_fits0 + 10, self.y0_fits0]
@@ -330,7 +353,7 @@ class AlignmentWindow(MainWindow):
 
                 self.after(self.check_star)
 
-            elif self.test_level == 4:
+            elif self.test_level == 3:
                 if self.askyesno('HOPS - Alignment', 'Stars not detected.\n'
                                                      'Do you want to skip this frame?'):
                     self.plot_current()
@@ -350,14 +373,13 @@ class AlignmentWindow(MainWindow):
 
         else:
 
+            int_psf = int(max(1, round(self.fits_header[self.log.psf_key])))
+            y_length, x_length = self.fits_data.shape
+
             if self.setting_checking < len(self.settings_to_check):
 
                 x, y, u, star = self.settings_to_check[self.setting_checking]
                 self.alignment_log('Checking star at: ', x, y, ', with rotation:', u)
-
-                if self.test_level > 1 and x != self.circle.center[0]:
-                    self.circle.set_center((x, y))
-                    self.progress_figure.draw()
 
                 test = 0
 
@@ -366,10 +388,10 @@ class AlignmentWindow(MainWindow):
                     check_x = int(x + comp[0] * np.cos(u + comp[1]))
                     check_y = int(y + comp[0] * np.sin(u + comp[1]))
                     if 0 < check_x < self.x_length and 0 < check_y < self.y_length:
-                        check_sum = np.sum(self.fits[1].data[check_y - self.int_psf:check_y + self.int_psf + 1,
-                                           check_x - self.int_psf:check_x + self.int_psf + 1])
-                        check_lim = (self.fits[1].header[self.log.mean_key] +
-                                     3 * self.fits[1].header[self.log.std_key]) * ((2 * self.int_psf + 1) ** 2)
+                        check_sum = np.sum(self.fits_data[check_y - int_psf:check_y + int_psf + 1,
+                                           check_x - int_psf:check_x + int_psf + 1])
+                        check_lim = (self.fits_header[self.log.mean_key] +
+                                     3 * self.fits_header[self.log.std_key]) * ((2 * int_psf + 1) ** 2)
                         if check_sum > check_lim:
                             test += 1
                         else:
@@ -394,18 +416,16 @@ class AlignmentWindow(MainWindow):
             else:
                 if self.test_level == 1:
                     self.test_level = 2
-                    self.progress_figure.draw()
                     self.progress_all_stars.set('Analysing frame...')
-                    self.progress_alignment.show_message('Testing small shift & rotation...')
+                    self.progress_alignment.show_message('Testing large shift & rotation...')
+                    self.progress_figure.load_fits(self.fits_data, self.fits_header, self.science_file, draw=True,
+                                                   show_half=self.progress_half_frame.get())
                     self.after(self.detect_stars)
                 elif self.test_level == 2:
                     self.test_level = 3
-                    self.progress_all_stars.set('Analysing frame...')
-                    self.progress_alignment.show_message('Testing large shift & rotation...')
-                    self.after(self.detect_stars)
-                elif self.test_level == 3:
-                    self.test_level = 4
                     self.progress_alignment.show_message('Testing all shifts & rotations...')
+                    self.progress_figure.load_fits(self.fits_data, self.fits_header, self.science_file, draw=True,
+                                                   show_half=self.progress_half_frame.get())
                     self.after(self.detect_stars)
                 else:
                     self.plot_current()
@@ -419,60 +439,96 @@ class AlignmentWindow(MainWindow):
 
             if self.stars_detected:
 
-                if self.rotation_detected:
+                test_u0 = []
+                test_cos = []
+                test_sin = []
 
-                    test_u0 = []
-                    test_cos = []
-                    test_sin = []
+                for ii in self.comparisons:
+                    check_x = self.x0 + ii[0] * np.cos(self.u0 + ii[1])
+                    check_y = self.y0 + ii[0] * np.sin(self.u0 + ii[1])
 
-                    for ii in self.comparisons[:int(self.check_num + 0.5)]:
-                        check_x = self.x0 + ii[0] * np.cos(self.u0 + ii[1])
-                        check_y = self.y0 + ii[0] * np.sin(self.u0 + ii[1])
-                        star = find_single_star(self.fits[1].data, check_x, check_y, mean=self.mean,  std=self.std,
-                                                    burn_limit=self.burn_limit, star_std=self.star_std)
+                    if 0 < check_x < self.x_length and 0 < check_y < self.y_length:
 
-                        if star:
-                            diff = plc.cartesian_to_polar(star[0], star[1], self.x0, self.y0)[1] - ii[1]
-                            if diff < 0:
-                                diff += 2 * np.pi
-                            test_u0.append(diff)
-                            test_cos.append(np.cos(diff))
-                            test_sin.append(np.sin(diff))
+                        search_window = 3
+                        search_window = int(round(search_window * self.fits_header[self.log.psf_key]))
+                        y_min = int(max(int(check_y) - search_window, 0))
+                        y_max = int(min(int(check_y) + search_window + 1, self.y_length))
+                        x_min = int(max(int(check_x) - search_window, 0))
+                        x_max = int(min(int(check_x) + search_window + 1, self.x_length))
+                        test_window = self.fits_data[y_min: y_max, x_min: x_max]
+                        test_windowx = self.fits_datax[y_min: y_max, x_min: x_max]
+                        test_windowy = self.fits_datay[y_min: y_max, x_min: x_max]
+                        test_window_sum = np.sum(test_window)
 
-                    if len(test_u0) > 0:
-                        test_cos = np.median(test_cos)
-                        test_sin = np.median(test_sin)
+                        polar = plc.cartesian_to_polar(
+                            np.sum(test_window * test_windowx) / test_window_sum,
+                            np.sum(test_window * test_windowy) / test_window_sum,
+                            self.x0, self.y0)
+                        diff = polar[1] - ii[1]
+                        if diff < 0:
+                            diff += 2 * np.pi
+                        test_u0.append(diff)
+                        test_cos.append(np.cos(diff))
+                        test_sin.append(np.sin(diff))
 
-                        self.u0 = np.arccos(test_cos)
-                        if test_sin < 0:
-                            self.u0 = np.pi + (np.pi - self.u0)
+                    if len(test_u0) >= 20:
+                        break
 
-                self.fits[1].header.set(self.log.align_x0_key, self.x0)
-                self.fits[1].header.set(self.log.align_y0_key, self.y0)
-                self.fits[1].header.set(self.log.align_u0_key, self.u0)
+                test_cos = np.median(test_cos)
+                test_sin = np.median(test_sin)
 
-                self.circle.set_center((self.x0, self.y0))
+                self.u0 = np.arccos(test_cos)
+                if test_sin < 0:
+                    self.u0 = np.pi + (np.pi - self.u0)
+
+                self.alignment_log(test_cos, test_sin)
+                self.alignment_log(self.x0, self.y0, self.u0)
+
+                fits = pf.open(os.path.join(self.log.reduction_directory, self.science_file), memmap=False, mode='update')
+                fits[1].header.set(self.log.align_x0_key, self.x0)
+                fits[1].header.set(self.log.align_y0_key, self.y0)
+                fits[1].header.set(self.log.align_u0_key, self.u0)
+                fits.flush()
+                fits.close()
+
+                circle = mpatches.Circle((self.x0, self.y0), self.circles_diameter, ec='r', fill=False)
+                self.progress_figure.ax.add_patch(circle)
                 for ii in self.comparisons[:int(self.check_num + 0.5)]:
                     circle = mpatches.Circle((self.x0 + ii[0] * np.cos(self.u0 + ii[1]),
                                               self.y0 + ii[0] * np.sin(self.u0 + ii[1])),
                                              self.circles_diameter, ec='w', fill=False)
                     self.progress_figure.ax.add_patch(circle)
 
+                if self.target_x0:
+
+                    target_x = self.x0 + self.target_r * np.cos(self.u0 + self.target_u)
+                    target_y = self.y0 + self.target_r * np.sin(self.u0 + self.target_u)
+                    dd = len(self.fits_data[0]) * 0.1
+                    arrow = mpatches.Arrow(target_x - dd, target_y - dd, 0.9 * dd, 0.9 * dd, width=dd/3, color='r')
+
+                    text = self.log.get_param('target_name')
+                    self.progress_figure.ax.text(target_x - 0.4 * dd, target_y - 0.5 * dd,
+                                                 text, color='r', va='top', ha='left')
+                    self.progress_figure.ax.add_patch(arrow)
+
             else:
 
-                self.fits[1].header.set(self.log.align_x0_key, False)
-                self.fits[1].header.set(self.log.align_y0_key, False)
-                self.fits[1].header.set(self.log.align_u0_key, False)
+                fits = pf.open(os.path.join(self.log.reduction_directory, self.science_file),
+                               memmap=False, mode='update')
+                fits[1].header.set(self.log.align_x0_key, False)
+                fits[1].header.set(self.log.align_y0_key, False)
+                fits[1].header.set(self.log.align_u0_key, False)
+                fits.flush()
+                fits.close()
 
-            self.all_frames[self.science_file][self.log.align_x0_key] = self.fits[1].header[self.log.align_x0_key]
-            self.all_frames[self.science_file][self.log.align_y0_key] = self.fits[1].header[self.log.align_y0_key]
-            self.all_frames[self.science_file][self.log.align_u0_key] = self.fits[1].header[self.log.align_u0_key]
+                time.sleep(1)
 
-            if not self.fits[1].header[self.log.align_x0_key]:
+            self.all_frames[self.science_file][self.log.align_x0_key] = self.x0
+            self.all_frames[self.science_file][self.log.align_y0_key] = self.y0
+            self.all_frames[self.science_file][self.log.align_u0_key] = self.u0
+
+            if not self.x0:
                 self.all_frames[self.science_file][self.log.skip_key] = True
-
-            self.fits.flush()
-            self.fits.close()
 
             self.progress_figure.draw()
             if self.skip_time == 0:
@@ -486,7 +542,7 @@ class AlignmentWindow(MainWindow):
                 self.progress_all_stars.set('Aligning all stars in all frames...')
                 self.after(self.save)
             else:
-                self.after(self.align)
+                self.after(self.align, time=self.fr_time)
 
     def save(self):
 
@@ -505,7 +561,6 @@ class AlignmentWindow(MainWindow):
 
             all_stars_dict = plc.open_dict('all_stars.pickle')
             stars = np.array(all_stars_dict['all_stars'])
-            fits = plc.open_fits(os.path.join(self.log.reduction_directory, self.science_files[0]))
 
             polar_coords = []
             for star in all_stars_dict['all_stars']:
@@ -527,7 +582,7 @@ class AlignmentWindow(MainWindow):
                 ref_x_position = metadata[self.log.align_x0_key]
                 ref_y_position = metadata[self.log.align_y0_key]
                 ref_u_position = metadata[self.log.align_u0_key]
-                star_std = metadata[self.log.psf_key]
+                psf = metadata[self.log.psf_key]
 
                 if ref_x_position:
 
@@ -538,8 +593,8 @@ class AlignmentWindow(MainWindow):
                         cartesian_x = ref_x_position + star[0] * np.cos(ref_u_position + star[1])
                         cartesian_y = ref_y_position + star[0] * np.sin(ref_u_position + star[1])
 
-                        if (3 * star_std < cartesian_x < len(fits[1].data[0]) - 3 * star_std
-                                and 3 * star_std < cartesian_y < len(fits[1].data) - 3 * star_std):
+                        if (3 * psf < cartesian_x < all_stars_dict['x-length'] - 3 * psf
+                                and 3 * psf < cartesian_y < all_stars_dict['y-length'] - 3 * psf):
 
                             in_fov_single.append(1)
                         else:
@@ -549,10 +604,10 @@ class AlignmentWindow(MainWindow):
 
             all_stars_dict['in_fov'] = np.array(in_fov)
 
-            visible_fov_x_min = np.min(stars[np.where(in_fov), 0]) - 3 * star_std
-            visible_fov_x_max = np.max(stars[np.where(in_fov), 0]) + 3 * star_std
-            visible_fov_y_min = np.min(stars[np.where(in_fov), 1]) - 3 * star_std
-            visible_fov_y_max = np.max(stars[np.where(in_fov), 1]) + 3 * star_std
+            visible_fov_x_min = np.min(stars[np.where(in_fov), 0]) - 3 * psf
+            visible_fov_x_max = np.max(stars[np.where(in_fov), 0]) + 3 * psf
+            visible_fov_y_min = np.min(stars[np.where(in_fov), 1]) - 3 * psf
+            visible_fov_y_max = np.max(stars[np.where(in_fov), 1]) + 3 * psf
 
             self.log.set_param('min_x', float(visible_fov_x_min))
             self.log.set_param('min_y', float(visible_fov_y_min))

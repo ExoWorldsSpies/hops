@@ -21,8 +21,8 @@ def fit_gaussian(datax, datay, positive=False, sampled=False, sampled_precision=
 
     # TODO option to restrict the space searched
 
-    datax = np.array(datax, dtype=np.float)
-    datay = np.array(datay, dtype=np.float)
+    datax = np.array(datax, dtype=float)
+    datay = np.array(datay, dtype=float)
 
     # TODO option to point towards the solution
 

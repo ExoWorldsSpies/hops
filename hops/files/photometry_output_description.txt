@@ -48,25 +48,25 @@ the following information (in order):
 . comparison 2 y position in pixels
 . comparison 3 y position in pixels
 ...
-. target total flux in counts
-. comparison 1 total flux in counts
-. comparison 2 total flux in counts
-. comparison 3 total flux in counts
+. target flux in counts
+. comparison 1 flux in counts
+. comparison 2 flux in counts
+. comparison 3 flux in counts
 ...
-. target total flux uncertainty in counts
-. comparison 1 total flux uncertainty in counts
-. comparison 2 total flux uncertainty in counts
-. comparison 3 total flux uncertainty in counts
+. target flux uncertainty in counts
+. comparison 1 flux uncertainty in counts
+. comparison 2 flux uncertainty in counts
+. comparison 3 flux uncertainty in counts
 ...
-. target sky/pixel flux in counts
-. comparison 1 sky flux/pixel in counts
-. comparison 2 sky flux/pixel in counts
-. comparison 3 sky flux/pixel in counts
+. target background in counts
+. comparison 1 background in counts
+. comparison 2 background in counts
+. comparison 3 background in counts
 ...
-. target sky/pixel flux uncertainty in counts
-. comparison 1 sky flux/pixel uncertainty in counts
-. comparison 2 sky flux/pixel uncertainty in counts
-. comparison 3 sky flux/pixel uncertainty in counts
+. target background uncertainty in counts
+. comparison 1 background uncertainty in counts
+. comparison 2 background uncertainty in counts
+. comparison 3 background uncertainty in counts
 ...
 
 --- PHOTOMETRY_g.txt ---
@@ -96,23 +96,18 @@ the following information (in order):
 . comparison 2 PSF STD across axis 2 in pixels
 . comparison 3 PSF STD across axis 2 in pixels
 ...
-. target PSF volume in counts
-. comparison 1 PSF volume in counts
-. comparison 2 PSF volume in counts
-. comparison 3 PSF volume in counts
+. target flux in counts
+. comparison 1 flux in counts
+. comparison 2 flux in counts
+. comparison 3 flux in counts
 ...
-. target PSF volume uncertainty in counts
-. comparison 1 PSF volume uncertainty in counts
-. comparison 2 PSF volume uncertainty in counts
-. comparison 3 PSF volume uncertainty in counts
+. target flux uncertainty in counts
+. comparison 1 flux uncertainty in counts
+. comparison 2 flux uncertainty in counts
+. comparison 3 flux uncertainty in counts
 ...
-. target PSF baseline in counts
-. comparison 1 PSF baseline in counts
-. comparison 2 PSF baseline in counts
-. comparison 3 PSF baseline in counts
-...
-. target PSF baseline uncertainty in counts
-. comparison 1 PSF baseline uncertainty in counts
-. comparison 2 PSF baseline uncertainty in counts
-. comparison 3 PSF baseline uncertainty in counts
+. target flux measurement uncertainty in counts
+. comparison 1 flux measurement uncertainty in counts
+. comparison 2 flux measurement uncertainty in counts
+. comparison 3 flux measurement uncertainty in counts
 ...

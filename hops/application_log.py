@@ -134,6 +134,14 @@ class HOPSLog:
         self.skip_key = 'SKIP'
         self.time_key = 'HOPSJD'
         self.airmass_key= 'AIRMASS'
+        self.hops_observatory_latitude_key = 'SITELAT'
+        self.hops_observatory_longitude_key = 'SITELONG'
+        self.hops_target_ra_key = 'RA'
+        self.hops_target_dec_key = 'DEC'
+        self.hops_datetime_key = 'DATE-OBS'
+        self.hops_exposure_key = 'EXPTIME'
+        self.hops_filter_key = 'FILTER'
+        self.hops_saturation_key = 'SATUR'
 
         # process - values
 

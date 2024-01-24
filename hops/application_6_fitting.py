@@ -663,12 +663,13 @@ class FittingWindow(MainWindow):
         time = fitting.results['input_series']['time']
         phase = (time - new_mid_time)/planet.period
 
-        predicted_transit_model = planet.transit_integrated(
-            time, 'BJD_TDB', float(self.exposure_time), 'start', filter_map[self.log.get_param('filter')]
-        )
         epoch = round((new_mid_time-planet.mid_time)/planet.period)
         predicted_mid_time = planet.mid_time + epoch * planet.period
         predicted_rp_over_rs = planet.rp_over_rs
+
+        predicted_transit_model = planet.transit_integrated(
+            time, 'BJD_TDB', float(self.exposure_time), 'start', filter_map[self.log.get_param('filter')]
+        )
 
         ax1.cla()
 
@@ -686,18 +687,18 @@ class FittingWindow(MainWindow):
             trend = 1
             std_res = fitting.results['detrended_statistics']['res_std']
 
-        self.plot_data = ax1.errorbar(phase, flux, flux_unc, c='k', fmt='o', ms=2, lw=0.5, zorder=0)
+        self.plot_data = ax1.errorbar(time, flux, flux_unc, c='k', fmt='o', ms=2, lw=0.5, zorder=0)
         self.plot_data = self.plot_data.lines[0].get_xdata()
-        ax1.plot(phase, flux, 'ko', ms=2, label=lc_type + ' data', zorder=0)
+        ax1.plot(time, flux, 'ko', ms=2, label=lc_type + ' data', zorder=0)
 
         if lc_type == 'Raw':
             ax1.errorbar(
-                (fitting.results['settings']['time'][np.where(fitting.results['prefit']['outliers_map'])]- new_mid_time)/planet.period,
+                fitting.results['settings']['time'][np.where(fitting.results['prefit']['outliers_map'])],
                 fitting.results['settings']['flux'][np.where(fitting.results['prefit']['outliers_map'])],
                 fitting.results['settings']['flux_unc'][np.where(fitting.results['prefit']['outliers_map'])] * fitting.results['prefit']['scale_factor'],
                 c='k', fmt='o', ms=2, lw=0.5, zorder=0)
             ax1.plot(
-                (fitting.results['settings']['time'][np.where(fitting.results['prefit']['outliers_map'])]- new_mid_time)/planet.period,
+                fitting.results['settings']['time'][np.where(fitting.results['prefit']['outliers_map'])],
                 fitting.results['settings']['flux'][np.where(fitting.results['prefit']['outliers_map'])],
                 'rx', ms=7, label='Outliers (not fitted)', zorder=1)
 
@@ -707,12 +708,10 @@ class FittingWindow(MainWindow):
         ax1.set_yticks(ax1.get_yticks()[np.where(ax1.get_yticks() > data_ymin)])
         ymin, ymax = data_ymax - 1.3 * (data_ymax - data_ymin), data_ymax
         ax1.set_ylim(ymin, ymax)
-        x_max = max(np.abs(phase) + 0.05 * (max(phase) - min(phase)))
 
-        ax1.set_xlim(-x_max, x_max)
         ax1.tick_params(labelbottom=False, labelsize=self.fsmain)
 
-        ax1.plot(phase, model, 'r-', label='Best-fit model (De-trending: {11}, a/Rs,i: {12})\n{0}{3}{0}={0}{4}_{1}-{5}{2}^{1}+{6}{2}{0}, {0}{7}{0}={0}{8}_{1}-{9}{2}^{1}+{10}{2}{0}'.format(
+        ax1.plot(time, model, 'r-', label='Best-fit model (De-trending: {11}, a/Rs,i: {12})\n{0}{3}{0}={0}{4}_{1}-{5}{2}^{1}+{6}{2}{0}, {0}{7}{0}={0}{8}_{1}-{9}{2}^{1}+{10}{2}{0}'.format(
             '$', '{', '}',
             fitting.results['parameters']['T_mid']['print_name'],
             fitting.results['parameters']['T_mid']['print_value'],
@@ -726,7 +725,7 @@ class FittingWindow(MainWindow):
             ['Fixed', 'Free'][self.a_i_fit.get()],
         ),zorder=3)
 
-        ax1.plot(phase, predicted_transit_model * trend, 'c-', label='Expected model\n{0}{3}{0}={0}{4}{0}, {0}{5}{0}={0}{6}{0}, O-C={0}{7}_{1}-{8}{2}^{1}+{9}{2}{0} min'.format(
+        ax1.plot(time, predicted_transit_model * trend, 'c-', label='Expected model\n{0}{3}{0}={0}{4}{0}, {0}{5}{0}={0}{6}{0}, O-C={0}{7}_{1}-{8}{2}^{1}+{9}{2}{0} min'.format(
             '$','{', '}',
             fitting.results['parameters']['T_mid']['print_name'],
             round(predicted_mid_time, 5),
@@ -747,15 +746,14 @@ class FittingWindow(MainWindow):
         res_autocorr = fitting.results['statistics']['res_max_autocorr']
         res_autocorr_flag = fitting.results['statistics']['res_max_autocorr_flag']
 
-        ax2.errorbar(phase, detrended_residuals,  detrended_flux_unc, c='k', fmt='o', ms=2, lw=0.5)
-        ax2.plot(phase, detrended_residuals, 'ko', ms=2)
-        ax2.plot(phase, np.zeros_like(phase), 'r-')
+        ax2.errorbar(time, detrended_residuals,  detrended_flux_unc, c='k', fmt='o', ms=2, lw=0.5)
+        ax2.plot(time, detrended_residuals, 'ko', ms=2)
+        ax2.plot(time, np.zeros_like(time), 'r-')
 
         ax2.set_ylim(- 6 * detrended_std_res, 6 * detrended_std_res)
 
         ax2.set_xlabel('Phase', fontsize=self.fsmain)
 
-        ax2.set_xlim(-x_max, x_max)
         ax2.tick_params(labelsize=self.fsmain)
 
         ax2.text(ax2.get_xlim()[0] + 0.02 * (ax2.get_xlim()[-1] - ax2.get_xlim()[0]),

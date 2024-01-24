@@ -42,8 +42,10 @@ simbad_target_name: Target name
 max_comparisons: 10
 sky_inner_aperture: 1.7
 sky_outer_aperture: 2.4
+star_size_arcsec: 4.0
+camera_gain: 1.0
 target_ra_dec: hh:mm:ss +dd:mm:ss
-target_name: ''
+target_name: 'Your target'
 time_stamp: exposure start
 data_target_complete: false
 data_target_version: false
@@ -89,7 +91,7 @@ photometry_fov_options:
   - auto
 show_good_comparisons: True
 show_good_comparisons_percent: 40
-use_variable_aperture: False
+use_variable_aperture: True
 use_geometric_center: False
 target_ra_dec_choice: 0
 comparison_10_aperture: 0.0

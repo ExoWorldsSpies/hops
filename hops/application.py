@@ -12,7 +12,7 @@ from .application_log import HOPSLog
 from .application_windows import MainWindow
 from .application_1_data_target import DataTargetWindow
 from .application_2_reduction import ReductionWindow
-from .application_3_inspectiont import InspectiontWindow
+from .application_3_inspection import InspectiontWindow
 from .application_4_alignment import AlignmentWindow
 from .application_5_photometry import PhotometryWindow, PhotometryProgressWindow
 from .application_6_fitting import FittingWindow
@@ -248,7 +248,12 @@ class HOPS(MainWindow):
             self.disable()
 
             inspection_window = InspectiontWindow(self.log)
-            inspection_window.run(f_before=inspection_window.adjust_size)
+            inspection_window.run(f_before=inspection_window.disable,
+                                  f_after=[
+                                      inspection_window.first_image_warning,
+                                      inspection_window.activate,
+                                      inspection_window.show
+                                  ])
 
             self.activate()
             self.update_window()
@@ -341,7 +346,7 @@ class HOPS(MainWindow):
                     self.fitting()
 
         except:
-            print('\nPhotometry failed:')
+            print('\nPhotometry progress failed:')
             traceback.print_exc()
             print()
 

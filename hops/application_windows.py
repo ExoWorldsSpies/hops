@@ -46,19 +46,21 @@ class HOPSWindow:
         self.log = log
 
         self.root = Tk()
-        self.mainloop_on = False
-        self.exit = False
+        self.hide()
+        self.main_frame = self.root
+        self.root.protocol('WM_DELETE_WINDOW', self.close)
+
         self.name = name
-        self.jobs = []
+        self.position = position
         self.root.wm_title(name)
         if sizex and sizey:
             self.root.geometry('{0}x{1}'.format(int(self.root.winfo_screenwidth() / sizex),
                                                 int(self.root.winfo_screenheight() / sizey)))
 
-        self.hide()
-
-        self.finalised = False
-        self.position = position
+        self.mainloop_on = False
+        self.exit = False
+        self.widgets = []
+        self.jobs = []
 
         self.DISABLED = DISABLED
         self.NORMAL = NORMAL
@@ -71,12 +73,6 @@ class HOPSWindow:
         self.Y = Y
         self.HORIZONTAL = HORIZONTAL
         self.VERTICAL = VERTICAL
-
-        self.main_frame = self.root
-
-        self.widgets = []
-
-        self.root.protocol('WM_DELETE_WINDOW', self.close)
 
     def no_action(self):
         pass
@@ -182,14 +178,6 @@ class HOPSWindow:
         self.root.deiconify()
         self.update_idletasks()
 
-    def loop(self, f_after=None):
-
-        self.mainloop_on = True
-
-        self.after(f_after)
-
-        self.root.mainloop()
-
     def hide(self):
 
         self.root.withdraw()
@@ -200,8 +188,14 @@ class HOPSWindow:
 
         if f_before:
             f_before()
+
         self.show()
-        self.loop(f_after)
+
+        self.mainloop_on = True
+
+        self.after(f_after)
+
+        self.root.mainloop()
 
     def trigger_exit(self):
         self.exit = True
@@ -698,7 +692,7 @@ class HOPSFigureWindow(HOPSWidget):
 
     def __init__(self, window,
                  figsize=None, max_figsize_percent=(0.9,0.8),
-                 show_nav=False):
+                 show_nav=False, subplots_adjust=None,):
 
         widget = Frame(window.main_frame)
 
@@ -712,6 +706,10 @@ class HOPSFigureWindow(HOPSWidget):
         self.figure.patch.set_facecolor('white')
         self.canvas = FigureCanvasTkAgg(self.figure, master=widget)
         self.canvas.get_tk_widget().pack(side=TOP)
+
+        if subplots_adjust:
+            self.figure.subplots_adjust(left=subplots_adjust[0], right=subplots_adjust[1],
+                                        bottom=subplots_adjust[2], top=subplots_adjust[3])
 
         if show_nav:
             toolbar = NavigationToolbar2Tk(self.canvas, widget)
@@ -750,7 +748,7 @@ class HOPSFigureWindow(HOPSWidget):
 
 class HOPSFitsWindow(HOPSWidget):
 
-    def __init__(self, window, input=None,
+    def __init__(self, window, fits_data=None, fits_header=None,
                  input_name=None, input_options=None,
                  max_figsize_percent=(0.9,0.8),  subplots_adjust=None,
                  show_nav=False, show_controls=False, show_axes=False):
@@ -867,8 +865,8 @@ class HOPSFitsWindow(HOPSWidget):
         else:
             self.canvas.stop_event_loop
 
-        if input:
-            self.load_fits(input, input_name, input_options)
+        if type(fits_data) != type(None):
+            self.load_fits(fits_data, fits_header, input_name, input_options)
 
     def adjust_size(self):
 
@@ -889,17 +887,9 @@ class HOPSFitsWindow(HOPSWidget):
 
         self.window.reposition()
 
-    def load_fits(self, input, input_name=None, input_options=None, draw=True, shift=0, show_half=False):
+    def load_fits(self, fits_data, fits_header, input_name=None, input_options=None, draw=True, shift=0, show_half=False):
 
         self.show_half = show_half
-
-        if isinstance(input, str):
-            fits = get_fits_data(input)
-            input_name = os.path.split(input)[1]
-        elif isinstance(input, pf.ImageHDU) or isinstance(input, pf.PrimaryHDU) or isinstance(input, pf.CompImageHDU):
-            fits = [input]
-        else:
-            raise RuntimeError('Invalid input ', type(input))
 
         if input_name:
             input_name = os.path.split(input_name)[1]
@@ -909,13 +899,13 @@ class HOPSFitsWindow(HOPSWidget):
 
         self.fits_name.set(input_name)
 
-        self.data = fits[0].data
+        self.data = np.ones_like(fits_data) * fits_data
 
         try:
-            self.mean = fits[0].header[self.window.log.mean_key]
-            self.std = fits[0].header[self.window.log.std_key]
+            self.mean = fits_header[self.window.log.mean_key]
+            self.std = fits_header[self.window.log.std_key]
         except:
-            self.mean, self.std = plc.mean_std_from_median_mad(fits[0].data)
+            self.mean, self.std = plc.mean_std_from_median_mad(fits_data)
 
         self.black_entry['from_'] = np.sqrt(max(0, np.min(self.data)))
         self.black_entry['to'] = np.sqrt(np.max(self.data))
@@ -964,14 +954,14 @@ class HOPSFitsWindow(HOPSWidget):
             self.image.set_cmap(Greys_r)
 
         if self.flip.get():
-            self.ax.set_ylim(len(self.data) + 5, 0)
+            self.ax.set_ylim(len(self.data), 0)
         else:
-            self.ax.set_ylim(0, len(self.data) + 5)
+            self.ax.set_ylim(0, len(self.data))
 
         if self.mirror.get():
-            self.ax.set_xlim(len(self.data[0]) + 5, 0)
+            self.ax.set_xlim(len(self.data[0]), 0)
         else:
-            self.ax.set_xlim(0, len(self.data[0]) + 5)
+            self.ax.set_xlim(0, len(self.data[0]))
 
         try:
             if 'auto' not in input_options[6:]:
@@ -1021,10 +1011,13 @@ class HOPSFitsWindow(HOPSWidget):
         self.canvas.draw()
 
     def get_fov_options(self):
-        return [(self.vmin.get() - self.mean)/self.std, (self.vmax.get() - self.mean)/self.std,
-                self.gamma.get(), self.flip.get(), self.mirror.get(), self.white_sky.get(),
-                int(self.ax.get_xlim()[0]), int(self.ax.get_xlim()[1]),
-                int(self.ax.get_ylim()[0]), int(self.ax.get_ylim()[1])]
+        try:
+            return [(self.vmin.get() - self.mean)/self.std, (self.vmax.get() - self.mean)/self.std,
+                    self.gamma.get(), self.flip.get(), self.mirror.get(), self.white_sky.get(),
+                    int(self.ax.get_xlim()[0]), int(self.ax.get_xlim()[1]),
+                    int(self.ax.get_ylim()[0]), int(self.ax.get_ylim()[1])]
+        except:
+            return None
 
     def pick(self, event):
 

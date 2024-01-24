@@ -6,7 +6,7 @@ import hops.pylightcurve41 as plc
 from astropy.io import fits as pf
 
 from hops.hops_tools.fits import *
-from hops.hops_tools.images_reshape import bin_frame
+from hops.hops_tools.image_analysis import bin_frame
 
 from .application_windows import MainWindow, AddOnWindow
 
@@ -26,6 +26,7 @@ filter_map = {'Clear': 'clear',
               'g\'': 'sdss_g',
               'r\'': 'sdss_r',
               'z\'': 'sdss_z',
+              'i\'': 'sdss_i',
               }
 
 filter_translations = {
@@ -44,6 +45,7 @@ filter_translations = {
     'g\'': ['gp', 'g\''],
     'r\'': ['rp', 'r\''],
     'z\'': ['zp', 'z\''],
+    'i\'': ['ip', 'i\''],
 }
 
 __location__ = os.path.abspath(os.path.dirname(__file__))
@@ -359,9 +361,9 @@ class DataTargetWindow(MainWindow):
             []
         ])
 
-        self.disable()
-
     def check_dir(self):
+
+        self.disable()
 
         dir_ok = False
 
@@ -506,10 +508,8 @@ class DataTargetWindow(MainWindow):
 
             if check[0] != self.science_name:
 
-                fits_file = get_fits_data(check[0])[0]
                 self.science_name = check[0]
-                self.science_header = fits_file.header
-                self.science_data = fits_file.data
+                self.science_data, self.science_header = get_fits_data_and_header(check[0])
 
                 header_list = ['  Keywords:      Values:', '  ']
                 for ii in self.science_header:
@@ -529,27 +529,25 @@ class DataTargetWindow(MainWindow):
 
     def update_preview(self):
 
-        check = find_fits_files(self.observation_files.get())
-        fits_file = get_fits_data(check[0])[0]
-
         if self.crop_x2.get() == 0:
            self.crop_x2.set(len(self.science_data[0]))
         if self.crop_y2.get() == 0:
            self.crop_y2.set(len(self.science_data))
         self.initial_figure_size.set(
             'Image before reduction: {0} MB'.format(
-                round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+                round(os.stat(self.science_name).st_size/1024.0/1024.0, 2)
             )
         )
         self.final_figure_size.set(
             'Image after reduction: {0} MB'.format(
-                round(os.stat(check[0]).st_size/1024.0/1024.0, 2)
+                round(os.stat(self.science_name).st_size/1024.0/1024.0, 2)
             )
         )
-        self.initial_figure.load_fits(fits_file, input_name=check[0])
+        self.initial_figure.load_fits(self.science_data, self.science_header, input_name=self.science_name)
         self.initial_figure.adjust_size()
-        self.final_figure.load_fits(fits_file, input_name='This is only an example of the reduction output.  '
-                                                          'Select the area to crop on the left image.')
+        self.final_figure.load_fits(self.science_data, self.science_header,
+                                    input_name='This is only an example of the reduction output.  '
+                                               'Select the area to crop on the left image.')
         self.final_figure.adjust_size()
         self.update_preview_final()
 
@@ -571,7 +569,7 @@ class DataTargetWindow(MainWindow):
         except:
             pass
 
-        hdu= pf.CompImageHDU(header=self.science_header, data=np.array(data_frame, dtype=np.int32))
+        hdu= pf.CompImageHDU(data=np.array(data_frame, dtype=np.int32))
         plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '.test_size.fits')
 
         self.final_figure_size.set(
@@ -580,7 +578,8 @@ class DataTargetWindow(MainWindow):
 
         os.remove('.test_size.fits')
 
-        self.final_figure.load_fits(hdu, input_name='This is only an example of the reduction output.  '
+        self.final_figure.load_fits(data_frame, self.science_header,
+                                    input_name='This is only an example of the reduction output.  '
                                                     'Select the area to crop on the left image.')
         # self.final_figure.draw()
 
