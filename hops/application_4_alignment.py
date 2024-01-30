@@ -316,13 +316,11 @@ class AlignmentWindow(MainWindow):
                                          verbose=True, order_by_flux=True
                                          )
 
-                # self.stars = find_all_stars(self.fits[1].data, mean=self.mean, std=self.std, burn_limit=self.saturation,
-                #                             psf=self.psf, order_by_flux=True, verbose=True)
-
-                self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)
                 self.progress_all_stars.set(' ')
 
                 if self.stars and len(self.stars) > 5:
+
+                    self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)
 
                     all_stars_dict = plc.open_dict('all_stars.pickle')
                     all_stars = np.array(all_stars_dict['all_stars'])

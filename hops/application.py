@@ -248,10 +248,8 @@ class HOPS(MainWindow):
             self.disable()
 
             inspection_window = InspectiontWindow(self.log)
-            inspection_window.run(f_before=inspection_window.disable,
-                                  f_after=[
+            inspection_window.run(f_after=[
                                       inspection_window.first_image_warning,
-                                      inspection_window.activate,
                                       inspection_window.show
                                   ])
 
