@@ -178,10 +178,11 @@ class AlignmentWindow(MainWindow):
 
             min_flux = np.log10(np.min(stars[:, 2]) - 1)
             max_flux = np.log10(0.5 * burn_limit)
+
             weight_distance = 2
             weight_flux = 1
             stars = sorted(stars,
-                           key=lambda x: - (weight_flux * ((np.log10(min(x[2], 0.5 * burn_limit)) - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - np.sqrt((x[0] - all_stars_dict['x-length']/2)**2 + (x[1] - all_stars_dict['y-length']/2)**2)/length))
+                           key=lambda x: - (weight_flux * (([min_flux, np.log10(x[2])][int(x[2] < 0.5 * burn_limit)] - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - np.sqrt((x[0] - all_stars_dict['x-length']/2)**2 + (x[1] - all_stars_dict['y-length']/2)**2)/length))
                                          / (weight_distance + weight_flux)
                            )
 

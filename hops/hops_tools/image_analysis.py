@@ -146,7 +146,6 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
             return None
 
     stars = []
-    stars_ids = []
     if verbose:
         print('Verifying stars...')
 
@@ -158,9 +157,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
             if abs(star[0][4] - psf) < (3 * np.sqrt(star[1][4][4]) + psf * psf_variation_allowed):
 
-                star_id = '{0}_{1}'.format(int(star[0][2]), int(star[0][3]))
-
-                if star_id not in stars_ids:
+                if len(stars) == 0 or np.min([np.sqrt((ff[0]-star[0][2])**2 + (ff[1]-star[0][3])**2) for ff in stars]) > psf:
 
                     x_mean, y_mean = star[0][2], star[0][3]
                     ap = aperture * star[0][4]
@@ -199,8 +196,6 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
                             star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
                             total_flux, target_flux, sky_flux, sky_flux_unc
                         ])
-
-                        stars_ids.append(star_id)
 
             if verbose:
                 sys.stdout.write('\r\033[K')
