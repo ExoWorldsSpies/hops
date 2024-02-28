@@ -51,7 +51,7 @@ class HOPS(MainWindow):
 
         # for backwards compatibility
         if self.log.get_param('reduction_complete'):
-            if not self.log.is_version_new(self.log.get_param('reduction_version'), '3.0.0'):
+            if not self.log.is_version_new(self.log.get_param('reduction_version'), '3.2.0'):
                 self.log.set_param('reduction_complete', False)
 
         # inspection
@@ -66,7 +66,7 @@ class HOPS(MainWindow):
 
         # for backwards compatibility
         if self.log.get_param('alignment_complete'):
-            if not self.log.is_version_new(self.log.get_param('reduction_version'), '3.0.0'):
+            if not self.log.is_version_new(self.log.get_param('reduction_version'), '3.2.0'):
                 self.log.set_param('alignment_complete', False)
 
         # photometry
@@ -76,7 +76,7 @@ class HOPS(MainWindow):
 
         # for backwards compatibility
         if self.log.get_param('photometry_complete'):
-            if not self.log.is_version_new(self.log.get_param('photometry_version'), '3.0.0'):
+            if not self.log.is_version_new(self.log.get_param('photometry_version'), '3.2.0'):
                 self.log.set_param('photometry_complete', False)
 
         # fitting
@@ -85,7 +85,7 @@ class HOPS(MainWindow):
         self.fitting_complete = self.Label()
 
         if self.log.get_param('fitting_complete'):
-            if not self.log.is_version_new(self.log.get_param('fitting_version'), '3.0.0'):
+            if not self.log.is_version_new(self.log.get_param('fitting_version'), '3.2.0'):
                 self.log.set_param('fitting_complete', False)
 
         #
