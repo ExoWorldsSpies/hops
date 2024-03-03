@@ -10,11 +10,11 @@ import webbrowser
 import warnings
 
 from tkinter import Tk, TclError
-from tkinter import Label, Button, Entry, Checkbutton, Scrollbar, Listbox, PhotoImage, Radiobutton, Scale, Frame, Canvas
+from tkinter import Label, Button, Entry, Scrollbar, Listbox, PhotoImage, Scale, Frame, Canvas
 from tkinter import StringVar, BooleanVar, DoubleVar, IntVar
 from tkinter import DISABLED, NORMAL, END, RIGHT, LEFT, TOP, BOTTOM, BOTH, Y, HORIZONTAL, VERTICAL, E, W, N, S, NW, TRUE, FALSE
 
-from tkinter.ttk import Combobox, Style, Progressbar
+from tkinter.ttk import Combobox, Style, Progressbar, Radiobutton, Checkbutton
 from tkinter.filedialog import askdirectory
 from tkinter.messagebox import showinfo, askyesno, askyesnocancel
 
@@ -322,7 +322,7 @@ class HOPSWindow:
                         obj[0].config(borderwidth=buttons_bd, font=button_font, padx=1, pady=1)
                     elif obj[0].winfo_class() == 'Entry':
                         obj[0].configure(width=entries_wd, bd=entries_bd, font=main_font)
-                    elif obj[0].winfo_class() in ['Label', 'Radiobutton', 'Checkbutton']:
+                    elif obj[0].winfo_class() in ['Label']:
                         if len(obj) == 5:
                             if obj[4] == 'title':
                                 obj[0].configure(font=title_font, padx=0, pady=0)
