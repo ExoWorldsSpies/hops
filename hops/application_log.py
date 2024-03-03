@@ -346,16 +346,16 @@ class HOPSLog:
         if not version1:
             return False
 
-        c1 = int(version1.split('.')[0]) * 100 * 100 * 100
-        c2 = int(version1.split('.')[1]) * 100 * 100
-        c3 = int(version1.split('.')[2]) * 100
-        v1 = int(version2.split('.')[0]) * 100 * 100 * 100
-        v2 = int(version2.split('.')[1]) * 100 * 100
-        v3 = int(version2.split('.')[2]) * 100
+        v11 = int(version1.split('.')[0]) * 100 * 100 * 100
+        v12 = int(version1.split('.')[1]) * 100 * 100
+        v13 = int(version1.split('.')[2]) * 100
+        v21 = int(version2.split('.')[0]) * 100 * 100 * 100
+        v22 = int(version2.split('.')[1]) * 100 * 100
+        v23 = int(version2.split('.')[2]) * 100
 
-        if v1 + v2 + v3 >= c1 + c2 + c3:
-            return False
-        else:
+        if v11 + v12 + v13 >= v21 + v22 + v23:
             return True
+        else:
+            return False
 
 

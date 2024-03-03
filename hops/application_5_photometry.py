@@ -714,7 +714,7 @@ class PhotometryWindow(MainWindow):
                                                         pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
                                                         verbose=True)
 
-                if len(self.plate_solution['identified_stars']) < 0.8 * len(self.all_stars):
+                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
                     self.plate_solution = None
 
         except:
