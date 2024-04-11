@@ -334,10 +334,14 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
         sip_degree=3,
     )
 
+    source_id_key = 'source_id'
+    if source_id_key not in gaia_query.keys():
+        source_id_key = 'SOURCE_ID'
+
     identified_stars = {
         'plate_solution': plate_solution,
         'identified_stars': {
-            gaia_query['source_id'][s1][nn]:{
+            gaia_query[source_id_key][s1][nn]:{
                 'ra': gaia_query['ra'][s1][nn],
                 'dec': gaia_query['dec'][s1][nn],
                 'phot_g_mean_mag': gaia_query['phot_g_mean_mag'][s1][nn],
