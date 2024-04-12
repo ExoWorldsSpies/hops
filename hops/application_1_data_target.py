@@ -90,7 +90,7 @@ class DataTargetWindow(MainWindow):
                                      command=self.update_dark_files)
         self.dark_files_test = self.Label(text=' ')
 
-        self.dark_flat_files = self.Entry(value=self.log.get_param('dark_flat_files'), instance=str,
+        self.dark_flat_files = self.Entry(value=self.log.get_param('darkf_files'), instance=str,
                                      command=self.update_dark_flat_files)
         self.dark_flat_files_test = self.Label(text=' ')
 
@@ -447,7 +447,7 @@ class DataTargetWindow(MainWindow):
         self.observation_files.set(self.log.get_param('observation_files'))
         self.bias_files.set(self.log.get_param('bias_files'))
         self.dark_files.set(self.log.get_param('dark_files'))
-        self.dark_flat_files.set(self.log.get_param('dark_flat_files'))
+        self.dark_flat_files.set(self.log.get_param('darkf_files'))
         self.flat_files.set(self.log.get_param('flat_files'))
         self.bin_fits.set(self.log.get_param('bin_fits'))
         self.crop_x1.set(self.log.get_param('crop_x1'))
