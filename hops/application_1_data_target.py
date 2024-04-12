@@ -941,7 +941,7 @@ class DataTargetWindow(MainWindow):
         self.log.set_param('observation_files', self.observation_files.get())
         self.log.set_param('bias_files', self.bias_files.get())
         self.log.set_param('dark_files', self.dark_files.get())
-        self.log.set_param('dark_flat_files', self.dark_flat_files.get())
+        self.log.set_param('darkf_files', self.dark_flat_files.get())
         self.log.set_param('flat_files', self.flat_files.get())
         self.log.set_param('bin_fits', self.bin_fits.get())
         self.log.set_param('crop_x1', self.crop_x1.get())
