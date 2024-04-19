@@ -297,7 +297,7 @@ class AlignmentWindow(MainWindow):
                                               y_centre=self.y0,
                                               mean=self.fits_header[self.log.mean_key],
                                               std=self.fits_header[self.log.std_key],
-                                              burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                              burn_limit=2*self.fits_header[self.log.hops_saturation_key],
                                               psf=self.fits_header[self.log.psf_key],
                                               order_by_flux=False
                                               )
@@ -312,7 +312,7 @@ class AlignmentWindow(MainWindow):
 
                 self.stars = image_find_stars(self.fits_data, self.fits_header,
                                          mean=self.fits_header[self.log.mean_key], std=self.fits_header[self.log.std_key],
-                                         burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                         burn_limit=2*self.fits_header[self.log.hops_saturation_key],
                                          psf=self.fits_header[self.log.psf_key],
                                          verbose=True, order_by_flux=True
                                          )
