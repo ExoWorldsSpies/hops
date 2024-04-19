@@ -267,7 +267,7 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
 
     x0, y0 = len(fits_data[0])/2, len(fits_data)/2
 
-    gaia_query = gaia_engine(ra, dec, 2.0 * fov_radius, 2 * len(stars))
+    gaia_query = gaia_engine(ra, dec, 2.0 * fov_radius, 9 * len(stars))
     gaia_stars = np.array([[star['ra'], star['dec']] for star in gaia_query])
 
     xx = np.array(default_wcs.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1))

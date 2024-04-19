@@ -7,6 +7,6 @@ SET /p pydir=<pydir.txt
 call "%pydir%"
 
 python -m pip install -r "%mydir%\requirements.txt"
-python "%mydir%\setup.py" install
+python -m pip install "$mydir"
 python "%mydir%\post_setup.py"
 python "%mydir%\setup_close.py"
