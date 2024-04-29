@@ -414,7 +414,7 @@ class ReductionWindow(MainWindow):
             if self.science_counter == 0:
                 t0 = time.time()
                 _ = plc.mean_std_from_median_mad(data_frame)
-                self.fr_time = int(2000 * (time.time()-t0))
+                self.fr_time = int(1000 * (time.time()-t0))
 
             t0 = time.time()
             mean, std = image_mean_std(data_frame, samples=10000, mad_filter=5.0)
@@ -518,6 +518,9 @@ class ReductionWindow(MainWindow):
                 if self.progress_science_loop.get() or self.science_counter == 1:
                     self.progress_figure.load_fits(data_frame, fits_header, new_name)
                     self.progress_figure.draw()
+
+                if len(self.jobs) > self.jobs_completed + 1:
+                    self.fr_time += 10
 
                 self.after(self.reduce_science, time=self.fr_time)
 

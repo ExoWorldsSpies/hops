@@ -258,7 +258,7 @@ class AlignmentWindow(MainWindow):
             if self.science_counter == 0:
                 t0 = time.time()
                 _ = plc.mean_std_from_median_mad(self.fits_data)
-                self.fr_time = int(2000 * (time.time()-t0))
+                self.fr_time = int(1000 * (time.time()-t0))
 
             self.y_length, self.x_length = self.fits_data.shape
             self.fits_datax, self.fits_datay = np.meshgrid(np.arange(0, self.x_length) + 0.5,
@@ -355,9 +355,8 @@ class AlignmentWindow(MainWindow):
             elif self.test_level == 3:
                 if self.askyesno('HOPS - Alignment', 'Stars not detected.\n'
                                                      'Do you want to skip this frame?'):
-                    self.plot_current()
+                    pass
                 else:
-
                     if self.stars:
                         for star in self.stars:
                             for rotation in self.large_angles:
@@ -541,7 +540,11 @@ class AlignmentWindow(MainWindow):
                 self.progress_all_stars.set('Aligning all stars in all frames...')
                 self.after(self.save)
             else:
-                self.after(self.align, time=self.fr_time)
+
+                if len(self.jobs) > self.jobs_completed + 3:
+                    self.fr_time += 10
+
+                self.after(self.align, self.fr_time)
 
     def save(self):
 

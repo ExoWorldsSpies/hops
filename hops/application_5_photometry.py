@@ -717,7 +717,8 @@ class PhotometryWindow(MainWindow):
                 if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
                     self.plate_solution = None
 
-        except:
+        except Exception as e:
+            # print(e)
             pass
 
         if self.plate_solution is None:

@@ -61,6 +61,7 @@ class HOPSWindow:
         self.exit = False
         self.widgets = []
         self.jobs = []
+        self.jobs_completed = 0
 
         self.DISABLED = DISABLED
         self.NORMAL = NORMAL
@@ -103,6 +104,8 @@ class HOPSWindow:
 
                 else:
                     function()
+
+                self.jobs_completed += 1
 
             xx = self.root.after(time, internal_command)
             self.jobs.append(xx)
