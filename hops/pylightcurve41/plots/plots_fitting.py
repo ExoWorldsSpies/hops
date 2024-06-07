@@ -4,7 +4,7 @@ import numpy as np
 from ..errors import *
 from ..analysis.distributions import two_d_distribution
 
-import matplotlib.cm as cm
+from matplotlib.cm import Greys, Greys_r, brg
 import matplotlib.gridspec as gridspec
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import FigureCanvasBase
@@ -126,7 +126,7 @@ def plot_mcmc_corner(fitting_object, export_file):
 
     fig = Figure(figsize=(2.5 * all_var + 0.5, 2.5 * all_var + 0.5))
     canvas = FigureCanvasBase(fig)
-    cmap = cm.get_cmap('brg')
+    cmap = brg
     try:
         gs = gridspec.GridSpec(all_var, all_var, fig, 0.5 / (2.5 * all_var + 0.5), 0.85 / (2.5 * all_var + 0.5),
                                1 - 0.5 / (2.5 * all_var + 0.5), 1 - 0.15 / (2.5 * all_var + 0.5), 0.0, 0.0)
@@ -163,7 +163,7 @@ def plot_mcmc_corner(fitting_object, export_file):
             binsx, binsy, final = two_d_distribution(traces[j], traces[var])
             ax2.imshow(np.where(final > 0, np.log(np.where(final > 0, final, 1)), 0),
                        extent=(np.min(binsx), np.max(binsx), np.min(binsy), np.max(binsy)),
-                       cmap=cm.Greys, origin='lower', aspect='auto')
+                       cmap=Greys, origin='lower', aspect='auto')
 
             ax2.set_xticks([])
             ax2.set_yticks([])
