@@ -1,31 +1,38 @@
 
-__all__ = ['Fitting', 'EmceeFitting', 'values_to_print']
+__all__ = ['Fitting', 'EmceeFitting', 'curve_fit']
 
 import emcee
 import sys
 import numpy as np
 import warnings
+
+from scipy.optimize import curve_fit as scipy_curve_fit
 from scipy.optimize import minimize
-from scipy.stats import shapiro
+
+from .distributions import one_d_distribution
+from .statistics import values_to_print, residual_statistics
 
 from ..errors import *
 from ..processes.counter import Counter
 from ..processes.files import save_dict
 from ..plots.plots_fitting import plot_mcmc_corner, plot_mcmc_traces, plot_mcmc_fitting
-from ..analysis.distributions import one_d_distribution
-from ..analysis.gaussian import gaussian
-from .curve_fit import curve_fit
-from .stats import *
+
+
+def curve_fit(*args, **kwargs):
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message='Covariance of the parameters could not be estimated')
+        return scipy_curve_fit(*args, **kwargs)
 
 
 class Fitting:
 
     def __init__(self, input_data_x, input_data_y, input_data_y_unc,
                  model, initials, limits1, limits2,
+                 logspace=None,
                  data_x_name='x', data_y_name='y', data_x_print_name='x', data_y_print_name='y',
-                 walkers=None, iterations=None, burn_in=None, strech_prior=0.2,
+                 walkers=None, iterations=None, burn_in=None, strech_prior=0.2, walkers_spread=0.01,
                  parameters_names=None, parameters_print_names=None,
-                 counter=None, window_counter=None,
+                 counter=None, window_counter=False,
                  optimise_initial_parameters=True,
                  optimise_initial_parameters_trials=4,
                  scale_uncertainties=False,
@@ -33,107 +40,120 @@ class Fitting:
                  optimiser='emcee',
                  ):
 
-        if optimiser not in ['emcee', 'curve_fit']:
-            raise PyLCInputError('Optimiser {0} in not valid. Please choose between '
-                                 'emcee, scipy_minimize.'.format(optimiser))
+        self.input_data_x = np.array(input_data_x, dtype=float)
+        self.input_data_y = np.array(input_data_y, dtype=float)
+        self.input_data_y_unc = np.array(input_data_y_unc, dtype=float)
+        self.input_data_y_unc_backup = np.array(input_data_y_unc, dtype=float)
 
-        self.input_data_x = np.array(input_data_x)
-        self.input_data_y = np.array(input_data_y)
-        self.input_data_y_unc = np.array(input_data_y_unc)
-        self.input_data_y_unc_backup = np.array(input_data_y_unc)
-
-        self.data_x_name = data_x_name
-        self.data_y_name = data_y_name
-        self.data_x_print_name = data_x_print_name
-        self.data_y_print_name = data_y_print_name
+        self.data_x_name = str(data_x_name)
+        self.data_y_name = str(data_y_name)
+        self.data_x_print_name = str(data_x_print_name)
+        self.data_y_print_name = str(data_y_print_name)
 
         self.model = model
-        self.initials = np.array(initials)
-        self.limits1 = np.array(limits1)
-        self.limits2 = np.array(limits2)
+        self.initials = np.array(initials, dtype=float)
+        self.limits1 = np.array(limits1, dtype=float)
+        self.limits2 = np.array(limits2, dtype=float)
         self.fitted_parameters_indices = np.where(~np.isnan(self.limits1 * self.limits2))[0]
         self.dimensions = len(self.fitted_parameters_indices)
-        self.internal_limits1 = self.limits1[self.fitted_parameters_indices]
-        self.internal_limits2 = self.limits2[self.fitted_parameters_indices]
-        self.internal_initials = (self.initials[self.fitted_parameters_indices] - self.internal_limits1) / (self.internal_limits2 - self.internal_limits1)
 
         self.names = ['p{0}'.format(ff) for ff in range(len(initials))]
-        if parameters_names:
+        if parameters_names is not None:
             self.names = parameters_names
 
         self.print_names = ['p{0}'.format(ff) for ff in range(len(initials))]
-        if parameters_print_names:
+        if parameters_print_names is not None:
             self.print_names = parameters_print_names
 
+        self.logspace = np.zeros_like(initials, dtype=bool)
+        if logspace is not None:
+            self.logspace = np.array(logspace, dtype=bool)
+
+        for var in range(len(self.initials)):
+            if np.isnan(self.limits1[var] * self.limits2[var]):
+                self.logspace[var] = False
+
+        self.internal_limits1 = []
+        self.internal_limits2 = []
+        self.internal_initials = []
+        for var in self.fitted_parameters_indices:
+
+            if self.initials[var] < self.limits1[var] or self.initials[var] > self.limits2[var]:
+                raise PyLCInputError('Initial value for parameter {0} is outside the prior bounds.'.format(
+                    self.names[var]))
+
+            if self.logspace[var]:
+                self.internal_limits1.append(np.log10(self.limits1[var]))
+                self.internal_limits2.append(np.log10(self.limits2[var]))
+                self.internal_initials.append((np.log10(self.initials[var]) - np.log10(self.limits1[var])) / (np.log10(self.limits2[var]) - np.log10(self.limits1[var])))
+            else:
+                self.internal_limits1.append(self.limits1[var])
+                self.internal_limits2.append(self.limits2[var])
+                self.internal_initials.append((self.initials[var] - self.limits1[var]) / (self.limits2[var] - self.limits1[var]))
+        self.internal_limits1 = np.array(self.internal_limits1)
+        self.internal_limits2 = np.array(self.internal_limits2)
+        self.internal_initials = np.array(self.internal_initials)
+
+        if optimiser not in ['emcee', 'curve_fit']:
+            raise PyLCInputError('Optimiser {0} in not valid. Please choose between '
+                             'emcee, scipy_minimize.'.format(optimiser))
         self.optimiser = optimiser
-        if self.optimiser == 'emcee':
 
-            if not walkers:
-                self.walkers = 3 * self.dimensions
-                print('setting walkers = ', self.walkers)
-            else:
-                self.walkers = int(walkers)
-
-            if not iterations:
-                self.iterations = 5000
-                print('setting iterations = ', self.iterations)
-            else:
-                self.iterations = int(iterations)
-
-            if not burn_in:
-                self.burn_in = int(self.iterations * 0.2)
-                print('setting burn_in = ', self.burn_in)
-            else:
-                self.burn_in = int(burn_in)
-                if self.burn_in >= self.iterations:
-                    raise PyLCInputError('burn_in must be lower than iterations.')
-
-            self.strech_prior = strech_prior
-            self.walkers_initial_positions = None
-
-            self.counter = counter
-            if self.counter is True:
-                self.counter = 'MCMC'
-            self.window_counter = window_counter
-
-            self.sampler = emcee.EnsembleSampler(self.walkers, self.dimensions, self.probability)
-            self.progress = 0
-
+        if not walkers:
+            self.walkers = 3 * self.dimensions
         else:
-            self.counter = None
-            self.window_counter = None
-            self.walkers = None
-            self.iterations = None
-            self.burn_in = None
-            self.strech_prior = strech_prior
-            self.sampler = None
-            self.progress = None
+            self.walkers = int(walkers)
 
-        self.scale_uncertainties = scale_uncertainties
-        self.filter_outliers = filter_outliers
-        self.optimise_initial_parameters = optimise_initial_parameters
-        self.optimise_initial_parameters_trials = optimise_initial_parameters_trials
+        if not iterations:
+            self.iterations = 5000
+        else:
+            self.iterations = int(iterations)
+
+        if burn_in is None:
+            self.burn_in = int(self.iterations * 0.2)
+        else:
+            self.burn_in = int(burn_in)
+            if self.burn_in >= self.iterations:
+                raise PyLCInputError('burn_in must be lower than iterations.')
+
+        self.strech_prior = float(strech_prior)
+        self.walkers_spread = float(walkers_spread)
+        self.walkers_initial_positions = None
+        self.sampler = None
+        self.progress = 0
+
+        if counter:
+            if not isinstance(counter, str):
+                raise PyLCInputError('Counter should be a string.')
+        self.counter_name = counter
+        self.window_counter = window_counter
+
+        self.scale_uncertainties = bool(scale_uncertainties)
+        self.filter_outliers = bool(filter_outliers)
+        self.optimise_initial_parameters = bool(optimise_initial_parameters)
+        self.optimise_initial_parameters_trials = int(optimise_initial_parameters_trials)
 
         self.results = {
+            'original_data': {},
             'settings': {},
             'prefit': {},
             'input_series': {},
             'parameters': {},
             'parameters_final': [],
             'output_series': {},
-            'statistics': {}}
+            'statistics': {},
+            'mcmc_run_complete': False,
+            'terminated_by_user': False
+        }
 
         self.fitted_parameters = []
 
         self.mcmc_run_complete = False
         self.prefit_complete = False
 
-        self.results['settings'][self.data_x_name] = np.ones_like(self.input_data_x) * self.input_data_x
-        self.results['settings'][self.data_y_name] = np.ones_like(self.input_data_y) * self.input_data_y
-        self.results['settings'][self.data_y_name + '_unc'] = np.ones_like(self.input_data_y_unc) * self.input_data_y_unc
-        self.results['settings']['initials'] = self.initials
-        self.results['settings']['limits1'] = self.limits1
-        self.results['settings']['limits2'] = self.limits2
+        self.results['original_data'][self.data_x_name] = np.ones_like(self.input_data_x) * self.input_data_x
+        self.results['original_data'][self.data_y_name] = np.ones_like(self.input_data_y) * self.input_data_y
+        self.results['original_data'][self.data_y_name + '_unc'] = np.ones_like(self.input_data_y_unc) * self.input_data_y_unc
         self.results['settings']['walkers'] = self.walkers
         self.results['settings']['iterations'] = self.iterations
         self.results['settings']['burn_in'] = self.burn_in
@@ -141,9 +161,8 @@ class Fitting:
         self.results['settings']['data_x_print_name'] = self.data_x_print_name
         self.results['settings']['data_y_name'] = self.data_y_name
         self.results['settings']['data_y_print_name'] = self.data_y_print_name
-        self.results['settings']['parameters_names'] = self.names
-        self.results['settings']['parameters_print_names'] = self.print_names
         self.results['settings']['strech_prior'] = self.strech_prior
+        self.results['settings']['walkers_spread'] = self.walkers_spread
         self.results['settings']['optimise_initial_parameters'] = self.optimise_initial_parameters
         self.results['settings']['scale_uncertainties'] = self.scale_uncertainties
         self.results['settings']['filter_outliers'] = self.filter_outliers
@@ -152,59 +171,77 @@ class Fitting:
     def _pass(self):
         pass
 
-    def internal_model(self, theta):
-        parameters = self.initials
+    def _internal_model(self, theta):
+        parameters = np.ones_like(self.initials) * self.initials
         parameters[self.fitted_parameters_indices] = theta * (self.internal_limits2 - self.internal_limits1) + self.internal_limits1
+        parameters[self.logspace] = 10**parameters[self.logspace]
         return self.model(self.input_data_x, *parameters)
 
-    def internal_model_curve_fit(self, x, *theta):
+    def _internal_model_curve_fit(self, x, *theta):
         theta = np.array(theta)
-        parameters = self.initials
+        parameters = np.ones_like(self.initials) * self.initials
         parameters[self.fitted_parameters_indices] = theta * (self.internal_limits2 - self.internal_limits1) + self.internal_limits1
+        parameters[self.logspace] = 10**parameters[self.logspace]
         return self.model(self.input_data_x, *parameters)
 
-    def probability(self, theta):
+    def _probability(self, theta):
         if np.prod((0 < theta) * (theta < 1)):
-            chi = (self.input_data_y - self.internal_model(theta)) / self.input_data_y_unc
+            chi = (self.input_data_y - self._internal_model(theta)) / self.input_data_y_unc
             return -0.5 * (np.sum(chi * chi) +
                            np.sum(np.log(2.0 * np.pi * (self.input_data_y_unc * self.input_data_y_unc))))
         else:
             return -np.inf
 
-    def prefit(self):
+    def _prefit(self, verbose=False):
 
         if self.scale_uncertainties or self.filter_outliers or self.optimise_initial_parameters:
 
-            nll = lambda *args: -self.probability(*args)
+            nll = lambda *args: -self._probability(*args)
             soln_test = nll(self.internal_initials)
 
-            test_initials = self.internal_initials
-            optimisation_ok = False
+            test_initials = np.ones_like(self.internal_initials) * self.internal_initials
+            if self.optimise_initial_parameters_trials == 0:
+                optimisation_ok = True
+            else:
+                optimisation_ok = False
+
+            # import matplotlib.pyplot as plt
+            # plt.figure()
+            # plt.plot(self.input_data_x, self.input_data_y, 'ko')
+            # plt.plot(self.input_data_x, self._internal_model(self.internal_initials), 'r-')
+            # plt.show()
 
             for ii in range(self.optimise_initial_parameters_trials):
-                print('Optimising initial parameters, attempt {0}: maximizing likelihood...'.format(ii+1))
+
+                if verbose:
+                    print('Optimising initial parameters, attempt {0}: maximizing likelihood...'.format(ii+1))
+
                 soln_i = minimize(nll, test_initials, method='Nelder-Mead')
                 soln_test_i = nll(soln_i.x)
+                optimisation_ok = soln_i.success
 
-                if soln_i.success and soln_test_i < soln_test:
+                if soln_i.success and soln_test_i <= soln_test:
 
-                    print('Optimisation completed.')
+                    if verbose:
+                        print('Optimisation completed.')
+
                     self.internal_initials = soln_i.x
 
                     if self.filter_outliers:
-                        norm_res = (self.input_data_y - self.internal_model(self.internal_initials)) /self.input_data_y_unc
+                        norm_res = (self.input_data_y - self._internal_model(self.internal_initials)) / self.input_data_y_unc
                         outliers = len(np.where(np.abs(norm_res) >= 3 * np.std(norm_res))[0])
 
                         while outliers > 0:
 
-                            print('Filtering outliers...'.format(ii+1))
+                            if verbose:
+                                print('Filtering outliers...'.format(ii+1))
 
                             flags = np.where(np.abs(norm_res) >= 3 * np.std(norm_res))[0]
                             self.input_data_y_unc[flags] = 1000000000
 
                             soln_i = minimize(nll, self.internal_initials, method='Nelder-Mead')
                             self.internal_initials = soln_i.x
-                            norm_res = (self.input_data_y - self.internal_model(self.internal_initials)) / self.input_data_y_unc
+                            norm_res = (self.input_data_y - self._internal_model(self.internal_initials)) / self.input_data_y_unc
                             # print(np.std(norm_res), np.median(np.abs(norm_res - np.median(norm_res))))
 
                             outliers = len(np.where(np.abs(norm_res) >= 3 * np.std(norm_res))[0])
@@ -213,7 +250,7 @@ class Fitting:
                     optimisation_ok = True
                     break
 
-                elif soln_test_i < soln_test:
+                elif soln_test_i <= soln_test:
                     test_initials = soln_i.x
                     soln_test = nll(test_initials)
                 else:
@@ -224,6 +261,12 @@ class Fitting:
             if not optimisation_ok:
                 raise PyLCProcessError('Optimisation failed. You can try re-running, or increasing the strech_prior parameter, or the prior limits.')
 
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.plot(self.input_data_x, self.input_data_y, 'ko')
+        # plt.plot(self.input_data_x, self._internal_model(self.internal_initials), 'r-')
+        # plt.show()
+
         self.results['prefit']['outliers_map'] = self.input_data_y_unc == 1000000000
         outliers = np.where(self.results['prefit']['outliers_map'])
         points_to_use = np.where(~self.results['prefit']['outliers_map'])
@@ -233,12 +276,12 @@ class Fitting:
         self.input_data_y_unc = self.input_data_y_unc[points_to_use]
 
         if self.scale_uncertainties:
-            scale_factor = np.sqrt(np.nanmean(((self.input_data_y - self.internal_model(self.internal_initials))**2) / (self.input_data_y_unc**2)))
+            scale_factor = np.sqrt(np.nanmean(((self.input_data_y - self._internal_model(self.internal_initials)) ** 2) / (self.input_data_y_unc ** 2)))
             # import matplotlib.pyplot as plt
             # plt.figure()
-            # plt.plot(self.input_data_x, self.input_data_y - self.internal_model(self.internal_initials), 'ko')
+            # plt.plot(self.input_data_x, self.input_data_y - self._internal_model(self.internal_initials), 'ko')
             # plt.plot(self.input_data_x, self.input_data_y, 'ko')
-            # plt.plot(self.input_data_x, self.internal_model(self.internal_initials), 'r-')
+            # plt.plot(self.input_data_x, self._internal_model(self.internal_initials), 'r-')
             # plt.show()
         else:
             scale_factor = 1
@@ -246,38 +289,51 @@ class Fitting:
         self.input_data_y_unc *= scale_factor
         self.results['prefit']['scale_factor'] = scale_factor
 
-        print('Data-points excluded:', self.results['prefit']['outliers'])
-        print('Scaling uncertainties by:', scale_factor)
-        print('Initial parameters:')
+        if verbose:
+            print('Data-points excluded:', self.results['prefit']['outliers'])
+            print('Scaling uncertainties by:', scale_factor)
+            print('Initial parameters:')
 
         self.results['prefit']['initials'] = []
         for var in range(len(self.names)):
             if np.isnan(self.limits1[var]):
                 self.results['prefit']['initials'].append(self.initials[var])
             else:
-                print(
-                    self.names[var], ': ',
-                    self.internal_initials[np.where(self.fitted_parameters_indices == var)[0][0]] * (self.limits2[var] - self.limits1[var]) + self.limits1[var]
-                )
-                self.results['prefit']['initials'].append(self.internal_initials[np.where(self.fitted_parameters_indices == var)[0][0]] * (self.limits2[var] - self.limits1[var]) + self.limits1[var])
+                idx = np.where(self.fitted_parameters_indices == var)[0][0]
 
+                self.initials[var] = (self.internal_initials * (self.internal_limits2 - self.internal_limits1) + self.internal_limits1)[idx]
+                if self.logspace[var]:
+                    self.initials[var] = 10 ** self.initials[var]
+
+                if verbose:
+                    print(self.names[var], ': ', self.initials[var])
+
+                self.results['prefit']['initials'].append(self.initials[var])
+
+        self.results['prefit']['initials'] = np.array(self.results['prefit']['initials'])
         self.results['input_series'][self.data_x_name] = self.input_data_x
         self.results['input_series'][self.data_y_name] = self.input_data_y
         self.results['input_series'][self.data_y_name + '_unc'] = self.input_data_y_unc
 
         self.prefit_complete = True
 
-    def run(self):
+    def run(self, verbose=False):
 
         if not self.prefit_complete:
-            self.prefit()
+            self._prefit(verbose=verbose)
 
         # run sampler
 
         if self.optimiser == 'curve_fit':
 
-            popt, pcov = curve_fit(self.internal_model_curve_fit, self.input_data_x,
-                                   self.input_data_y, sigma=self.input_data_y_unc, p0=self.internal_initials)
+            option = int(bool(self.counter_name))
+
+            print(['Running curve_fit...', self.counter_name][option] + '...')
+
+            popt, pcov = curve_fit(self._internal_model_curve_fit, self.input_data_x,
+                                   self.input_data_y, sigma=self.input_data_y_unc, p0=self.internal_initials,
+                                   maxfev=self.iterations
+                                   )
 
             for var in range(len(self.names)):
 
@@ -296,9 +352,15 @@ class Fitting:
                     value = popt[idx]
                     min_value = value - np.sqrt(pcov[idx][idx])
                     max_value = value + np.sqrt(pcov[idx][idx])
-                    value = value * (self.limits2[var] - self.limits1[var]) + self.limits1[var]
-                    min_value = min_value * (self.limits2[var] - self.limits1[var]) + self.limits1[var]
-                    max_value = max_value * (self.limits2[var] - self.limits1[var]) + self.limits1[var]
+
+                    value = value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    min_value = min_value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    max_value = max_value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+
+                    if self.logspace[var]:
+                        value = 10**value
+                        min_value = 10**min_value
+                        max_value = 10**max_value
 
                     m_error = value - min_value
                     p_error = max_value - value
@@ -320,16 +382,18 @@ class Fitting:
             self.results['statistics']['corr_matrix'] = pcov
             self.results['statistics']['corr_variables'] = ','.join(self.fitted_parameters)
 
-            self.postfit()
+            self._postfit()
 
         elif self.optimiser == 'emcee':
 
             sys.setrecursionlimit(self.iterations)
 
-            if self.counter:
-                self.counter = Counter(self.counter, self.iterations, show_every=10, increment=10)
-            else:
-                self.counter = Counter('MCMC', self.iterations, show_every=self.iterations+1000, increment=10)
+            self.sampler = emcee.EnsembleSampler(self.walkers, self.dimensions, self._probability)
+
+            option = int(bool(self.counter_name))
+
+            self.counter = Counter(['MCMC', self.counter_name][option], self.iterations - self.progress,
+                                   show_every=[self.iterations, 0][option] + 10, increment=10)
 
             if self.window_counter:
                 from tkinter import Tk, Label
@@ -338,24 +402,24 @@ class Fitting:
                 label1, label2, self.label = Label(self.root, textvar='   ...   '), Label(self.root, textvar='   ...   '), Label(self.root, textvar='')
                 label1.grid(row=0, column=0), label2.grid(row=0, column=2),self.label.grid(row=0, column=1),self.root.update_idletasks()
                 x, y = (self.root.winfo_screenwidth() - self.root.winfo_reqwidth()) / 2, (self.root.winfo_screenheight() - self.root.winfo_reqheight()) / 2
-                self.root.geometry('+%d+%d' % (int(x), int(y))), self.root.update_idletasks(), self.root.wm_attributes("-topmost", 1), self.root.after_idle(self.root.attributes, '-topmost', 0), self.root.deiconify(), self.root.update_idletasks(),self.root.after(100, self.emcee_run)
+                self.root.geometry('+%d+%d' % (int(x), int(y))), self.root.update_idletasks(), self.root.wm_attributes("-topmost", 1), self.root.after_idle(self.root.attributes, '-topmost', 0), self.root.deiconify(), self.root.update_idletasks(),self.root.after(100, self._emcee_run)
                 self.root.mainloop()
 
             else:
-                self.emcee_run()
+                self._emcee_run()
 
     def close(self):
         self.exit = True
 
-    def emcee_run(self):
+    def _emcee_run(self):
 
         if self.progress == 0:
             while self.progress == 0:
                 try:
                     self.walkers_initial_positions = np.random.uniform(
-                        (self.internal_initials - 0.5 * self.strech_prior)[:, None] * np.ones(self.walkers),
-                        (self.internal_initials + 0.5 * self.strech_prior)[:, None] * np.ones(self.walkers))
-                    self.walkers_initial_positions = np.swapaxes(self.walkers_initial_positions,0, 1)
+                        (self.internal_initials - 0.5 * self.walkers_spread)[:, None] * np.ones(self.walkers),
+                        (self.internal_initials + 0.5 * self.walkers_spread)[:, None] * np.ones(self.walkers))
+                    self.walkers_initial_positions = np.swapaxes(self.walkers_initial_positions, 0, 1)
                     self.walkers_initial_positions = np.minimum(self.walkers_initial_positions, 1)
                     self.walkers_initial_positions = np.maximum(self.walkers_initial_positions, 0)
 
@@ -366,29 +430,31 @@ class Fitting:
                     if self.window_counter:
                         if self.exit:
                             self.root.quit(), self.root.destroy()
+                            return None
                         else:
                             self.label['text'] = '\n{0}\n'.format(self.counter.text.replace(',', '\n'))
-                            self.root.update_idletasks(), self.root.after(5, self.emcee_run)
+                            self.root.update_idletasks(), self.root.after(5, self._emcee_run)
                     else:
-                        self.emcee_run()
+                        self._emcee_run()
 
                 except ValueError:
                     pass
 
         elif self.progress < self.iterations:
 
-            self.sampler.run_mcmc(None, 10)
+            self.sampler.run_mcmc(None, 10, skip_initial_state_check=True)
             self.progress += 10
             self.counter.update()
 
             if self.window_counter:
                 if self.exit:
                     self.root.quit(), self.root.destroy()
+                    return None
                 else:
                     self.label['text'] = '\n{0}\n'.format(self.counter.text.replace(',', '\n'))
-                    self.root.update_idletasks(), self.root.after(5, self.emcee_run)
+                    self.root.update_idletasks(), self.root.after(5, self._emcee_run)
             else:
-                self.emcee_run()
+                self._emcee_run()
 
         else:
             if self.window_counter:
@@ -424,14 +490,29 @@ class Fitting:
                                 'print_value': str(self.initials[var]), 'print_m_error': '-', 'print_p_error': '-'}
 
                 else:
-                    trace = mcmc_results[self.burn_in:, :, np.where(self.fitted_parameters_indices == var)[0][0]]
-                    trace = trace.flatten()
+                    idx = np.where(self.fitted_parameters_indices == var)[0][0]
 
-                    trace = trace[trace_to_analyse] * (self.limits2[var] - self.limits1[var]) + self.limits1[var]
+                    trace = mcmc_results[self.burn_in:, :, idx]
+                    trace = trace.flatten()
+                    trace = trace[trace_to_analyse]
 
                     bins, counts = one_d_distribution(trace)
 
                     min_value, value, max_value = np.quantile(trace, [0.16, 0.5, 0.84])
+
+                    trace = trace * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    bins = bins * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    value = value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    min_value = min_value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+                    max_value = max_value * (self.internal_limits2 - self.internal_limits1)[idx] + self.internal_limits1[idx]
+
+                    if self.logspace[var]:
+                        trace = 10**trace
+                        bins = 10**bins
+                        value = 10**value
+                        min_value = 10**min_value
+                        max_value = 10**max_value
+
                     m_error = value - min_value
                     p_error = max_value - value
 
@@ -456,44 +537,22 @@ class Fitting:
             self.results['statistics']['corr_matrix'] = correlation_matrix
             self.results['statistics']['corr_variables'] = ','.join(self.fitted_parameters)
 
-            self.postfit()
+            self._postfit()
 
-    def postfit(self):
+    def _postfit(self):
+
+        self.results['parameters_final'] = np.array(self.results['parameters_final'])
 
         self.results['output_series']['model'] = self.model(self.input_data_x, *self.results['parameters_final'])
         self.results['output_series']['residuals'] = self.input_data_y - self.results['output_series']['model']
 
-        norm_residuals = self.results['output_series']['residuals'] / self.input_data_y_unc
-        try:
-            norm_residuals = np.swapaxes([self.input_data_x, norm_residuals], 0, 1)
-            norm_residuals = sorted(norm_residuals, key=lambda x: x[0])
-            norm_residuals = np.swapaxes(norm_residuals, 0, 1)[1]
-        except ValueError:
-            pass
-
-        res_autocorr = np.correlate(norm_residuals, norm_residuals, mode='full')
-        res_autocorr = res_autocorr[res_autocorr.size // 2:]
-        res_autocorr /= res_autocorr[0]
-
-        limit3_autocorr = gaussian(np.log10(len(norm_residuals)), 1.08401, 0.03524, -0.26884, 1.49379)
-
-        res_shapiro = shapiro(norm_residuals)
-
-        limit3_shapiro = gaussian(np.log10(len(norm_residuals)), 0.65521, 0.00213, -0.21983, 0.96882)
-
-        self.results['statistics']['res_autocorr'] = res_autocorr
-        self.results['statistics']['res_max_autocorr'] = np.max(np.abs(res_autocorr[1:]))
-        self.results['statistics']['res_max_autocorr_flag'] = np.max(np.abs(res_autocorr[1:])) > limit3_autocorr
-        self.results['statistics']['res_shapiro'] = res_shapiro[0]
-        self.results['statistics']['res_shapiro_flag'] = (1 - res_shapiro[0]) > limit3_shapiro
-        self.results['statistics']['res_mean'] = np.mean(self.results['output_series']['residuals'])
-        self.results['statistics']['res_std'] = np.std(self.results['output_series']['residuals'])
-        self.results['statistics']['res_rms'] = np.sqrt(np.mean(self.results['output_series']['residuals']**2))
-        self.results['statistics']['res_chi_sqr'] = np.sum(norm_residuals ** 2)
-        self.results['statistics']['res_red_chi_sqr'] = (
-                self.results['statistics']['res_chi_sqr'] / (len(self.input_data_y_unc) - len(self.fitted_parameters)))
+        statistics = residual_statistics(self.input_data_x, self.input_data_y, self.input_data_y_unc,
+                                          self.results['output_series']['model'], len(self.fitted_parameters))
+        for statistic in statistics:
+            self.results['statistics'][statistic] = statistics[statistic]
 
         self.mcmc_run_complete = True
+        self.results['mcmc_run_complete'] = True
 
     def save_all(self, export_file):
 
@@ -513,8 +572,8 @@ class Fitting:
             ['value'],
             ['uncertainty'],
             ['initial'],
-            ['min. allowed'],
-            ['max. allowed']
+            ['min.allowed'],
+            ['max.allowed']
         ]
 
         for i in self.names:
@@ -549,10 +608,15 @@ class Fitting:
         for row in range(len(cols[0])):
             lines.append('  '.join([col[row] for col in cols]))
 
-        lines.append('')
-        lines.append('#Pre-fit:')
-        lines.append('#Number of outliers removed: {0}'.format(self.results['prefit']['outliers']))
-        lines.append('#Uncertainties scale factor: {0}'.format(self.results['prefit']['scale_factor']))
+        try:
+            _ = self.results['prefit']
+            lines.append('')
+            lines.append('#Pre-fit:')
+            lines.append('#Number of outliers removed: {0}'.format(self.results['prefit']['outliers']))
+            lines.append('#Uncertainties scale factor: {0}'.format(self.results['prefit']['scale_factor']))
+        except:
+            pass
+
         lines.append('')
         lines.append('#Residuals:')
         lines.append('#Mean: {0}'.format(self.results['statistics']['res_mean']))
@@ -580,39 +644,6 @@ class Fitting:
     def plot_traces(self, export_file):
 
         plot_mcmc_traces(self, export_file)
-
-
-# decimal points and rounding
-
-
-def values_to_print(value, error_minus, error_plus):
-
-    value = float(value)
-    error_minus = float(error_minus)
-    error_plus = float(error_plus)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-
-        if error_minus >= 1.0 or error_minus == 0.0:
-            digit1 = 2
-        else:
-            str_error_minus = '{0:.{test}f}'.format(error_minus, test=10 + abs(int(np.log10(error_minus))))
-            digit1 = np.where([ff not in ['0', '.'] for ff in str_error_minus])[0][0]
-
-        if error_plus >= 1.0 or error_plus == 0.0:
-            digit2 = 2
-        else:
-            str_error_plus = '{0:.{test}f}'.format(error_plus, test=10 + abs(int(np.log10(error_plus))))
-            digit2 = np.where([ff not in ['0', '.'] for ff in str_error_plus])[0][0]
-
-    width = max(2, digit1, digit2)
-
-    print_value = '{0:.{width}f}'.format(round(value, width), width=width)
-    print_m_error = '{0:.{width}f}'.format(round(error_minus, width), width=width)
-    print_p_error = '{0:.{width}f}'.format(round(error_plus, width), width=width)
-
-    return print_value, print_m_error, print_p_error
 
 
 # for compatibility reasons

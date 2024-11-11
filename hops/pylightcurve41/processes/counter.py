@@ -6,7 +6,7 @@ import datetime
 
 class Counter:
 
-    def __init__(self, counter, total_iterations, ignore=0, show_every=1, increment=1):
+    def __init__(self, counter, total_iterations, ignore=0, show_every=1, increment=1, notebook=False):
 
         self.counter = counter
         self.current_iteration = 0
@@ -18,6 +18,7 @@ class Counter:
         self.max_message_len = 0
         self.increment = increment
         self.text = ''
+        self.notebook = notebook
 
     def update(self, message=''):
 
@@ -50,9 +51,14 @@ class Counter:
 
         if self.show == self.show_every and self.current_iteration > 0:
 
-            sys.stdout.write('\r\033[K')
-            sys.stdout.write(self.text)
-            sys.stdout.flush()
+            if self.notebook:
+                from IPython.display import clear_output, display
+                clear_output(wait=True)
+                print(self.text)
+            else:
+                sys.stdout.write('\r\033[K')
+                sys.stdout.write(self.text)
+                sys.stdout.flush()
 
             self.show = 0
 

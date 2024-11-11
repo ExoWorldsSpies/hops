@@ -1,10 +1,11 @@
 
 import os
+import sys
 import time
 import numpy as np
 import shutil
+import exoclock
 import hops.pylightcurve41 as plc
-import sys
 
 from astropy.io import fits as pf
 
@@ -45,9 +46,10 @@ class ReductionWindow(MainWindow):
         self.psf = 10
 
         location_string = self.log.get_param('location').split(' ')
-        self.observatory = plc.Observatory(plc.Degrees(location_string[0]), plc.Degrees(location_string[1]))
+        self.observatory = exoclock.Observatory(exoclock.Degrees(location_string[0]), 
+                                                exoclock.Degrees(location_string[1]))
         ra_dec_string = self.log.get_param('target_ra_dec').split(' ')
-        self.target = plc.FixedTarget(plc.Hours(ra_dec_string[0]), plc.Degrees(ra_dec_string[1]))
+        self.target = exoclock.FixedTarget(exoclock.Hours(ra_dec_string[0]), exoclock.Degrees(ra_dec_string[1]))
 
         self.filter = self.log.get_param('filter')
 
@@ -368,6 +370,9 @@ class ReductionWindow(MainWindow):
 
             saturation = image_burn_limit(fits_header, key=self.log.hops_saturation_key)
             exp_time = float(fits_header[self.log.get_param('exposure_time_key')])
+            centroids_snr = self.log.get_param('centroids_snr')
+            stars_snr = self.log.get_param('stars_snr')
+            psf_guess = self.log.get_param('psf_guess')
             data_frame = np.ones_like(fits_data) * fits_data
             dq_frame = np.where(data_frame == saturation, 1, 0)
             data_frame = (data_frame - self.master_bias - (exp_time - self.bias_frames_exp) * self.master_dark) / self.master_flat
@@ -422,7 +427,8 @@ class ReductionWindow(MainWindow):
                 print('SKY: ', time.time()-t0)
 
             t0 = time.time()
-            psf = image_psf(data_frame, fits_header, mean, std, saturation)
+            psf = image_psf(data_frame, fits_header, mean, std, saturation,
+                            centroids_snr=centroids_snr, stars_snr=stars_snr, psf_guess=psf_guess)
             if np.isnan(psf):
                 psf = 10
                 skip = True
@@ -438,23 +444,23 @@ class ReductionWindow(MainWindow):
                 observation_time = ' '.join([fits_header[self.log.get_param('observation_date_key')].split('T')[0],
                                              fits_header[self.log.get_param('observation_time_key')]])
 
-            observation_time = plc.UTC(observation_time)
+            observation_time = exoclock.Moment(utc=observation_time)
             if self.log.get_param('time_stamp') == 'exposure start':
                 pass
             elif self.log.get_param('time_stamp') == 'mid-exposure':
-                observation_time = observation_time - plc.DTime(seconds=0.5 * exp_time)
+                observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - 0.5 * exp_time / 24.0 / 3600.0)
             elif self.log.get_param('time_stamp') == 'exposure end':
-                observation_time = observation_time - plc.DTime(seconds=exp_time)
+                observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - exp_time / 24.0 / 3600.0)
             else:
                 raise RuntimeError('Not acceptable time stamp.')
 
-            julian_date = observation_time.jd()
+            julian_date = observation_time.jd_utc()
             airmass = self.observatory.airmass(self.target, observation_time)
 
             # write the new fits file
             # important to keep it like this for windows!
 
-            time_in_file = observation_time.utc.isoformat()
+            time_in_file = observation_time.utc().isoformat()
             time_in_file = time_in_file.split('.')[0]
             time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
 
@@ -473,7 +479,7 @@ class ReductionWindow(MainWindow):
             image.header.set(self.log.hops_observatory_longitude_key, self.observatory.longitude.deg())
             image.header.set(self.log.hops_target_ra_key, self.target.ra.deg())
             image.header.set(self.log.hops_target_dec_key, self.target.dec.deg_coord())
-            image.header.set(self.log.hops_datetime_key, observation_time.iso())
+            image.header.set(self.log.hops_datetime_key, observation_time.utc().isoformat())
             image.header.set(self.log.hops_exposure_key, exp_time)
             image.header.set(self.log.hops_filter_key, self.filter)
             image.header.set(self.log.time_key, julian_date)

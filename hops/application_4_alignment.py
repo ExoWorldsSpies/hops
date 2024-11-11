@@ -10,10 +10,11 @@ from astropy.io import fits as pf
 
 from hops.application_windows import MainWindow
 from hops.hops_tools.fits import get_fits_data_and_header
-from hops.hops_tools.image_analysis import image_find_stars
+from hops.hops_tools.image_analysis import image_find_stars, cartesian_to_polar
 
 import sys
 sys.setrecursionlimit(100000000)
+
 
 class AlignmentWindow(MainWindow):
 
@@ -26,6 +27,9 @@ class AlignmentWindow(MainWindow):
         self.shift_tolerance_p = self.log.get_param('shift_tolerance_p')
         self.rotation_tolerance = self.log.get_param('rotation_tolerance')
         self.min_calibration_stars_number = int(self.log.get_param('min_calibration_stars_number'))
+        self.centroids_snr = self.log.get_param('centroids_snr')
+        self.stars_snr = self.log.get_param('stars_snr')
+        self.faint_target_mode = self.log.get_param('faint_target_mode')
 
         self.all_frames = plc.open_dict(self.log.all_frames)
         self.science_files = []
@@ -142,6 +146,7 @@ class AlignmentWindow(MainWindow):
             stars = image_find_stars(fits_data, fits_header,
                                      mean=fits_header[self.log.mean_key], std=fits_header[self.log.std_key],
                                      burn_limit=fits_header[self.log.hops_saturation_key],
+                                     centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
                                      psf=fits_header[self.log.psf_key],
                                      progress_window=self,
                                      verbose=True
@@ -179,8 +184,14 @@ class AlignmentWindow(MainWindow):
             min_flux = np.log10(np.min(stars[:, 2]) - 1)
             max_flux = np.log10(0.5 * burn_limit)
 
-            weight_distance = 2
-            weight_flux = 1
+            if self.faint_target_mode:
+                weight_distance = -0.5
+                weight_flux = 1
+
+            else:
+                weight_distance = 2
+                weight_flux = 1
+
             stars = sorted(stars,
                            key=lambda x: - (weight_flux * (([min_flux, np.log10(x[2])][int(x[2] < 0.5 * burn_limit)] - min_flux) /(max_flux-min_flux)) + weight_distance * (1 - np.sqrt((x[0] - all_stars_dict['x-length']/2)**2 + (x[1] - all_stars_dict['y-length']/2)**2)/length))
                                          / (weight_distance + weight_flux)
@@ -211,16 +222,18 @@ class AlignmentWindow(MainWindow):
             # take the rest as calibration stars and calculate their polar coordinates relatively to the first
             self.comparisons = []
             for star in stars:
-                r_position, u_position = plc.cartesian_to_polar(star[0], star[1], self.x0, self.y0)
+                r_position, u_position = cartesian_to_polar(star[0], star[1], self.x0, self.y0)
                 if r_position > 5 * psf:
                     self.comparisons.append([r_position, u_position])
 
-            self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.comparisons) / 10.0)
-            if self.check_num < 10 and len(self.comparisons) >=0:
-                self.check_num = 10
+            if self.faint_target_mode:
+                self.min_calibration_stars_number = 3
+                self.check_num = 2.5
+            else:
+                self.check_num = max(9.5, len(self.comparisons) / 10.0)
 
             if self.target_x0:
-                self.target_r, self.target_u = plc.cartesian_to_polar(self.target_x0, self.target_y0, self.x0, self.y0)
+                self.target_r, self.target_u = cartesian_to_polar(self.target_x0, self.target_y0, self.x0, self.y0)
 
             ustep = np.arcsin(psf / self.comparisons[int(len(self.comparisons) / 2)][0])
             self.small_angles = np.append(np.arange(-self.rotation_tolerance, self.rotation_tolerance, ustep),
@@ -299,6 +312,7 @@ class AlignmentWindow(MainWindow):
                                               std=self.fits_header[self.log.std_key],
                                               burn_limit=2*self.fits_header[self.log.hops_saturation_key],
                                               psf=self.fits_header[self.log.psf_key],
+                                              centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
                                               order_by_flux=False
                                               )
 
@@ -311,15 +325,19 @@ class AlignmentWindow(MainWindow):
             elif self.test_level == 2:
 
                 self.stars = image_find_stars(self.fits_data, self.fits_header,
-                                         mean=self.fits_header[self.log.mean_key], std=self.fits_header[self.log.std_key],
-                                         burn_limit=2*self.fits_header[self.log.hops_saturation_key],
-                                         psf=self.fits_header[self.log.psf_key],
-                                         verbose=True, order_by_flux=True
-                                         )
+                                              mean=self.fits_header[self.log.mean_key],
+                                              std=self.fits_header[self.log.std_key],
+                                              burn_limit=2*self.fits_header[self.log.hops_saturation_key],
+                                              psf=self.fits_header[self.log.psf_key],
+                                              centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
+                                              verbose=True, order_by_flux=True
+                                              )
 
                 self.progress_all_stars.set(' ')
 
-                if self.stars and len(self.stars) > 5:
+                print(len(self.stars))
+
+                if self.stars and len(self.stars) > self.min_calibration_stars_number:
 
                     self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)
 
@@ -347,7 +365,7 @@ class AlignmentWindow(MainWindow):
                                                                     ]))
 
                     for star in sorted(self.stars, key=lambda x: np.sqrt((x[0] - center[0])**2 + (x[1] - center[1])**2))[:5]:
-                        for rotation in self.small_angles + plc.cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
+                        for rotation in self.small_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
                             self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.after(self.check_star)
@@ -389,7 +407,7 @@ class AlignmentWindow(MainWindow):
                         check_sum = np.sum(self.fits_data[check_y - int_psf:check_y + int_psf + 1,
                                            check_x - int_psf:check_x + int_psf + 1])
                         check_lim = (self.fits_header[self.log.mean_key] +
-                                     3 * self.fits_header[self.log.std_key]) * ((2 * int_psf + 1) ** 2)
+                                     self.centroids_snr * self.fits_header[self.log.std_key]) * ((2 * int_psf + 1) ** 2)
                         if check_sum > check_lim:
                             test += 1
                         else:
@@ -458,7 +476,7 @@ class AlignmentWindow(MainWindow):
                         test_windowy = self.fits_datay[y_min: y_max, x_min: x_max]
                         test_window_sum = np.sum(test_window)
 
-                        polar = plc.cartesian_to_polar(
+                        polar = cartesian_to_polar(
                             np.sum(test_window * test_windowx) / test_window_sum,
                             np.sum(test_window * test_windowy) / test_window_sum,
                             self.x0, self.y0)
@@ -566,7 +584,7 @@ class AlignmentWindow(MainWindow):
 
             polar_coords = []
             for star in all_stars_dict['all_stars']:
-                polar_coords.append(plc.cartesian_to_polar(star[0], star[1],
+                polar_coords.append(cartesian_to_polar(star[0], star[1],
                                                            self.all_frames[self.science_files[0]][
                                                                self.log.align_x0_key],
                                                            self.all_frames[self.science_files[0]][

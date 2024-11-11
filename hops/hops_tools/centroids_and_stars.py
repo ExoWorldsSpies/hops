@@ -32,7 +32,7 @@ def _find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_
     test = np.array(test)
     data_array_test = data_array[bright]
 
-    min_test = np.sum(test > mean + 3 * std, 0) >= 0.5 * (2 * psf + 1)**2
+    min_test = np.sum(test > mean + snr * std, 0) >= 0.5 * (2 * psf + 1)**2
     max_test = np.max(test, 0)
 
     centroids = np.where((max_test < burn_limit) * (max_test == data_array_test) * min_test)[0]

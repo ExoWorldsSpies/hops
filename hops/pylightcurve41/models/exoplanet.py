@@ -1,162 +1,356 @@
-__all__ = ['Planet', 'get_filter', 'add_filter']
+
+__all__ = ['Planet', 'get_planet', 'get_all_planets']
 
 import os
-import shutil
-import warnings
-
 import numpy as np
+import shutil
+import time as sys_time
+import itertools
+import exoclock
 
-from ..errors import *
-from ..__databases__ import plc_data
-
-from ..models.exoplanet_lc import planet_orbit, planet_star_projected_distance, planet_phase, \
-    transit, transit_integrated, \
-    transit_duration, transit_depth, eclipse, eclipse_integrated, eclipse_mid_time, eclipse_duration, eclipse_depth,\
-    fp_over_fs, transit_t12, exotethys
-from ..analysis.optimisation import Fitting
-from ..processes.files import open_dict, save_dict,  copy_dict
-from ..plots.plots_fitting import plot_transit_fitting_models
-from ..spacetime.angles import Degrees, _request_angle, _reformat_or_request_angle
-from ..spacetime.times import JD
-from ..spacetime.targets import FixedTarget
-from ..plots.plots_fitting import in_brackets
-
-from ..spacetime.times import now
-from ..spacetime.observing import Observatory
 
 from inspect import signature
+from astropy.time import Time as astrotime
+
+from ..analysis.optimisation import Fitting
+from ..analysis.statistics import residual_statistics
+
+from ..errors import *
+from ..models.exoplanet_lc import planet_orbit, planet_star_projected_distance, planet_phase, \
+    transit, transit_integrated, \
+    transit_duration, transit_depth, eclipse, eclipse_integrated, eclipse_mid_time, eclipse_duration, eclipse_depth, \
+    fp_over_fs, transit_t12, exotethys, convert_to_bjd_tdb, convert_to_jd_utc, convert_to_relflux, airmass
+from ..processes.files import save_dict, copy_dict, open_dict
+from ..plots.plots_fitting import plot_transit_fitting_models
 
 
-class Filter:
+class Observation:
 
-    def __init__(self, name, passband=None):
+    def __init__(self,
+                 time, time_format, exp_time, time_stamp,
+                 flux, flux_unc, flux_format,
+                 filter_name, wlrange, stellar_model,
+                 auxiliary_data, observatory_latitude, observatory_longitude,
+                 detrending_series, detrending_order,
+                 trend_function, trend_parameters,
+                 ):
 
-        if name in plc_data.all_filters():
-            photometry_path = plc_data.photometry()
-            passband = np.loadtxt(os.path.join(photometry_path, name + '.pass'))
-        else:
+        if time_stamp not in ['start', 'mid', 'end']:
+            raise PyLCInputError(
+                'Not acceptable time stamp {0}. Please choose between "mid", "start", "end".'.format(time_stamp))
+
+        if trend_function:
+            if not trend_parameters:
+                raise PyLCInputError('You need to provide the detrending parameters information '
+                                     '(initial guess, limits, names, names to print)')
+            else:
+                detrending_series = None
+                detrending_order = None
+
+        elif detrending_series:
+            detrending_series_ok = True
+
+            available_detrending_series = ['time'] + list(auxiliary_data.keys())
+            if None not in [observatory_latitude, observatory_longitude]:
+                available_detrending_series.append('airmass')
+
+            if isinstance(detrending_series, str):
+                if detrending_series not in available_detrending_series:
+                    detrending_series_ok = False
+                else:
+                    detrending_series = [detrending_series]
+
+            elif isinstance(detrending_series, list):
+                for i in detrending_series:
+                    if i not in available_detrending_series:
+                        detrending_series_ok = False
+            else:
+                detrending_series_ok = False
+
+            if not detrending_series_ok:
+                raise PyLCInputError('Not acceptable detrending_series: {0}. '
+                                     'Please provide a string or a list of strings. '
+                                     'Available detrending_series: {1}'.format(
+                    detrending_series, ','.join(available_detrending_series)))
+
             try:
-                passband = np.loadtxt(passband)
+                detrending_order = int(detrending_order)
+                if detrending_order <= 0:
+                    raise PyLCInputError('You need to detrending_order must be a positive integer.')
             except:
-                raise PyLCInputError('Wrong passband format or file path.')
+                raise PyLCInputError('You need to detrending_order must be a positive integer.')
 
-        self.name = name
-        self.passband = passband
-        self.ldcs_mem = {}
-        self.fp_over_fs_mem = {}
-
-    def ldcs(self, stellar_logg, stellar_temperature, stellar_metallicity, wlrange=None, method='claret', stellar_model='Phoenix_2018'):
-
-        if wlrange is None:
-            ldcs_id = '_'.join([str(ff) for ff in [float(stellar_logg), float(stellar_temperature), float(stellar_metallicity), method, stellar_model, 'None']])
         else:
-            ldcs_id = '_'.join([str(ff) for ff in [float(stellar_logg), float(stellar_temperature), float(stellar_metallicity), method, stellar_model, float(wlrange[0]), float(wlrange[1])]])
+            raise PyLCInputError('You need to indicate a detrending_series or a trend_function')
 
-        try:
-            return self.ldcs_mem[ldcs_id]
-        except KeyError:
-            pass
+        self.dict = {
+            'original_data': {
+                'time': np.ones_like(time) * time,
+                'time_format': time_format,
+                'exp_time': exp_time,
+                'time_stamp': time_stamp,
+                'flux': np.ones_like(flux) * flux,
+                'flux_unc': np.ones_like(flux_unc) * flux_unc,
+                'flux_format': flux_format,
+                'filter_name': filter_name,
+                'wlrange': wlrange,
+                'stellar_model': stellar_model,
+                'observatory_longitude': observatory_longitude,
+                'observatory_latitude': observatory_latitude,
+                'auxiliary_data': auxiliary_data,
+                'trend_function': trend_function,
+                'trend_parameters': trend_parameters,
+                'detrending_series': detrending_series,
+                'detrending_order': detrending_order,
+            }
+        }
 
-        calc = exotethys(
-            stellar_logg, stellar_temperature, stellar_metallicity, self.passband, wlrange, method, stellar_model
-        )
+    def reset(self, planet):
 
-        self.ldcs_mem[ldcs_id] = calc
-        return calc
+        self.dict['input_series'] = {}
+        self.dict['output_series'] = {}
+        self.dict['detrended_series'] = {}
+        self.dict['statistics'] = {}
 
-    def fp_over_fs(self, rp_over_rs, sma_over_rs, albedo, emissivity, stellar_temperature, wlrange=None):
+        self.dict['data_conversion_info'] = {
+            'notes': [],
+            'ra': planet.ra,
+            'dec': planet.dec,
+        }
+        self.dict['model_info'] = {
+            'target': planet.name,
+            'date': astrotime(
+                convert_to_jd_utc(planet.ra, planet.dec, min(self.dict['original_data']['time']),
+                                  self.dict['original_data']['time_format']),
+                format='jd'
+            ).datetime.isoformat().split('T')[0],
+            'ldc_method': planet.method,
+            'max_sub_exp_time': planet.max_sub_exp_time,
+            'precision': planet.precision,
+            'stellar_temperature': planet.stellar_temperature,
+            'stellar_logg': planet.stellar_logg,
+            'stellar_metallicity': planet.stellar_metallicity,
+            'limb_darkening_coefficients': planet.exotethys(self.dict['original_data']['filter_name'],
+                                                            self.dict['original_data']['wlrange'],
+                                                            self.dict['original_data']['stellar_model']),
+            'emissivity': planet.emissivity,
+            'albedo': planet.albedo,
+            'sma_over_rs': planet.sma_over_rs,
+            'fp_over_fs': planet.fp_over_fs(self.dict['original_data']['filter_name'],
+                                            self.dict['original_data']['wlrange'])
+        }
 
-        if wlrange is None:
-            fpfs_id = '_'.join([str(ff) for ff in [rp_over_rs, sma_over_rs, albedo, emissivity, stellar_temperature] + ['None']])
+        self.precision = planet.precision
+        self.max_sub_exp_time = planet.max_sub_exp_time
+        self.ldc_method = planet.method
+
+        # convert time
+
+        time_stamp_correction = {
+            'start': 0.5,
+            'mid': 0,
+            'end': -0.5
+        }[self.dict['original_data']['time_stamp']]
+        time_stamp_correction = time_stamp_correction * self.dict['original_data']['exp_time'] / (60.0 * 60.0 * 24.0)
+
+        time = np.array(self.dict['original_data']['time']) + time_stamp_correction
+        self.dict['data_conversion_info']['time_stamp_correction'] = time_stamp_correction
+        self.dict['data_conversion_info']['notes'].append('Time converted to mid-exposure time.')
+
+        bjd_tdb_correction = planet.convert_to_bjd_tdb(time, self.dict['original_data']['time_format']) - time
+        time = np.array(time) + bjd_tdb_correction
+        self.dict['data_conversion_info']['bjd_tdb_correction'] = time_stamp_correction
+        self.dict['data_conversion_info']['notes'].append('Time converted to BJD_TDB.')
+
+        self.dict['input_series']['time'] = time
+
+        # convert flux
+
+        flux, flux_unc = planet.convert_to_relflux(self.dict['original_data']['flux'],
+                                                   self.dict['original_data']['flux_unc'],
+                                                   self.dict['original_data']['flux_format'])
+        self.dict['input_series']['flux'], self.dict['input_series']['flux_unc'] = \
+            flux, flux_unc
+        self.dict['data_conversion_info']['notes'].append('Flux and flux_unc converted to relative flux.')
+
+        #  auxiliary_data
+
+        for auxiliary_timeseries in self.dict['original_data']['auxiliary_data']:
+            self.dict['input_series'][auxiliary_timeseries] = \
+                self.dict['original_data']['auxiliary_data'][auxiliary_timeseries]
+
+        if (self.dict['original_data']['observatory_latitude'] is not None
+                and self.dict['original_data']['observatory_longitude'] is not None):
+            self.dict['input_series']['airmass'] = planet.airmass(time,
+                                                                  self.dict['original_data']['observatory_latitude'],
+                                                                  self.dict['original_data']['observatory_longitude']
+                                                                  )
+        # sort by time
+
+        idx_sorted = sorted(np.arange(len(time)), key=lambda x: time[x])
+        for input_series in self.dict['input_series']:
+            self.dict['input_series'][input_series] = np.array(self.dict['input_series'][input_series])[idx_sorted]
+
+        # ids
+        if self.dict['original_data']['wlrange'] is None:
+            self.filter_id = self.dict['original_data']['filter_name']
         else:
-            fpfs_id = '_'.join([str(ff) for ff in [rp_over_rs, sma_over_rs, albedo, emissivity, stellar_temperature] + wlrange])
+            self.filter_id = '{0}:{1}-{2}'.format(self.dict['original_data']['filter_name'],
+                                                  self.dict['original_data']['wlrange'][0],
+                                                  self.dict['original_data']['wlrange'][1])
 
-        try:
-            return self.fp_over_fs_mem[fpfs_id]
-        except KeyError:
-            pass
+        self.dict['model_info']['filter_id'] = self.filter_id
 
-        culc = fp_over_fs(rp_over_rs, sma_over_rs, albedo, emissivity, stellar_temperature, self.passband, wlrange)
+        transit_phase = (np.mean(time) - planet.mid_time) / planet.period
+        transit_epoch = int(round(transit_phase, 0))
 
-        self.fp_over_fs_mem[fpfs_id] = culc
-        return culc
+        eclipse_phase = (np.mean(time) - planet.eclipse_mid_time()) / planet.period
+        eclipse_epoch = int(round(eclipse_phase, 0))
 
-
-class Trend:
-
-    def __init__(self, function, trend_priors=None):
-
-        self.function = function
-        self.coefficients = len(str(signature(function))[1:-1].split(','))
-
-        self.names = ['c{0}'.format(ff) for ff in range(self.coefficients)]
-        self.print_names = ['c{0}'.format(ff) for ff in range(self.coefficients)]
-
-        if trend_priors is None:
-            self.limits1 = [0] + [-2 for ff in range(self.coefficients - 1)]
+        if abs(transit_phase - transit_epoch) < abs(eclipse_phase - eclipse_epoch):
+            self.observation_type = 'transit'
+            self.epoch = transit_epoch
         else:
-            self.limits1 = [0] + list([ff[0] for ff in trend_priors])
+            self.observation_type = 'eclipse'
+            self.epoch = eclipse_epoch
 
-        if trend_priors is None:
-            self.limits2 = [2] + [2 for ff in range(self.coefficients - 1)]
+        self.dict['model_info']['observation_type'] = self.observation_type
+        self.dict['model_info']['epoch'] = self.epoch
+
+        self.time_factor = int(self.dict['original_data']['exp_time'] / self.max_sub_exp_time) + 1
+        self.exp_time_h = self.dict['original_data']['exp_time'] / (60.0 * 60.0 * 24.0)
+
+        self.series_length = len(time)
+        self.time_hr = (time[:, None] + np.arange(
+            -self.exp_time_h / 2 + self.exp_time_h / self.time_factor / 2,
+            self.exp_time_h / 2,
+            self.exp_time_h / self.time_factor
+        )).flatten()
+
+        self.parameters_map = np.array([], dtype=int)
+        self.non_outliers_map = np.array(np.arange(self.series_length), dtype=int)
+
+        # setup de-trending
+        if not self.dict['original_data']['trend_function']:
+
+            detrending_names = [ff for ff in self.dict['original_data']['detrending_series']]
+
+            detrending_series = [self.dict['input_series'][ff] - np.min(self.dict['input_series'][ff]) for ff in detrending_names]
+
+            detrending_names.append('???')
+            detrending_series.append(np.ones_like(detrending_series[0]))
+
+            detrending_names = np.array(detrending_names)
+            detrending_series = np.array(detrending_series)
+
+            combinations = list(itertools.combinations_with_replacement(np.arange(len(detrending_series)),
+                                                                        self.dict['original_data']['detrending_order']))
+            detrending_names = detrending_names[(combinations,)]
+            detrending_series = np.prod(detrending_series[(combinations,)], 1)
+            detrending_names = detrending_names[np.where(np.sum((detrending_series - 1) ** 2, 1) != 0)]
+            detrending_series = detrending_series[np.where(np.sum((detrending_series - 1) ** 2, 1) != 0)]
+
+            self.detrending = detrending_series
+            self.number_of_detrending_parameters = 1 + len(detrending_series)
+            self.names = ['n'] + ['_'.join(ff).replace('_???', '') for ff in detrending_names]
+            self.print_names = ['n'] + ['-'.join(ff).replace('-???', '') for ff in detrending_names]
+            self.limits1 = [0] + [-2 for ff in range(len(detrending_series))]
+            self.limits2 = [2] + [2 for ff in range(len(detrending_series))]
+            self.initial = [1] + [0 for ff in range(len(detrending_series))]
+            self.logspace = [True] + [False for ff in range(len(detrending_series))]
+
         else:
-            self.limits2 = [2] + list([ff[2] for ff in trend_priors])
+            self.detrending = None
 
-        if trend_priors is None:
-            self.initial = [1] + [0 for ff in range(self.coefficients - 1)]
-        else:
-            self.initial = [1] + list([ff[1] for ff in trend_priors])
+            self.number_of_detrending_parameters = len(str(signature(
+                self.dict['original_data']['trend_function']))[1:-1].split(','))
 
-    def adjust_normalisation_factor(self, flux):
+            self.initial = [1] + [ff[0] for ff in self.dict['original_data']['trend_parameters']]
+            self.limits1 = [0] + [ff[1] for ff in self.dict['original_data']['trend_parameters']]
+            self.limits2 = [2] + [ff[2] for ff in self.dict['original_data']['trend_parameters']]
+            self.names = ['n'] + [ff[3] for ff in self.dict['original_data']['trend_parameters']]
+            self.print_names = ['n'] + [ff[4] for ff in self.dict['original_data']['trend_parameters']]
+            self.logspace = [True] + [False for ff in self.dict['original_data']['trend_parameters']]
 
+        # adjust normalisation factor
         df = max(np.median(flux) - np.min(flux), np.max(flux) - np.median(flux))
         self.initial[0] = np.median(flux)
-        self.limits1[0] = np.min(flux) - 2 * df
+        self.limits1[0] = max(10**-10, np.min(flux) - 2 * df)
         self.limits2[0] = np.max(flux) + 2 * df
 
-    def evaluate(self, auxiliary_data, *coeff):
+    def add_to_parameters_map(self, idx):
+        self.parameters_map = np.append(self.parameters_map, int(idx))
 
-        coefficients = list(coeff)
+    def clear_outliers(self):
 
-        return coefficients[0] * self.function(auxiliary_data, *coefficients[1:])
+        if self.detrending is not None:
+            self.detrending = self.detrending[:, self.non_outliers_map]
 
+        self.dict['input_series'] = {ff:self.dict['input_series'][ff][self.non_outliers_map]
+                                     for ff in self.dict['input_series']}
 
-built_in_filters = {ff: Filter(ff) for ff in plc_data.all_filters()}
+        self.series_length = len(self.dict['input_series']['time'])
+        self.time_hr = (self.dict['input_series']['time'][:, None] + np.arange(
+            -self.exp_time_h / 2 + self.exp_time_h / self.time_factor / 2, self.exp_time_h / 2, self.exp_time_h / self.time_factor
+        )).flatten()
 
+    def _signal_model(self, parameters):
+        if self.dict['model_info']['observation_type'] == 'transit':
+            ldc1, ldc2, ldc3, ldc4, r, p, a, e, i, w, mt = parameters
+            return np.mean(np.reshape(
+                transit([ldc1, ldc2, ldc3, ldc4], r, p, a, e, i, w, mt, self.time_hr,
+                        method=self.ldc_method, precision=self.precision),
+                (self.series_length, self.time_factor)), 1)
 
-def get_filter(filter_name):
-    if filter_name in built_in_filters:
-        return built_in_filters[filter_name]
-    else:
-        raise PyLCInputError('{0} is not available. Available filters are: {1}. '
-                             '\nAlternatively you can define your own filter as follows: plc.add_filter(filter_name, passbandfile). '
-                             '\nThe passband file should contain the passband of the filter '
-                             '(two columns txt file, column 1: wavelength in A, column 2: total throughput in electrons/photons)'.format(
-            filter_name, ','.join(plc_data.all_filters())))
+        elif self.dict['model_info']['observation_type'] == 'eclipse':
+            d, r, p, a, e, i, w, mt = parameters
+            return np.mean(np.reshape(
+                eclipse(d, r, p, a, e, i, w, mt, self.time_hr, precision=self.precision),
+                (self.series_length, self.time_factor)), 1)
 
+    def _trend_model(self, parameters):
+        if not self.dict['original_data']['trend_function']:
+            return 1 + np.sum(self.detrending * np.array(parameters)[:, None], 0)
+        else:
+            return self.dict['original_data']['trend_function'](self.dict['input_series'], *parameters)
 
-def add_filter(filter_name, passband):
+    def splitted_model(self, indices, parameters):
 
-    built_in_filters[filter_name] = Filter(filter_name, passband)
+        parameters = parameters[self.parameters_map]
+        trend_model = self._trend_model(parameters[1:self.number_of_detrending_parameters])
+        signal_model = self._signal_model(parameters[self.number_of_detrending_parameters:])
+
+        if indices is None:
+            return (parameters[0] * trend_model), signal_model
+        else:
+            return (parameters[0] * trend_model)[indices], signal_model[np.int_(indices)]
+
+    def full_model(self, indices, parameters):
+
+        parameters = parameters[self.parameters_map]
+        trend_model = self._trend_model(parameters[1:self.number_of_detrending_parameters])
+        signal_model = self._signal_model(parameters[self.number_of_detrending_parameters:])
+
+        if indices is None:
+            return parameters[0] * trend_model * signal_model
+        else:
+            return (parameters[0] * trend_model * signal_model)[np.int_(indices)]
 
 
 class Planet:
 
     def __init__(self, name, ra, dec, stellar_logg, stellar_temperature, stellar_metallicity,
                  rp_over_rs, period, sma_over_rs, eccentricity, inclination,
-                 periastron, mid_time, mid_time_format, ww=0,
+                 periastron, mid_time,
+                 ldc_method='claret', max_sub_exp_time=10, precision=2,
+                 asc_node=0,
                  albedo=0.15, emissivity=1.0):
 
-        ra = _reformat_or_request_angle(ra)
-        dec = _reformat_or_request_angle(dec)
-        inclination = _reformat_or_request_angle(inclination)
-        inclination = inclination.deg()
-        periastron = _reformat_or_request_angle(periastron)
-        periastron = periastron.deg()
-
         self.name = name
-        self.target = FixedTarget(ra, dec)
-
+        self.ra = ra
+        self.dec = dec
+        if self.dec > 90 or self.dec < -90:
+            raise PyLCInputError('Declination must be within -90, 90 degrees')
         self.stellar_logg = stellar_logg
         self.stellar_temperature = stellar_temperature
         self.stellar_metallicity = stellar_metallicity
@@ -167,68 +361,72 @@ class Planet:
         self.eccentricity = eccentricity
         self.inclination = inclination
         self.periastron = periastron
-        self.mid_time = self.target.convert_to_bjd_tdb(mid_time, mid_time_format)
-        self.mid_time_format = 'BJD_TDB'
-        self.eclipse_mid_time = eclipse_mid_time(self.period, self.sma_over_rs, self.eccentricity, self.inclination,
-                                                 self.periastron, self.mid_time)
-        self.ww = ww
+        self.mid_time = mid_time
+
+        self.asc_node = asc_node
         self.albedo = albedo
         self.emissivity = emissivity
 
-        self.filters = built_in_filters
+        self.method = ldc_method
+        self.max_sub_exp_time = max_sub_exp_time
+        self.precision = precision
 
-        self.observations = {}
+        self.ldcs_memory = {}
+        self.observations = []
 
-    # planet calculations
+    # conversions
 
-    def ldcs(self, filter_name, wlrange=None, method='claret', stellar_model='Phoenix_2018'):
-        return get_filter(filter_name).ldcs(self.stellar_logg, self.stellar_temperature, self.stellar_metallicity, wlrange, method, stellar_model)
+    def convert_to_bjd_tdb(self, time_array, time_format):
+        return convert_to_bjd_tdb(self.ra, self.dec, time_array, time_format)
+
+    def convert_to_jd_utc(self, time_array, time_format):
+        return convert_to_jd_utc(self.ra, self.dec, time_array, time_format)
+
+    def convert_to_relflux(self, flux_array, flux_unc_array, flux_format):
+        return convert_to_relflux(flux_array, flux_unc_array, flux_format)
+
+    def airmass(self, time_array, observatory_latitude, observatory_longitude):
+        return airmass(observatory_latitude, observatory_longitude, self.ra, self.dec, time_array)
+
+    # filter-dependent values
+
+    def exotethys(self, filter_name, wlrange=None, stellar_model='Phoenix_2018'):
+        options = '{0}_{1}_{2}_{3}'.format(filter_name, wlrange, self.method, stellar_model)
+        if options not in self.ldcs_memory:
+            self.ldcs_memory[options] = exotethys(self.stellar_logg, self.stellar_temperature, self.stellar_metallicity,
+                                                  filter_name, wlrange, self.method, stellar_model)
+        return self.ldcs_memory[options]
+
+    def add_custom_limb_darkening_coefficients(self, limb_darkening_coefficients, filter_name, wlrange, stellar_model):
+        options = '{0}_{1}_{2}_{3}'.format(filter_name, wlrange, self.method, stellar_model)
+        self.ldcs_memory[options] = limb_darkening_coefficients
 
     def fp_over_fs(self, filter_name, wlrange=None):
-        return get_filter(filter_name).fp_over_fs(self.rp_over_rs, self.sma_over_rs, self.albedo, self.emissivity, self.stellar_temperature, wlrange)
+        return fp_over_fs(self.rp_over_rs, self.sma_over_rs, self.albedo, self.emissivity, self.stellar_temperature,
+                          filter_name, wlrange)
 
-    def planet_orbit(self, time, time_format):
-        time = self.target.convert_to_bjd_tdb(time, time_format)
+    def planet_orbit(self, time):
         return planet_orbit(self.period, self.sma_over_rs, self.eccentricity, self.inclination, self.periastron,
-                            self.mid_time, time, ww=self.ww)
+                            self.mid_time, time, ww=self.asc_node)
 
-    def planet_star_projected_distance(self, time, time_format):
-        time = self.target.convert_to_bjd_tdb(time, time_format)
+    def planet_star_projected_distance(self, time):
         return planet_star_projected_distance(self.period, self.sma_over_rs, self.eccentricity, self.inclination,
                                               self.periastron, self.mid_time, time)
 
-    def planet_phase(self, time, time_format):
-        time = np.array([self.target.convert_to_bjd_tdb(ff, time_format) for ff in time])
+    def planet_phase(self, time):
         return planet_phase(self.period, self.mid_time, time)
 
-    def transit(self, time, time_format, filter_name, wlrange=None, method='claret', stellar_model='Phoenix_2018', precision=3):
-
-        time = self.target.convert_to_bjd_tdb(time, time_format)
-
-        return transit(self.ldcs(filter_name, wlrange, method, stellar_model),
+    def transit(self, time, filter_name, wlrange=None, stellar_model='Phoenix_2018'):
+        return transit(self.exotethys(filter_name, wlrange, stellar_model),
                        self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity,
                        self.inclination, self.periastron, self.mid_time, time,
-                       method=method, precision=precision)
+                       self.method, self.precision)
 
-    def transit_integrated(self, time, time_format, exp_time, time_stamp, filter_name, wlrange=None, method='claret', stellar_model='Phoenix_2018', max_sub_exp_time=10, precision=3):
-
-        if time_stamp == 'start':
-            time = np.array(time) + 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        elif time_stamp == 'mid':
-            time = np.array(time)
-        elif time_stamp == 'end':
-            time = np.array(time) - 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        else:
-            raise PyLCInputError(
-                'Not acceptable time stamp {0}. Please choose between "mid", "start", "end".'.format(time_stamp))
-
-        time = self.target.convert_to_bjd_tdb(time, time_format)
-
-        return transit_integrated(self.ldcs(filter_name, wlrange=wlrange, method=method, stellar_model=stellar_model),
+    def transit_integrated(self, time, exp_time, filter_name, wlrange=None, stellar_model='Phoenix_2018'):
+        return transit_integrated(self.exotethys(filter_name, wlrange, stellar_model),
                                   self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity,
                                   self.inclination, self.periastron, self.mid_time, time, exp_time,
-                                  max_sub_exp_time=max_sub_exp_time,
-                                  method=method, precision=precision)
+                                  self.max_sub_exp_time, self.method, self.precision)
 
     def transit_duration(self):
         return transit_duration(self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity, self.inclination,
@@ -238,1258 +436,1134 @@ class Planet:
         return transit_t12(self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity, self.inclination,
                            self.periastron)
 
-    def transit_depth(self, filter_name, wlrange=None, method='claret', stellar_model='Phoenix_2018', precision=6):
-
-        return transit_depth(self.ldcs(filter_name, wlrange, method, stellar_model),
+    def transit_depth(self, filter_name, wlrange=None, stellar_model='Phoenix_2018'):
+        return transit_depth(self.exotethys(filter_name, wlrange, stellar_model),
                              self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity,
                              self.inclination, self.periastron,
-                             method=method, precision=precision)
+                             self.method, self.precision)
 
-    def eclipse(self, time, time_format, filter_name, wlrange=None, precision=3):
-
-        time = self.target.convert_to_bjd_tdb(time, time_format)
-
+    def eclipse(self, time, filter_name, wlrange=None):
         return eclipse(self.fp_over_fs(filter_name, wlrange), self.rp_over_rs,
                        self.period, self.sma_over_rs, self.eccentricity,
-                       self.inclination, self.periastron, self.eclipse_mid_time, time, precision=precision)
+                       self.inclination, self.periastron, self.eclipse_mid_time(), time, self.precision)
 
-    def eclipse_integrated(self, time, time_format, exp_time, time_stamp, filter_name, wlrange=None,
-                           max_sub_exp_time=10, precision=3):
-
-        if time_stamp == 'start':
-            time = np.array(time) + 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        elif time_stamp == 'mid':
-            time = np.array(time)
-        elif time_stamp == 'end':
-            time = np.array(time) - 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        else:
-            raise PyLCInputError(
-                'Not acceptable time stamp {0}. Please choose between "mid", "start", "end".'.format(time_stamp))
-
-        time = self.target.convert_to_bjd_tdb(time, time_format)
-
+    def eclipse_integrated(self, time, exp_time, filter_name, wlrange=None):
         return eclipse_integrated(self.fp_over_fs(filter_name, wlrange=wlrange), self.rp_over_rs,
                                   self.period, self.sma_over_rs, self.eccentricity,
-                                  self.inclination, self.periastron, self.eclipse_mid_time, time, exp_time,
-                                  max_sub_exp_time=max_sub_exp_time, precision=precision)
+                                  self.inclination, self.periastron, self.eclipse_mid_time(), time, exp_time,
+                                  self.max_sub_exp_time, self.precision)
 
     def eclipse_duration(self):
         return eclipse_duration(self.rp_over_rs, self.period, self.sma_over_rs, self.eccentricity,
                                 self.inclination, self.periastron)
 
-    def eclipse_depth(self, filter_name, wlrange=None, precision=6):
+    def eclipse_depth(self, filter_name, wlrange=None):
         return eclipse_depth(self.fp_over_fs(filter_name, wlrange), self.rp_over_rs, self.period,
                              self.sma_over_rs, self.eccentricity, self.inclination, self.periastron,
-                             precision=precision)
+                             self.precision)
+
+    def eclipse_mid_time(self):
+        return eclipse_mid_time(self.period, self.sma_over_rs, self.eccentricity, self.inclination, self.periastron,
+                                self.mid_time)
 
     # data fitting
 
-    def add_observation(self, time, time_format, exp_time, time_stamp, flux, flux_unc, flux_format, filter_name,
-                        wlrange=None, observatory_latitude=None, observatory_longitude=None, auxiliary_data=None):
+    def add_observation(self, time, time_format, exp_time, time_stamp, flux, flux_unc, flux_format,
+                        filter_name, wlrange=None, stellar_model='Phoenix_2018',
+                        auxiliary_data={}, observatory_latitude=None, observatory_longitude=None,
+                        detrending_series='time', detrending_order=2,
+                        trend_function=None, trend_parameters=None,
+                        **kwargs
+                        ):
 
-        _ = get_filter(filter_name)
-
-        original_data = {
-            'time': time,
-            'time_stamp': time_stamp,
-            'time_format': time_format,
-            'flux': flux,
-            'flux_format': flux_format,
-            'flux_unc': flux_unc,
-            'exp_time': exp_time,
-            'filter_name': filter_name,
-            'wlrange': wlrange,
-        }
-
-        if observatory_latitude and observatory_longitude:
-            observatory_latitude = _reformat_or_request_angle(observatory_latitude)
-            observatory_longitude = _reformat_or_request_angle(observatory_longitude)
-            original_data['observatory_latitude'] = observatory_latitude.deg_coord()
-            original_data['observatory_longitude'] = observatory_longitude.deg()
-            observatory = Observatory(observatory_latitude, observatory_longitude)
-        else:
-            observatory = None
-            original_data['observatory_latitude'] = None
-            original_data['observatory_longitude'] = None
-
-        if time_stamp == 'start':
-            time = np.array(time) + 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        elif time_stamp == 'mid':
-            time = np.array(time)
-        elif time_stamp == 'end':
-            time = np.array(time) - 0.5 * exp_time / (60.0 * 60.0 * 24.0)
-        else:
-            raise PyLCInputError(
-                'Not acceptable time stamp {0}. Please choose between "mid", "start", "end".'.format(time_stamp))
-
-        date = self.target.convert_to_jd_utc(time[0], time_format)
-
-        time = np.array([self.target.convert_to_bjd_tdb(ff, time_format) for ff in time])
-
-        if flux_format == 'mag':
-            flux_unc = np.abs(np.array(flux_unc) * (-0.921034 * np.exp(0.921034 * flux[0] - 0.921034 * np.array(flux))))
-            flux = 10 ** ((flux[0] - np.array(flux)) / 2.5)
-        elif flux_format == 'flux':
-            flux = np.array(flux)
-            flux_unc = np.array(flux_unc)
-        else:
-            raise PyLCInputError('Not acceptable flux format {0}. Please choose between "flux" and '
-                                 '"mag".'.format(flux_format))
-
-        obs_id = 0
-        while obs_id in self.observations:
-            obs_id += 1
-
-        check_transit = (np.mean(time) - self.mid_time) / self.period
-        check_transit = abs(check_transit - int(check_transit))
-
-        check_eclipse = (np.mean(time) - self.eclipse_mid_time) / self.period
-        check_eclipse = abs(check_eclipse - int(check_eclipse))
-
-        if check_transit < check_eclipse:
-            observation_type = 'transit'
-            epoch = int(round((np.mean(time) - self.mid_time) / self.period, 0))
-        else:
-            observation_type = 'eclipse'
-            epoch = int(round((np.mean(time) - self.eclipse_mid_time) / self.period, 0))
-
-        if observatory:
-            airmass = []
-            for i in time:
-                airmass.append(observatory.airmass(self.target, JD(self.target.convert_to_jd_utc(i, time_format))))
-        else:
-            airmass = np.zeros_like(time)
-
-        dtime = time-time[0]
-
-        self.observations[obs_id] = {
-            'target': self.name,
-            'time': time,
-            'flux': flux / np.median(flux),
-            'flux_unc': flux_unc / np.median(flux),
-            'exp_time': exp_time,
-            'filter_name': filter_name,
-            'wlrange': wlrange,
-            'epoch': epoch,
-            'date': date,
-            'observation_type': observation_type,
-            'original_data': original_data,
-            'auxiliary_data': {
-                'dtime': np.array(dtime),
-                'dtimesqr': np.array(dtime)**2,
-                'airmass': np.array(airmass),
-            }
-        }
-
-        if auxiliary_data is not None:
-            for auxiliary_timeseries in auxiliary_data:
-                self.observations[obs_id]['auxiliary_data'][auxiliary_timeseries] = auxiliary_data[auxiliary_timeseries]
+        self.observations.append(
+            Observation(time, time_format, exp_time, time_stamp,
+                        flux, flux_unc, flux_format,
+                        filter_name, wlrange, stellar_model,
+                        auxiliary_data, observatory_latitude, observatory_longitude,
+                        detrending_series, detrending_order,
+                        trend_function, trend_parameters))
 
     def add_observation_from_dict(self, dictionary):
-        if 'wlrange' not in dictionary:
-            dictionary['wlrange'] = None
-        if 'observatory_latitude' not in dictionary:
-            dictionary['observatory_latitude'] = None
-        if 'observatory_longitude' not in dictionary:
-            dictionary['observatory_longitude'] = None
-        if 'auxiliary_data' not in dictionary:
-            dictionary['auxiliary_data'] = None
 
-        self.add_observation(
-            time=dictionary['time'],
-            time_format=dictionary['time_format'],
-            exp_time=dictionary['exp_time'],
-            time_stamp=dictionary['time_stamp'],
-            flux=dictionary['flux'],
-            flux_unc=dictionary['flux_unc'],
-            flux_format=dictionary['flux_format'],
-            filter_name=dictionary['filter_name'],
-            wlrange=dictionary['wlrange'],
-            observatory_latitude=dictionary['observatory_latitude'],
-            observatory_longitude=dictionary['observatory_longitude'],
-            auxiliary_data=dictionary['auxiliary_data'])
+        if isinstance(dictionary, str):
+            dictionary = open_dict(dictionary)
+        elif not isinstance(dictionary, dict):
+            raise PyLCInputError('Dictionary should be a dict object or a path to a pickle file.')
+
+        self.add_observation(**dictionary)
+
+    def clear_observations(self):
+
+        self.observations = []
 
     def transit_fitting(self, output_folder=None,
-
-                        method='claret', stellar_model='Phoenix_2018',
-
-                        max_sub_exp_time=10, precision=3,
-
-                        detrending='time', detrending_order=2,
-
-                        trend_function=None, trend_priors=None,
 
                         iterations=None, walkers=None, burn_in=None,
 
                         fit_ldc1=False, fit_ldc2=False, fit_ldc3=False, fit_ldc4=False,
 
-                        fit_rp_over_rs=True, fit_individual_rp_over_rs=False,
-
+                        fit_individual_rp_over_rs=True,
                         fit_sma_over_rs=False, fit_inclination=False,
-
                         fit_mid_time=True, fit_period=False,
                         fit_individual_times=True,
 
-                        fit_ldc_limits=[-1.0, 1.0],
-                        fit_rp_over_rs_limits=[0.25, 4.0],
-                        fit_sma_over_rs_limits=[0.25, 4.0],
-                        fit_inclination_limits=[70.0, 90.0],
+                        fit_ldc_limits=[-3.0, 3.0],
+                        fit_rp_over_rs_limits=[0.1, 10],
+                        fit_sma_over_rs_limits=[0.001, 1000],
+                        fit_inclination_limits=[10.0, 90.0],
                         fit_mid_time_limits=[-0.2, 0.2],
-                        fit_period_limits=[0.99, 1.01],
+                        fit_period_limits=[0.001, 1000],
 
-                        counter='Transit fitting',
-                        optimise_initial_parameters=True,
+                        counter='Transit fitting', window_counter=False,
                         optimise_initial_parameters_trials=3,
                         scale_uncertainties=False,
                         filter_outliers=False,
                         optimiser='emcee',
-                        window_counter=False,
                         strech_prior=0.2,
+                        walkers_spread=0.01,
                         return_traces=True,
+                        verbose=False,
                         ):
 
-        parameters_map = [[] for observation in self.observations]
+        for observation in self.observations:
+            observation.reset(self)
+            if observation.dict['model_info']['observation_type'] == 'eclipse':
+                raise PyLCInputError('You need to add only transit observation to proceed.')
+
+        if len(self.observations) == 0:
+            raise PyLCInputError('You need to add at least one transit observation to proceed.')
+
+        for observation_num, observation in enumerate(self.observations):
+            observation.obs_id = 'obs{0}'.format(observation_num)
+            observation.dict['model_info']['obs_id'] = observation.obs_id
+
+        fit_rp_over_rs_limits = [self.rp_over_rs * fit_rp_over_rs_limits[0], self.rp_over_rs * fit_rp_over_rs_limits[1]]
+        fit_sma_over_rs_limits = [self.sma_over_rs * fit_sma_over_rs_limits[0], self.sma_over_rs * fit_sma_over_rs_limits[1]]
+        fit_period_limits = [self.period * fit_period_limits[0], self.period * fit_period_limits[1]]
+
+        # separate filters and epochs
+
+        unique_epochs = []
+        for observation in self.observations:
+            if observation.epoch not in unique_epochs:
+                unique_epochs.append(observation.epoch)
+
+        if len(unique_epochs) == 1:
+            fit_individual_times = False
+            if fit_period:
+                raise PyLCInputError('Period cannot be fitted only on one epoch.')
+
+        if fit_individual_times and fit_period:
+            raise PyLCInputError('Period and individual mid times cannot be fitted simultaneously.')
+
+        unique_filters = {}
+        for observation in self.observations:
+            if observation.filter_id not in unique_filters:
+                unique_filters[observation.filter_id] = \
+                    observation.dict['model_info']['limb_darkening_coefficients']
+
+        if len(unique_filters) == 1:
+            fit_individual_rp_over_rs = False
+
+        # add parameters
 
         names = []
         print_names = []
         limits1 = []
         limits2 = []
         initial = []
-
-        if trend_function is None:
-
-            if detrending == 'time':
-                if detrending_order == 2:
-                    def trend_function(auxilary_data, c1, c2):
-                        return 1 + c1 * auxilary_data['dtime'] + c2 * auxilary_data['dtimesqr']
-                elif detrending_order == 1:
-                    def trend_function(auxilary_data, c1):
-                        return 1 + c1 * auxilary_data['dtime']
-                else:
-                    def trend_function(auxilary_data):
-                        return np.ones_like(auxilary_data['dtime'])
-            else:
-                if detrending_order == 2:
-                    def trend_function(auxilary_data, c1, c2):
-                        trend_x = auxilary_data['airmass']
-                        return 1 + c1 * trend_x + c2 * trend_x * trend_x
-                elif detrending_order == 1:
-                    def trend_function(auxilary_data, c1):
-                        trend_x = auxilary_data['airmass']
-                        return 1 + c1 * trend_x
-                else:
-                    def trend_function(auxilary_data):
-                        return np.ones_like(auxilary_data['dtime'])
-
-        trend = Trend(function=trend_function, trend_priors=trend_priors)
+        logspace = []
 
         # de-trending parameters
 
-        for observation_num, observation in enumerate(self.observations):
-
-            trend.adjust_normalisation_factor(self.observations[observation]['flux'])
-
-            for coefficient in range(trend.coefficients):
-
-                if len(self.observations) == 1:
-                    names.append('{0}'.format(trend.names[coefficient]))
-                    print_names.append('{0}'.format(trend.print_names[coefficient]))
-                else:
-                    names.append('{0}_{1}'.format(trend.names[coefficient], observation_num + 1))
-                    print_names.append('{0}_{1}'.format(trend.print_names[coefficient], observation_num + 1))
-
-                initial.append(trend.initial[coefficient])
-                limits1.append(trend.limits1[coefficient])
-                limits2.append(trend.limits2[coefficient])
-
-                parameters_map[observation_num].append(len(names) - 1)
-
-        # limb-darkening and rp_over_rs parameters
-
-        unique_filters = []
         for observation in self.observations:
-            if self.observations[observation]['wlrange'] is not None:
-                ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                          self.observations[observation]['wlrange'][0],
-                                          self.observations[observation]['wlrange'][1])
-            else:
-                ff = self.observations[observation]['filter_name']
-            if ff not in unique_filters:
-                unique_filters.append(ff)
 
-        if len(unique_filters) == 1:
-            fit_individual_rp_over_rs = False
+            for coefficient in range(observation.number_of_detrending_parameters):
+
+                if len(self.observations) > 1:
+                    names.append('{0}::{1}'.format(observation.names[coefficient], observation.obs_id))
+                    print_names.append('{0}::{1}'.format(observation.print_names[coefficient], observation.obs_id))
+                else:
+                    names.append('{0}'.format(observation.names[coefficient]))
+                    print_names.append('{0}'.format(observation.print_names[coefficient]))
+
+                initial.append(observation.initial[coefficient])
+                limits1.append(observation.limits1[coefficient])
+                limits2.append(observation.limits2[coefficient])
+                logspace.append(observation.logspace[coefficient])
+
+                observation.add_to_parameters_map(len(names) - 1)
+
+        # limb-darkening
 
         for phot_filter in unique_filters:
 
-            if len(phot_filter.split('>>>')) == 1:
-                ldc1, ldc2, ldc3, ldc4 = self.ldcs(phot_filter, method=method, stellar_model=stellar_model)
-            else:
-                ldc1, ldc2, ldc3, ldc4 = self.ldcs(phot_filter.split('>>>')[0],
-                                                   wlrange=[float(phot_filter.split('>>>')[1]),
-                                                            float(phot_filter.split('>>>')[2])],
-                                                   method=method, stellar_model=stellar_model)
+            ldcs = unique_filters[phot_filter]
+            fit_ldcs = [fit_ldc1, fit_ldc2, fit_ldc3, fit_ldc4]
 
-            rp_over_rs = self.rp_over_rs
+            for ldc in range(4):
 
-            names.append('LDC1_{0}'.format(phot_filter.replace('>>>', '_')))
-            print_names.append('LDC1_\mathrm{0}'.format(in_brackets(phot_filter.replace('>>>', '-'))))
-            initial.append(ldc1)
-            if fit_ldc1:
-                limits1.append(ldc1 + fit_ldc_limits[0])
-                limits2.append(ldc1 + fit_ldc_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
-
-            for observation_num, observation in enumerate(self.observations):
-                if self.observations[observation]['wlrange'] is not None:
-                    ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                  self.observations[observation]['wlrange'][0],
-                                                  self.observations[observation]['wlrange'][1])
+                if len(unique_filters) > 1:
+                    names.append('a_{0}::{1}'.format(ldc + 1, phot_filter))
+                    print_names.append('a_{{{0}}}::{1}'.format(ldc +1, phot_filter))
                 else:
-                    ff = self.observations[observation]['filter_name']
-                if ff == phot_filter:
-                    parameters_map[observation_num].append(len(names) - 1)
+                    names.append('a_{0}'.format(ldc + 1))
+                    print_names.append('a_{{{0}}}'.format(ldc +1))
 
-            names.append('LDC2_{0}'.format(phot_filter.replace('>>>', '_')))
-            print_names.append('LDC2_\mathrm{0}'.format(in_brackets(phot_filter.replace('>>>', '-'))))
-            initial.append(ldc2)
-            if fit_ldc2:
-                limits1.append(ldc2 + fit_ldc_limits[0])
-                limits2.append(ldc2 + fit_ldc_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
-
-            for observation_num, observation in enumerate(self.observations):
-                if self.observations[observation]['wlrange'] is not None:
-                    ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                  self.observations[observation]['wlrange'][0],
-                                                  self.observations[observation]['wlrange'][1])
+                initial.append(ldcs[ldc])
+                if fit_ldcs[ldc]:
+                    limits1.append(ldcs[ldc] + fit_ldc_limits[0])
+                    limits2.append(ldcs[ldc] + fit_ldc_limits[1])
                 else:
-                    ff = self.observations[observation]['filter_name']
-                if ff == phot_filter:
-                    parameters_map[observation_num].append(len(names) - 1)
+                    limits1.append(np.nan)
+                    limits2.append(np.nan)
+                logspace.append(False)
 
-            names.append('LDC3_{0}'.format(phot_filter.replace('>>>', '_')))
-            print_names.append('LDC3_\mathrm{0}'.format(in_brackets(phot_filter.replace('>>>', '-'))))
-            initial.append(ldc3)
-            if fit_ldc3:
-                limits1.append(ldc3 + fit_ldc_limits[0])
-                limits2.append(ldc3 + fit_ldc_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
+                for observation in self.observations:
+                    if observation.filter_id == phot_filter:
+                        observation.add_to_parameters_map(len(names) - 1)
 
-            for observation_num, observation in enumerate(self.observations):
-                if self.observations[observation]['wlrange'] is not None:
-                    ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                  self.observations[observation]['wlrange'][0],
-                                                  self.observations[observation]['wlrange'][1])
-                else:
-                    ff = self.observations[observation]['filter_name']
-                if ff == phot_filter:
-                    parameters_map[observation_num].append(len(names) - 1)
+        # rp_over_rs
 
-            names.append('LDC4_{0}'.format(phot_filter.replace('>>>', '_')))
-            print_names.append('LDC4_\mathrm{0}'.format(in_brackets(phot_filter.replace('>>>', '-'))))
-            initial.append(ldc4)
-            if fit_ldc4:
-                limits1.append(ldc4 + fit_ldc_limits[0])
-                limits2.append(ldc4 + fit_ldc_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
+        if fit_individual_rp_over_rs:
+            for phot_filter in unique_filters:
+                names.append('rp_over_rs::{0}'.format(phot_filter))
+                print_names.append(r'R_\mathrm{{p}}/R_*::{0}'.format(phot_filter))
+                initial.append(self.rp_over_rs)
+                limits1.append(fit_rp_over_rs_limits[0])
+                limits2.append(fit_rp_over_rs_limits[1])
+                logspace.append(False)
+                for observation in self.observations:
+                    if observation.filter_id == phot_filter:
+                        observation.add_to_parameters_map(len(names) - 1)
 
-            for observation_num, observation in enumerate(self.observations):
-                if self.observations[observation]['wlrange'] is not None:
-                    ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                  self.observations[observation]['wlrange'][0],
-                                                  self.observations[observation]['wlrange'][1])
-                else:
-                    ff = self.observations[observation]['filter_name']
-                if ff == phot_filter:
-                    parameters_map[observation_num].append(len(names) - 1)
+            global_parameters_names = []
+            global_parameters_print_names = []
+            global_parameters_initial = []
+            global_parameters_fit = []
+            global_parameters_limits = []
+            global_parameters_logspace = []
 
-            if fit_individual_rp_over_rs:
-
-                names.append('rp_{0}'.format(phot_filter.replace('>>>', '_')))
-                print_names.append('(R_\mathrm{p}/R_*)_\mathrm{' + phot_filter.replace('>>>', '-') + '}')
-                initial.append(rp_over_rs)
-                limits1.append(rp_over_rs * fit_rp_over_rs_limits[0])
-                limits2.append(rp_over_rs * fit_rp_over_rs_limits[1])
-
-                for observation_num, observation in enumerate(self.observations):
-                    if self.observations[observation]['wlrange'] is not None:
-                        ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                      self.observations[observation]['wlrange'][0],
-                                                      self.observations[observation]['wlrange'][1])
-                    else:
-                        ff = self.observations[observation]['filter_name']
-                    if ff == phot_filter:
-                        parameters_map[observation_num].append(len(names) - 1)
-
-        if not fit_individual_rp_over_rs:
-
-            names.append('rp')
-            print_names.append('R_\mathrm{p}/R_*')
-            initial.append(self.rp_over_rs)
-            if fit_rp_over_rs:
-                limits1.append(self.rp_over_rs * fit_rp_over_rs_limits[0])
-                limits2.append(self.rp_over_rs * fit_rp_over_rs_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
-
-            for observation_num, observation in enumerate(self.observations):
-                parameters_map[observation_num].append(len(names) - 1)
+        else:
+            global_parameters_names = ['rp_over_rs']
+            global_parameters_print_names = [r'R_\mathrm{p}/R_*']
+            global_parameters_initial = [self.rp_over_rs]
+            global_parameters_fit = [True]
+            global_parameters_limits = [fit_rp_over_rs_limits]
+            global_parameters_logspace = [False]
 
         # orbital parameters
 
-        names.append('P')
-        print_names.append('P')
-        initial.append(self.period)
-        if fit_period:
-            limits1.append(self.period * fit_period_limits[0])
-            limits2.append(self.period * fit_period_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
+        global_parameters_names += ['period', 'sma_over_rs', 'eccentricity', 'inclination', 'periastron']
+        global_parameters_print_names += ['P', 'a', 'e', 'i', r'\omega']
+        global_parameters_initial += [self.period, self.sma_over_rs, self.eccentricity, self.inclination, self.periastron]
+        global_parameters_fit += [fit_period, fit_sma_over_rs, False, fit_inclination, False]
+        global_parameters_limits += [fit_period_limits, fit_sma_over_rs_limits, False, fit_inclination_limits, False]
+        global_parameters_logspace += [True, True, False, True, False]
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+        if not fit_mid_time or not fit_individual_times or len(unique_epochs) == 1:
 
-        names.append('a')
-        print_names.append('a/R_*')
-        initial.append(self.sma_over_rs)
-        if fit_sma_over_rs:
-            limits1.append(self.sma_over_rs * fit_sma_over_rs_limits[0])
-            limits2.append(self.sma_over_rs * fit_sma_over_rs_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
+            test_epochs = np.array([])
+            test_epochs_weights = np.array([])
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+            for observation in self.observations:
+                test_epochs = np.append(test_epochs,
+                                        np.ones_like(observation.dict['input_series']['flux_unc']) * observation.epoch)
+                norm_errors = observation.dict['input_series']['flux_unc'] / observation.dict['input_series']['flux']
+                test_epochs_weights = np.append(test_epochs_weights, 1 / (norm_errors * norm_errors))
 
-        names.append('e')
-        print_names.append('e')
-        initial.append(self.eccentricity)
-        limits1.append(np.nan)
-        limits2.append(np.nan)
+            new_epoch = np.round(np.sum(test_epochs * test_epochs_weights) / np.sum(test_epochs_weights), 0)
+            new_mid_time = self.mid_time + new_epoch * self.period
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+            global_parameters_names += ['mid_time']
+            global_parameters_print_names += [r'T_\mathrm{mid}']
+            global_parameters_initial += [new_mid_time]
+            global_parameters_fit += [fit_mid_time]
+            global_parameters_limits += [[new_mid_time + fit_mid_time_limits[0], new_mid_time + fit_mid_time_limits[1]]]
+            global_parameters_logspace += [False]
 
-        names.append('i')
-        print_names.append('i')
-        initial.append(self.inclination)
-        if fit_inclination:
-            limits1.append(fit_inclination_limits[0])
-            limits2.append(fit_inclination_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
-
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
-
-        names.append('w')
-        print_names.append('\omega')
-        initial.append(self.periastron)
-        limits1.append(np.nan)
-        limits2.append(np.nan)
-
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
-
-        # time parameters
-
-        test_epochs = []
-        test_epochs_weights = []
-
-        for observation in self.observations:
-            test_epochs.append((self.observations[observation]['time'] - self.mid_time) / self.period)
-            norm_errors = self.observations[observation]['flux_unc'] / self.observations[observation]['flux']
-            test_epochs_weights.append(1 / (norm_errors * norm_errors))
-
-        test_epochs = np.concatenate(test_epochs)
-        test_epochs_weights = np.concatenate(test_epochs_weights)
-
-        new_epoch = np.round(np.sum(test_epochs * test_epochs_weights) / np.sum(test_epochs_weights), 0)
-        new_mid_time = self.mid_time + new_epoch * self.period
-
-        for observation in self.observations:
-            self.observations[observation]['epoch'] = int(round((np.mean(self.observations[observation]['time']) -new_mid_time) / self.period, 0))
-
-        unique_epochs = []
-        for observation in self.observations:
-            if self.observations[observation]['epoch'] not in unique_epochs:
-                unique_epochs.append(self.observations[observation]['epoch'])
-
-        if len(unique_epochs) == 1:
-            fit_individual_times = False
-
-        if not fit_individual_times:
-
-            names.append('T_mid')
-            print_names.append('T_\mathrm{mid}')
-            initial.append(new_mid_time)
-            if fit_mid_time:
-                limits1.append(new_mid_time + fit_mid_time_limits[0])
-                limits2.append(new_mid_time + fit_mid_time_limits[1])
+        for global_parameter in range(len(global_parameters_names)):
+            names.append(global_parameters_names[global_parameter])
+            print_names.append(global_parameters_print_names[global_parameter])
+            initial.append(global_parameters_initial[global_parameter])
+            if global_parameters_fit[global_parameter]:
+                limits1.append(global_parameters_limits[global_parameter][0])
+                limits2.append(global_parameters_limits[global_parameter][1])
             else:
                 limits1.append(np.nan)
                 limits2.append(np.nan)
+            logspace.append(global_parameters_logspace[global_parameter])
 
-            for observation_num, observation in enumerate(self.observations):
-                parameters_map[observation_num].append(len(names) - 1)
+            for observation in self.observations:
+                observation.add_to_parameters_map(len(names) - 1)
 
-        else:
-
-            if fit_period:
-                raise PyLCInputError('Period and individual mid times cannot be fitted simultaneously.')
+        # individual time parameters
+        if fit_mid_time and fit_individual_times and len(unique_epochs) > 1:
 
             for epoch in unique_epochs:
 
-                names.append('T_mid_{0}'.format(epoch))
-                print_names.append('T_\mathrm{mid_{' + str(epoch) + '}}')
-                initial.append(new_mid_time + epoch * self.period)
-                limits1.append(new_mid_time + epoch * self.period + fit_mid_time_limits[0])
-                limits2.append(new_mid_time + epoch * self.period + fit_mid_time_limits[1])
+                names.append('mid_time::{0}'.format(epoch))
+                print_names.append(r'T_\mathrm{{mid}}::{0}'.format(epoch))
+                initial.append(self.mid_time + epoch * self.period)
+                limits1.append(self.mid_time + epoch * self.period + fit_mid_time_limits[0])
+                limits2.append(self.mid_time + epoch * self.period + fit_mid_time_limits[1])
+                logspace.append(False)
 
-                for observation_num, observation in enumerate(self.observations):
-                    if self.observations[observation]['epoch'] == epoch:
-                        parameters_map[observation_num].append(len(names) - 1)
+                for observation in self.observations:
+                    if observation.epoch == epoch:
+                        observation.add_to_parameters_map(len(names) - 1)
 
-        model_ids = np.array([])
+        initial = np.array(initial)
+        limits1 = np.array(limits1)
+        limits2 = np.array(limits2)
+        logspace = np.array(logspace)
+
+        # single observation tests
+
+        for observation in self.observations:
+
+            def single_observation_full_model(indices, *model_variables):
+                return observation.full_model(indices, np.array(model_variables))
+
+            fitting = Fitting(observation.non_outliers_map,
+                              observation.dict['input_series']['flux'],
+                              observation.dict['input_series']['flux_unc'],
+                              single_observation_full_model, initial, limits1, limits2,
+                              logspace=logspace,
+                              data_x_name='time', data_y_name='flux',
+                              data_x_print_name='t_{BJD_{TDB}}', data_y_print_name='Relative Flux',
+                              parameters_names=names, parameters_print_names=print_names,
+                              walkers=walkers, iterations=iterations, burn_in=burn_in,
+                              counter=counter,
+                              optimise_initial_parameters=True,
+                              optimise_initial_parameters_trials=optimise_initial_parameters_trials,
+                              scale_uncertainties=scale_uncertainties,
+                              filter_outliers=filter_outliers,
+                              optimiser='curve_fit',
+                              strech_prior=strech_prior,
+                              walkers_spread=walkers_spread,
+                              )
+
+            fitting._prefit(verbose=verbose)
+
+            initial[observation.parameters_map] = fitting.results['prefit']['initials'][observation.parameters_map]
+            observation.dict['input_series']['flux_unc'] *= fitting.results['prefit']['scale_factor']
+            observation.dict['data_conversion_info']['scale_factor'] = fitting.results['prefit']['scale_factor']
+            observation.dict['data_conversion_info']['notes'].append('Flux_unc multiplied by {0}'.format(fitting.results['prefit']['scale_factor']))
+            observation.dict['data_conversion_info']['outliers'] = len(np.where(fitting.results['prefit']['outliers_map'])[0])
+            observation.dict['data_conversion_info']['notes'].append('{0} outliers removed'.format(len(np.where(fitting.results['prefit']['outliers_map'])[0])))
+            observation.dict['data_conversion_info']['non_outliers_map'] = np.where(~fitting.results['prefit']['outliers_map'])[0]
+            observation.non_outliers_map = np.where(~fitting.results['prefit']['outliers_map'])[0]
+
+            print()
+            print('Observation: ', observation.obs_id)
+            print('Filter: ', observation.filter_id)
+            print('Epoch: ', observation.epoch)
+            print('Data-points excluded: ', len(np.where(fitting.results['prefit']['outliers_map'])[0]))
+            print('Scaling uncertainties by: ', fitting.results['prefit']['scale_factor'])
+
+            observation.clear_outliers()
+
+        model_time = np.array([])
         model_flux = np.array([])
         model_flux_unc = np.array([])
         for observation in self.observations:
-            model_ids = np.append(model_ids, np.int_(10000*observation + np.arange(0, len(self.observations[observation]['time']))))
-            model_flux = np.append(model_flux, self.observations[observation]['flux'])
-            model_flux_unc = np.append(model_flux_unc, self.observations[observation]['flux_unc'])
+            model_time = np.append(model_time, observation.dict['input_series']['time'])
+            model_flux = np.append(model_flux, observation.dict['input_series']['flux'])
+            model_flux_unc = np.append(model_flux_unc, observation.dict['input_series']['flux_unc'])
 
-        parameters_map = np.array(parameters_map)
-
-        def detrend_model(model_ids, *model_variables):
-
+        def detrend_model(model_time, *model_variables):
             model = np.array([])
-
             for observation in self.observations:
-                coefficients = np.array(model_variables)[parameters_map[observation]][:trend.coefficients]
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-                model = np.append(model, trend.evaluate(self.observations[observation]['auxiliary_data'], *coefficients)[ids])
-
+                model = np.append(model, observation.splitted_model(None, np.array(model_variables))[0])
             return model
 
-        def full_model(model_ids, *model_variables):
-
-            model_variables = np.array(model_variables)
-
+        def full_model(model_time, *model_variables):
             model = np.array([])
-
             for observation in self.observations:
-
-                coefficients = np.array(model_variables)[parameters_map[observation]][:trend.coefficients]
-                ldc1, ldc2, ldc3, ldc4, r, p, a, e, i, w, mt = np.array(model_variables)[parameters_map[observation]][trend.coefficients:]
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-
-                trend_model = trend.evaluate(
-                    self.observations[observation]['auxiliary_data'],
-                    *coefficients)
-
-                transit_model = transit_integrated(
-                    [ldc1, ldc2, ldc3, ldc4], r, p, a, e, i, w, mt,
-                    time_array=self.observations[observation]['time'],
-                    exp_time=self.observations[observation]['exp_time'],
-                    max_sub_exp_time=max_sub_exp_time,
-                    method=method,
-                    precision=precision
-                )
-
-                model = np.append(model, (trend_model * transit_model)[ids])
-
+                model = np.append(model, observation.full_model(None, np.array(model_variables)))
             return model
 
-        fitting = Fitting(model_ids, model_flux, model_flux_unc,
+        fitting = Fitting(model_time, model_flux, model_flux_unc,
                           full_model, initial, limits1, limits2,
+                          logspace=logspace,
                           data_x_name='time', data_y_name='flux',
-                          data_x_print_name='t_{BJD_TDB}',  data_y_print_name='Relative Flux',
+                          data_x_print_name='t_{BJD_{TDB}}', data_y_print_name='Relative Flux',
                           parameters_names=names, parameters_print_names=print_names,
                           walkers=walkers, iterations=iterations, burn_in=burn_in,
                           counter=counter, window_counter=window_counter,
-                          optimise_initial_parameters=optimise_initial_parameters,
-                          optimise_initial_parameters_trials=optimise_initial_parameters_trials,
-                          scale_uncertainties=scale_uncertainties,
-                          filter_outliers=filter_outliers,
+                          optimise_initial_parameters=True,
+                          scale_uncertainties=False,
+                          filter_outliers=False,
                           optimiser=optimiser,
                           strech_prior=strech_prior,
+                          walkers_spread=walkers_spread,
                           )
 
-        fitting.run()
+        print('\nOptimising initial parameters...')
 
-        if fitting.mcmc_run_complete:
+        fitting.run(verbose=verbose)
 
-            fitting.results['settings']['max_sub_exp_time'] = max_sub_exp_time
-            fitting.results['settings']['precision'] = precision
-            fitting.results['settings']['detrending_order'] = detrending_order
-            fitting.results['settings']['iterations'] = iterations
-            fitting.results['settings']['walkers'] = walkers
-            fitting.results['settings']['burn_in'] = burn_in
-            fitting.results['settings']['fit_ldc1'] = fit_ldc1
-            fitting.results['settings']['fit_ldc2'] = fit_ldc2
-            fitting.results['settings']['fit_ldc3'] = fit_ldc3
-            fitting.results['settings']['fit_ldc4'] = fit_ldc4
-            fitting.results['settings']['fit_rp_over_rs'] = fit_rp_over_rs
-            fitting.results['settings']['fit_individual_rp_over_rs'] = fit_individual_rp_over_rs
-            fitting.results['settings']['fit_sma_over_rs'] = fit_sma_over_rs
-            fitting.results['settings']['fit_inclination'] = fit_inclination
-            fitting.results['settings']['fit_mid_time'] = fit_mid_time
-            fitting.results['settings']['fit_period'] = fit_period
-            fitting.results['settings']['fit_individual_times'] = fit_individual_times
-            fitting.results['settings']['fit_ldc_limits'] = fit_ldc_limits
-            fitting.results['settings']['fit_rp_over_rs_limits'] = fit_rp_over_rs_limits
-            fitting.results['settings']['fit_sma_over_rs_limits'] = fit_sma_over_rs_limits
-            fitting.results['settings']['fit_inclination_limits'] = fit_inclination_limits
-            fitting.results['settings']['fit_mid_time_limits'] = fit_mid_time_limits
-            fitting.results['settings']['fit_period_limits'] = fit_period_limits
-            fitting.results['settings']['filter_map'] = self.filters
+        fitting.results['settings'] = {
+            'output_folder': output_folder,
+            'iterations': fitting.iterations,
+            'walkers': fitting.walkers,
+            'burn_in': fitting.burn_in,
+            'strech_prior': strech_prior,
+            'walkers_spread': walkers_spread,
+            'optimise_initial_parameters': True,
+            'scale_uncertainties': scale_uncertainties,
+            'filter_outliers': filter_outliers,
+            'optimiser': optimiser,
+            'data_x_name': 'time',
+            'data_x_print_name': 't_{BJD_{TDB}}',
+            'data_y_name': 'flux',
+            'data_y_print_name': 'Relative Flux',
+            'fit_ldc1': fit_ldc1,
+            'fit_ldc2': fit_ldc2,
+            'fit_ldc3': fit_ldc3,
+            'fit_ldc4': fit_ldc4,
+            'fit_individual_rp_over_rs': fit_individual_rp_over_rs,
+            'fit_sma_over_rs': fit_sma_over_rs,
+            'fit_inclination': fit_inclination,
+            'fit_mid_time': fit_mid_time,
+            'fit_period': fit_period,
+            'fit_individual_times': fit_individual_times,
+            'fit_ldc_limits': fit_ldc_limits,
+            'fit_rp_over_rs_limits': fit_rp_over_rs_limits,
+            'fit_sma_over_rs_limits': fit_sma_over_rs_limits,
+            'fit_inclination_limits': fit_inclination_limits,
+            'fit_mid_time_limits': fit_mid_time_limits,
+            'fit_period_limits': fit_period_limits,
+        }
 
-            original_model_time = np.array([])
-            for observation_num, observation in enumerate(self.observations):
-                original_model_time = np.append(original_model_time, self.observations[observation]['time'])
+        del fitting.results['prefit']
+        del fitting.results['original_data']
 
-            model_ids = fitting.results['input_series']['time']
-            model_time = np.array([])
+        trend = detrend_model(model_time, *fitting.results['parameters_final'])
+
+        fitting.results['output_series']['trend'] = trend
+
+        fitting.results['detrended_series'] = {
+            'time': model_time,
+            'flux': fitting.results['input_series']['flux'] / trend,
+            'flux_unc': fitting.results['input_series']['flux_unc'] / trend,
+            'model': fitting.results['output_series']['model'] / trend,
+            'residuals': fitting.results['output_series']['residuals'] / trend
+        }
+
+        fitting.results['detrended_statistics'] = residual_statistics(fitting.results['detrended_series']['time'],
+                                                                      fitting.results['detrended_series']['flux'],
+                                                                      fitting.results['detrended_series']['flux_unc'],
+                                                                      fitting.results['detrended_series']['model'],
+                                                                      len(fitting.fitted_parameters))
+
+        for observation in self.observations:
+
+            observation.dict['parameters'] = {}
+            number_of_free_parameters = 0
+            for parameter_index in observation.parameters_map:
+                parameter_name = names[parameter_index]
+                parameter_sub_name = parameter_name.split('::')[0]
+                parameter_data = copy_dict(fitting.results['parameters'][parameter_name])
+                parameter_data['trace'] = None
+                parameter_data['name'] = parameter_sub_name
+                parameter_data['print_name'] = parameter_data['print_name'].split(':')[0]
+                observation.dict['parameters'][parameter_sub_name] = parameter_data
+                if fitting.results['parameters'][parameter_name]['initial'] is not None:
+                    number_of_free_parameters += 0
+
+            observation.dict['output_series']['model'] = observation.full_model(None, fitting.results['parameters_final'])
+            observation.dict['output_series']['trend'] = observation.splitted_model(None, fitting.results['parameters_final'])[0]
+            observation.dict['output_series']['residuals'] = observation.dict['input_series']['flux'] - observation.dict['output_series']['model']
+            observation.dict['detrended_series']['time'] = observation.dict['input_series']['time']
+            observation.dict['detrended_series']['flux'] = observation.dict['input_series']['flux'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['flux_unc'] = observation.dict['input_series']['flux_unc'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['model'] = observation.dict['output_series']['model'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['residuals'] = observation.dict['detrended_series']['flux'] - observation.dict['detrended_series']['model']
+
+            observation.dict['statistics'] = residual_statistics(observation.dict['input_series']['time'],
+                                                                 observation.dict['input_series']['flux'],
+                                                                 observation.dict['input_series']['flux_unc'],
+                                                                 observation.dict['output_series']['model'],
+                                                                 number_of_free_parameters)
+
+            observation.dict['detrended_statistics'] = residual_statistics(observation.dict['detrended_series']['time'],
+                                                                           observation.dict['detrended_series']['flux'],
+                                                                           observation.dict['detrended_series']['flux_unc'],
+                                                                           observation.dict['detrended_series']['model'],
+                                                                           number_of_free_parameters)
+
+        results_copy = copy_dict(fitting.results)
+        if not return_traces:
+            for parameter in results_copy['parameters']:
+                results_copy['parameters'][parameter]['trace'] = None
+
+        if output_folder:
+
+            if os.path.isdir(output_folder):
+                shutil.rmtree(output_folder)
+            os.mkdir(output_folder)
+
+            save_dict(results_copy, os.path.join(output_folder, 'global_results.pickle'))
+
+            fitting.save_results(os.path.join(output_folder, 'global_results.txt'))
+
+            fitting.plot_corner(os.path.join(output_folder, 'global_correlations.pdf'))
+
+            fitting.plot_traces(os.path.join(output_folder, 'global_traces.pdf'))
+
             for observation in self.observations:
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-                model_time = np.append(model_time, self.observations[observation]['time'][ids])
 
-            trend = detrend_model(model_ids, *fitting.results['parameters_final'])
+                cols = [
+                    ['# variable'],
+                    ['fix/fit'],
+                    ['value'],
+                    ['uncertainty'],
+                    ['initial'],
+                    ['min.allowed'],
+                    ['max.allowed']
+                ]
 
-            fitting.results['settings']['time'] = original_model_time
-            fitting.results['input_series']['time'] = model_time
-            fitting.results['output_series']['trend'] = trend
+                for parameter_index in observation.parameters_map:
+                    parameter_name = names[parameter_index].split('::')[0]
 
-            fitting.results['detrended_input_series'] = {
-                'time': model_time,
-                'flux': fitting.results['input_series']['flux'] / trend,
-                'flux_unc': fitting.results['input_series']['flux_unc'] / trend
-            }
+                    cols[0].append(observation.dict['parameters'][parameter_name]['name'])
+                    if observation.dict['parameters'][parameter_name]['initial'] is None:
+                        cols[1].append('fix')
+                        cols[2].append(observation.dict['parameters'][parameter_name]['print_value'])
+                        cols[3].append('-- --')
+                        cols[4].append('--')
+                        cols[5].append('--')
+                        cols[6].append('--')
+                    else:
+                        cols[1].append('fit')
+                        cols[2].append(observation.dict['parameters'][parameter_name]['print_value'])
+                        cols[3].append(
+                            '-{0} +{1}'.format(
+                                observation.dict['parameters'][parameter_name]['print_m_error'],
+                                observation.dict['parameters'][parameter_name]['print_p_error'])
+                        )
+                        cols[4].append(str(observation.dict['parameters'][parameter_name]['initial']))
+                        cols[5].append(str(observation.dict['parameters'][parameter_name]['min_allowed']))
+                        cols[6].append(str(observation.dict['parameters'][parameter_name]['max_allowed']))
 
-            fitting.results['detrended_output_series'] = {
-                'model': fitting.results['output_series']['model'] / trend,
-                'residuals': fitting.results['output_series']['residuals'] / trend
-            }
+                for col in cols:
+                    col_length = np.max([len(ff) for ff in col])
+                    for ff in range(len(col)):
+                        col[ff] = col[ff] + ' ' * (col_length - len(col[ff]))
 
-            fitting.results['detrended_statistics'] = {
-                'res_mean': np.mean(fitting.results['detrended_output_series']['residuals']),
-                'res_std': np.std(fitting.results['detrended_output_series']['residuals']),
-                'res_rms': np.sqrt(np.mean(fitting.results['detrended_output_series']['residuals'] ** 2)),
-            }
+                lines = []
 
-            for observation in self.observations:
+                for row in range(len(cols[0])):
+                    lines.append('  '.join([col[row] for col in cols]))
 
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
+                lines.append('')
+                lines.append('#Filter: {0}'.format(observation.filter_id))
+                lines.append('#Epoch: {0}'.format(observation.epoch))
+                lines.append('#Number of outliers removed: {0}'.format(observation.dict['data_conversion_info']['outliers']))
+                lines.append('#Uncertainties scale factor: {0}'.format(observation.dict['data_conversion_info']['scale_factor']))
 
-                self.observations[observation]['time'] = self.observations[observation]['time'][ids]
-                self.observations[observation]['flux'] = self.observations[observation]['flux'][ids]
-                self.observations[observation]['flux_unc'] = self.observations[observation]['flux_unc'][ids]
-                self.observations[observation]['auxiliary_data'] = {ff:self.observations[observation]['auxiliary_data'][ff][ids] for ff in self.observations[observation]['auxiliary_data']}
+                lines.append('')
+                lines.append('#Residuals:')
+                lines.append('#Mean: {0}'.format(observation.dict['statistics']['res_mean']))
+                lines.append('#STD: {0}'.format(observation.dict['statistics']['res_std']))
+                lines.append('#RMS: {0}'.format(observation.dict['statistics']['res_rms']))
+                lines.append('#Chi squared: {0}'.format(observation.dict['statistics']['res_chi_sqr']))
+                lines.append('#Reduced chi squared: {0}'.format(observation.dict['statistics']['res_red_chi_sqr']))
+                lines.append('#Max auto-correlation: {0}'.format(observation.dict['statistics']['res_max_autocorr']))
+                lines.append('#Max auto-correlation flag: {0}'.format(observation.dict['statistics']['res_max_autocorr_flag']))
+                lines.append('#Shapiro test: {0}'.format(observation.dict['statistics']['res_shapiro']))
+                lines.append('#Shapiro test flag: {0}'.format(observation.dict['statistics']['res_shapiro_flag']))
 
-                id_series = np.where(np.int_(model_ids/10000.0) == observation)
+                lines.append('')
+                lines.append('#Detrended Residuals:')
+                lines.append('#Mean: {0}'.format(observation.dict['detrended_statistics']['res_mean']))
+                lines.append('#STD: {0}'.format(observation.dict['detrended_statistics']['res_std']))
+                lines.append('#RMS: {0}'.format(observation.dict['detrended_statistics']['res_rms']))
+                lines.append('#Chi squared: {0}'.format(observation.dict['detrended_statistics']['res_chi_sqr']))
+                lines.append('#Reduced chi squared: {0}'.format(observation.dict['detrended_statistics']['res_red_chi_sqr']))
+                lines.append('#Max auto-correlation: {0}'.format(observation.dict['detrended_statistics']['res_max_autocorr']))
+                lines.append('#Max auto-correlation flag: {0}'.format(observation.dict['detrended_statistics']['res_max_autocorr_flag']))
+                lines.append('#Shapiro test: {0}'.format(observation.dict['detrended_statistics']['res_shapiro']))
+                lines.append('#Shapiro test flag: {0}'.format(observation.dict['detrended_statistics']['res_shapiro_flag']))
 
-                self.observations[observation]['model'] = fitting.results['output_series']['model'][id_series]
-                self.observations[observation]['residuals'] = fitting.results['output_series']['residuals'][id_series]
-                self.observations[observation]['detrended_flux'] = fitting.results['detrended_input_series']['flux'][id_series]
-                self.observations[observation]['detrended_flux_unc'] = fitting.results['detrended_input_series']['flux_unc'][id_series]
-                self.observations[observation]['detrended_model'] = fitting.results['detrended_output_series']['model'][id_series]
-                self.observations[observation]['detrended_residuals'] = fitting.results['detrended_output_series']['residuals'][id_series]
+                w = open(os.path.join(output_folder, '{0}_results.txt'.format(observation.obs_id)), 'w')
+                w.write('\n'.join(lines))
+                w.close()
 
-                self.observations[observation]['res_mean'] = np.mean(self.observations[observation]['residuals'])
-                self.observations[observation]['res_std'] = np.std(self.observations[observation]['residuals'])
-                self.observations[observation]['res_rms'] = np.sqrt(np.mean(self.observations[observation]['residuals'] ** 2))
-                self.observations[observation]['res_chi_sqr'] = np.sum(
-                    (self.observations[observation]['residuals']/self.observations[observation]['flux_unc']) ** 2)
+                observation_copy_dict = copy_dict(observation.dict)
+                save_dict(observation_copy_dict, os.path.join(output_folder, '{0}_results.pickle'.format(observation.obs_id)))
 
-                self.observations[observation]['detrended_res_mean'] = np.mean(self.observations[observation]['detrended_residuals'])
-                self.observations[observation]['detrended_res_std'] = np.std(self.observations[observation]['detrended_residuals'])
-                self.observations[observation]['detrended_res_rms'] = np.sqrt(np.mean(self.observations[observation]['detrended_residuals'] ** 2))
-                self.observations[observation]['detrended_res_chi_sqr'] = np.sum(
-                    (self.observations[observation]['detrended_residuals']/self.observations[observation]['detrended_flux_unc']) ** 2)
+                plot_transit_fitting_models(observation.dict, os.path.join(output_folder, '{0}_lightcurve.pdf'.format(observation.obs_id)))
 
-            fitting.results['observations'] = self.observations
+        results_copy['observations'] = {}
+        for observation in self.observations:
+            results_copy['observations'][observation.obs_id] = observation.dict
 
-            results_copy = copy_dict(fitting.results)
-            if not return_traces:
-                for parameter in results_copy['parameters']:
-                    results_copy['parameters'][parameter]['trace'] = None
-
-            if output_folder:
-
-                if not os.path.isdir(output_folder):
-                    os.mkdir(output_folder)
-                else:
-                    shutil.rmtree(output_folder)
-                    os.mkdir(output_folder)
-
-                save_dict(results_copy, os.path.join(output_folder, 'results.pickle'))
-
-                fitting.save_results(os.path.join(output_folder, 'results.txt'))
-
-                fitting.plot_corner(os.path.join(output_folder, 'correlations.pdf'))
-
-                fitting.plot_traces(os.path.join(output_folder, 'traces.pdf'))
-
-                plot_transit_fitting_models(fitting.results, os.path.join(output_folder, 'lightcurves.pdf'))
-
-                for observation in self.observations:
-
-                    w = open(os.path.join(output_folder, 'diagnostics_dataset_{0}.txt'.format(observation + 1)), 'w')
-                    w.write('\n#Residuals:\n')
-                    w.write('#Mean: {0}\n'.format(self.observations[observation]['res_mean']))
-                    w.write('#STD: {0}\n'.format(self.observations[observation]['res_std']))
-                    w.write('#RMS: {0}\n'.format(self.observations[observation]['res_rms']))
-                    w.write('#Chi squared: {0}\n'.format(self.observations[observation]['res_chi_sqr']))
-
-                    w.write('\n\n#Detrended Residuals:\n')
-                    w.write('#Mean: {0}\n'.format(self.observations[observation]['detrended_res_mean']))
-                    w.write('#STD: {0}\n'.format(self.observations[observation]['detrended_res_std']))
-                    w.write('#RMS: {0}\n'.format(self.observations[observation]['detrended_res_rms']))
-                    w.write('#Chi squared: {0}\n'.format(self.observations[observation]['detrended_res_chi_sqr']))
-
-                    w.close()
-
-            fitting.results = results_copy
-
-        return fitting
+        return results_copy
 
     def eclipse_fitting(self, output_folder=None,
 
-                            max_sub_exp_time=10, precision=3,
+                        iterations=None, walkers=None, burn_in=None,
 
-                            detrending='time', detrending_order=2,
+                        fit_individual_fp_over_fs=True,
+                        fit_rp_over_rs=False,
+                        fit_individual_rp_over_rs=False,
+                        fit_sma_over_rs=False, fit_inclination=False,
+                        fit_mid_time=True, fit_period=False,
+                        fit_individual_times=True,
 
-                            trend_function=None, trend_priors=None,
+                        fit_rp_over_rs_limits=[0.001, 1000],
+                        fit_fp_over_fs_limits=[0.001, 1000],
+                        fit_sma_over_rs_limits=[0.001, 1000],
+                        fit_inclination_limits=[10.0, 90.0],
+                        fit_mid_time_limits=[-0.2, 0.2],
+                        fit_period_limits=[0.001, 1000],
 
-                            iterations=None, walkers=None, burn_in=None,
+                        counter='Eclipse fitting', window_counter=False,
+                        optimise_initial_parameters_trials=3,
+                        scale_uncertainties=False,
+                        filter_outliers=False,
+                        optimiser='emcee',
+                        strech_prior=0.2,
+                        walkers_spread=0.01,
+                        return_traces=True,
+                        verbose=False,
+                        ):
 
-                            fit_fp_over_fs=True, fit_individual_fp_over_fs=False,
-                            fit_rp_over_rs=False, fit_individual_rp_over_rs=False,
+        for observation in self.observations:
+            observation.reset(self)
+            if observation.dict['model_info']['observation_type'] == 'transit':
+                raise PyLCInputError('You need to add only eclipse observation to proceed.')
 
-                            fit_sma_over_rs=False, fit_inclination=False,
+        if len(self.observations) == 0:
+            raise PyLCInputError('You need to add at least one eclipse observation to proceed.')
 
-                            fit_mid_time=True, fit_period=False,
-                            fit_individual_times=True,
+        for observation_num, observation in enumerate(self.observations):
+            observation.obs_id = 'obs{0}'.format(observation_num)
+            observation.dict['model_info']['obs_id'] = observation.obs_id
 
-                            fit_rp_over_rs_limits=[0.25, 4.0],
-                            fit_fp_over_fs_limits=[0.001, 1000.0],
-                            fit_sma_over_rs_limits=[0.25, 4.0],
-                            fit_inclination_limits=[70.0, 90.0],
-                            fit_mid_time_limits=[-0.2, 0.2],
-                            fit_period_limits=[0.99, 1.01],
+        fit_rp_over_rs_limits = [self.rp_over_rs * fit_rp_over_rs_limits[0], self.rp_over_rs * fit_rp_over_rs_limits[1]]
+        fit_sma_over_rs_limits = [self.sma_over_rs * fit_sma_over_rs_limits[0], self.sma_over_rs * fit_sma_over_rs_limits[1]]
+        fit_period_limits = [self.period * fit_period_limits[0], self.period * fit_period_limits[1]]
 
-                            counter='Eclipse fitting',
-                            optimise_initial_parameters=True,
-                            optimise_initial_parameters_trials=4,
-                            scale_uncertainties=False,
-                            filter_outliers=False,
-                            optimiser='emcee',
-                            window_counter=False,
-                            strech_prior=0.2,
-                            return_traces=True,
-                            ):
+        # separate filters and epochs
 
+        unique_epochs = []
+        for observation in self.observations:
+            if observation.epoch not in unique_epochs:
+                unique_epochs.append(observation.epoch)
 
-        parameters_map = [[] for observation in self.observations]
+        if len(unique_epochs) == 1:
+            fit_individual_times = False
+            if fit_period:
+                raise PyLCInputError('Period cannot be fitted only on one epoch.')
+
+        if fit_individual_times and fit_period:
+            raise PyLCInputError('Period and individual mid times cannot be fitted simultaneously.')
+
+        unique_filters = {}
+        for observation in self.observations:
+            if observation.filter_id not in unique_filters:
+                unique_filters[observation.filter_id] = \
+                    observation.dict['model_info']['fp_over_fs']
+
+        if len(unique_filters) == 1:
+            fit_individual_fp_over_fs = False
+            fit_individual_rp_over_rs = False
+
+        # add parameters
 
         names = []
         print_names = []
         limits1 = []
         limits2 = []
         initial = []
-
-        if trend_function is None:
-
-            if detrending=='time':
-                if detrending_order == 2:
-                    def trend_function(auxilary_data, c1, c2):
-                        return 1 + c1 * auxilary_data['dtime'] + c2 * auxilary_data['dtimesqr']
-                elif detrending_order == 1:
-                    def trend_function(auxilary_data, c1):
-                        return 1 + c1 * auxilary_data['dtime']
-                else:
-                    def trend_function(auxilary_data):
-                        return np.ones_like(auxilary_data['dtime'])
-            else:
-                if detrending_order == 2:
-                    def trend_function(auxilary_data, c1, c2):
-                        trend_x = auxilary_data['airmass']
-                        return 1 + c1 * trend_x + c2 * trend_x * trend_x
-                elif detrending_order == 1:
-                    def trend_function(auxilary_data, c1):
-                        trend_x = auxilary_data['airmass']
-                        return 1 + c1 * trend_x
-                else:
-                    def trend_function(auxilary_data):
-                        return np.ones_like(auxilary_data['dtime'])
-
-        trend = Trend(function=trend_function, trend_priors=trend_priors)
+        logspace = []
 
         # de-trending parameters
 
-        for observation_num, observation in enumerate(self.observations):
-
-            trend.adjust_normalisation_factor(self.observations[observation]['flux'])
-
-            for coefficient in range(trend.coefficients):
-
-                if len(self.observations) == 1:
-                    names.append('{0}'.format(trend.names[coefficient]))
-                    print_names.append('{0}'.format(trend.print_names[coefficient]))
-                else:
-                    names.append('{0}_{1}'.format(trend.names[coefficient], observation_num + 1))
-                    print_names.append('{0}_{1}'.format(trend.print_names[coefficient], observation_num + 1))
-
-                initial.append(trend.initial[coefficient])
-                limits1.append(trend.limits1[coefficient])
-                limits2.append(trend.limits2[coefficient])
-
-                parameters_map[observation_num].append(len(names) - 1)
-
-        # limb-darkening and rp_over_rs parameters
-
-        unique_filters = []
         for observation in self.observations:
-            if self.observations[observation]['wlrange'] is not None:
-                ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                              self.observations[observation]['wlrange'][0],
-                                              self.observations[observation]['wlrange'][1])
-            else:
-                ff = self.observations[observation]['filter_name']
-            if ff not in unique_filters:
-                unique_filters.append(ff)
 
-        if len(unique_filters) == 1:
-            fit_individual_rp_over_rs = False
-            fit_individual_fp_over_fs = False
+            for coefficient in range(observation.number_of_detrending_parameters):
+
+                if len(self.observations) > 1:
+                    names.append('{0}::{1}'.format(observation.names[coefficient], observation.obs_id))
+                    print_names.append('{0}::{1}'.format(observation.print_names[coefficient], observation.obs_id))
+                else:
+                    names.append('{0}'.format(observation.names[coefficient]))
+                    print_names.append('{0}'.format(observation.print_names[coefficient]))
+
+                initial.append(observation.initial[coefficient])
+                limits1.append(observation.limits1[coefficient])
+                limits2.append(observation.limits2[coefficient])
+                logspace.append(False)
+
+                observation.add_to_parameters_map(len(names) - 1)
+
+        # fp_over_fs
 
         if fit_individual_fp_over_fs:
-
             for phot_filter in unique_filters:
+                names.append('fp_over_fs::{0}'.format(phot_filter))
+                print_names.append(r'F_\mathrm{{p}}/F_*::{0}'.format(phot_filter))
+                initial.append(unique_filters[phot_filter])
+                limits1.append(unique_filters[phot_filter] * fit_fp_over_fs_limits[0])
+                limits2.append(unique_filters[phot_filter] * fit_fp_over_fs_limits[1])
+                logspace.append(True)
+                for observation in self.observations:
+                    if observation.filter_id == phot_filter:
+                        observation.add_to_parameters_map(len(names) - 1)
+        else:
+            phot_filter = list(unique_filters.keys())[0]
+            names.append('fp_over_fs')
+            print_names.append(r'F_\mathrm{{p}}/F_*')
+            initial.append(unique_filters[phot_filter])
+            limits1.append(unique_filters[phot_filter] * fit_fp_over_fs_limits[0])
+            limits2.append(unique_filters[phot_filter] * fit_fp_over_fs_limits[1])
+            logspace.append(True)
+            for observation in self.observations:
+                observation.add_to_parameters_map(len(names) - 1)
 
-                if len(phot_filter.split('>>>')) == 1:
-                    fp_over_fs = self.fp_over_fs(phot_filter)
-                else:
-                    fp_over_fs= self.fp_over_fs(phot_filter.split('>>>')[0],
-                                                wlrange=[float(phot_filter.split('>>>')[1]),
-                                                         float(phot_filter.split('>>>')[2])])
+        # rp_over_rs
 
+        if fit_rp_over_rs and fit_individual_rp_over_rs:
+            for phot_filter in unique_filters:
+                names.append('rp_ovr_rs::{0}'.format(phot_filter))
+                print_names.append(r'R_\mathrm{{p}}/R_*::{0}'.format(phot_filter))
+                initial.append(self.rp_over_rs)
+                limits1.append(fit_rp_over_rs_limits[0])
+                limits2.append(fit_rp_over_rs_limits[1])
+                logspace.append(True)
+                for observation in self.observations:
+                    if observation.filter_id == phot_filter:
+                        observation.add_to_parameters_map(len(names) - 1)
 
-                names.append('fp_{0}'.format(phot_filter.replace('>>>', '_')))
-                print_names.append('(F_\mathrm{p}/F_*)_\mathrm{' + phot_filter.replace('>>>', '-') + '}')
-                initial.append(fp_over_fs)
-                limits1.append(fp_over_fs * fit_fp_over_fs_limits[0])
-                limits2.append(fp_over_fs * fit_fp_over_fs_limits[1])
-
-                for observation_num, observation in enumerate(self.observations):
-                    if self.observations[observation]['wlrange'] is not None:
-                        ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                      self.observations[observation]['wlrange'][0],
-                                                      self.observations[observation]['wlrange'][1])
-                    else:
-                        ff = self.observations[observation]['filter_name']
-                    if ff == phot_filter:
-                        parameters_map[observation_num].append(len(names) - 1)
+            global_parameters_names = []
+            global_parameters_print_names = []
+            global_parameters_initial = []
+            global_parameters_fit = []
+            global_parameters_limits = []
+            global_parameters_logspace = []
 
         else:
-            fp_over_fs = 0.000001
-
-            names.append('fp')
-            print_names.append('F_\mathrm{p}/F_*')
-            initial.append(fp_over_fs)
-            if fit_fp_over_fs:
-                limits1.append(fp_over_fs * fit_fp_over_fs_limits[0])
-                limits2.append(fp_over_fs * fit_fp_over_fs_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
-
-            for observation_num, observation in enumerate(self.observations):
-                parameters_map[observation_num].append(len(names) - 1)
-
-        if fit_individual_rp_over_rs:
-
-            for phot_filter in unique_filters:
-
-                rp_over_rs = self.rp_over_rs
-
-                names.append('rp_{0}'.format(phot_filter.replace('>>>', '_')))
-                print_names.append('(R_\mathrm{p}/R_*)_\mathrm{' + phot_filter.replace('>>>', '-') + '}')
-                initial.append(rp_over_rs)
-                limits1.append(rp_over_rs * fit_rp_over_rs_limits[0])
-                limits2.append(rp_over_rs * fit_rp_over_rs_limits[1])
-
-                for observation_num, observation in enumerate(self.observations):
-                    if self.observations[observation]['wlrange'] is not None:
-                        ff = '{0}>>>{1}>>>{2}'.format(self.observations[observation]['filter_name'],
-                                                      self.observations[observation]['wlrange'][0],
-                                                      self.observations[observation]['wlrange'][1])
-                    else:
-                        ff = self.observations[observation]['filter_name']
-                    if ff == phot_filter:
-                        parameters_map[observation_num].append(len(names) - 1)
-
-        else:
-
-            rp_over_rs = self.rp_over_rs
-
-            names.append('rp')
-            print_names.append('R_\mathrm{p}/R_*')
-            initial.append(rp_over_rs)
-            if fit_rp_over_rs:
-                limits1.append(rp_over_rs * fit_rp_over_rs_limits[0])
-                limits2.append(rp_over_rs * fit_rp_over_rs_limits[1])
-            else:
-                limits1.append(np.nan)
-                limits2.append(np.nan)
-
-            for observation_num, observation in enumerate(self.observations):
-                parameters_map[observation_num].append(len(names) - 1)
+            global_parameters_names = ['rp_over_rs']
+            global_parameters_print_names = [r'R_\mathrm{p}/R_*']
+            global_parameters_initial = [self.rp_over_rs]
+            global_parameters_fit = [fit_rp_over_rs]
+            global_parameters_limits = [fit_rp_over_rs_limits]
+            global_parameters_logspace = [True]
 
         # orbital parameters
 
-        names.append('P')
-        print_names.append('P')
-        initial.append(self.period)
-        if fit_period:
-            limits1.append(self.period * fit_period_limits[0])
-            limits2.append(self.period * fit_period_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
+        global_parameters_names += ['period', 'sma_over_rs', 'eccentricity', 'inclination', 'periastron']
+        global_parameters_print_names += ['P', 'a', 'e', 'i', r'\omega']
+        global_parameters_initial += [self.period, self.sma_over_rs, self.eccentricity, self.inclination, self.periastron]
+        global_parameters_fit += [fit_period, fit_sma_over_rs, False, fit_inclination, False]
+        global_parameters_limits += [fit_period_limits, fit_sma_over_rs_limits, False, fit_inclination_limits, False]
+        global_parameters_logspace += [True, True, False, True, False]
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+        if not fit_mid_time or not fit_individual_times or len(unique_epochs) == 1:
 
-        names.append('a')
-        print_names.append('a/R_*')
-        initial.append(self.sma_over_rs)
-        if fit_sma_over_rs:
-            limits1.append(self.sma_over_rs * fit_sma_over_rs_limits[0])
-            limits2.append(self.sma_over_rs * fit_sma_over_rs_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
+            test_epochs = np.array([])
+            test_epochs_weights = np.array([])
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+            for observation in self.observations:
+                test_epochs = np.append(test_epochs,
+                                        np.ones_like(observation.dict['input_series']['flux_unc']) * observation.epoch)
+                norm_errors = observation.dict['input_series']['flux_unc'] / observation.dict['input_series']['flux']
+                test_epochs_weights = np.append(test_epochs_weights, 1 / (norm_errors * norm_errors))
 
-        names.append('e')
-        print_names.append('e')
-        initial.append(self.eccentricity)
-        limits1.append(np.nan)
-        limits2.append(np.nan)
+            new_epoch = np.round(np.sum(test_epochs * test_epochs_weights) / np.sum(test_epochs_weights), 0)
+            new_mid_time = self.eclipse_mid_time() + new_epoch * self.period
 
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
+            global_parameters_names += ['eclipse_mid_time']
+            global_parameters_print_names += [r'T_\mathrm{ec}']
+            global_parameters_initial += [new_mid_time]
+            global_parameters_fit += [fit_mid_time]
+            global_parameters_limits += [[new_mid_time + fit_mid_time_limits[0], new_mid_time + fit_mid_time_limits[1]]]
+            global_parameters_logspace += [False]
 
-        names.append('i')
-        print_names.append('i')
-        initial.append(self.inclination)
-        if fit_inclination:
-            limits1.append(fit_inclination_limits[0])
-            limits2.append(fit_inclination_limits[1])
-        else:
-            limits1.append(np.nan)
-            limits2.append(np.nan)
-
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
-
-        names.append('w')
-        print_names.append('\omega')
-        initial.append(self.periastron)
-        limits1.append(np.nan)
-        limits2.append(np.nan)
-
-        for observation_num, observation in enumerate(self.observations):
-            parameters_map[observation_num].append(len(names) - 1)
-
-        # time parameters
-
-        test_epochs = []
-        test_epochs_weights = []
-
-        for observation in self.observations:
-            test_epochs.append((self.observations[observation]['time'] - self.eclipse_mid_time) / self.period)
-            norm_errors = self.observations[observation]['flux_unc'] / self.observations[observation]['flux']
-            test_epochs_weights.append(1 / (norm_errors * norm_errors))
-
-        test_epochs = np.concatenate(test_epochs)
-        test_epochs_weights = np.concatenate(test_epochs_weights)
-
-        new_epoch = np.round(np.sum(test_epochs * test_epochs_weights) / np.sum(test_epochs_weights), 0)
-        new_mid_time = self.eclipse_mid_time + new_epoch * self.period
-
-        for observation in self.observations:
-            self.observations[observation]['epoch'] = int(round((np.mean(self.observations[observation]['time']) -new_mid_time) / self.period, 0))
-
-        unique_epochs = []
-        for observation in self.observations:
-            if self.observations[observation]['epoch'] not in unique_epochs:
-                unique_epochs.append(self.observations[observation]['epoch'])
-
-        if len(unique_epochs) == 1:
-            fit_individual_times = False
-
-        if not fit_individual_times:
-
-            names.append('T_mid')
-            print_names.append('T_\mathrm{mid}')
-            initial.append(new_mid_time)
-            if fit_mid_time:
-                limits1.append(new_mid_time + fit_mid_time_limits[0])
-                limits2.append(new_mid_time + fit_mid_time_limits[1])
+        for global_parameter in range(len(global_parameters_names)):
+            names.append(global_parameters_names[global_parameter])
+            print_names.append(global_parameters_print_names[global_parameter])
+            initial.append(global_parameters_initial[global_parameter])
+            if global_parameters_fit[global_parameter]:
+                limits1.append(global_parameters_limits[global_parameter][0])
+                limits2.append(global_parameters_limits[global_parameter][1])
             else:
                 limits1.append(np.nan)
                 limits2.append(np.nan)
+            logspace.append(global_parameters_logspace[global_parameter])
 
-            for observation_num, observation in enumerate(self.observations):
-                parameters_map[observation_num].append(len(names) - 1)
+            for observation in self.observations:
+                observation.add_to_parameters_map(len(names) - 1)
 
-        else:
-
-            if fit_period:
-                raise PyLCInputError('Period and individual mid times cannot be fitted simultaneously.')
+        # individual time parameters
+        eclipse_mid_time = self.eclipse_mid_time()
+        if fit_mid_time and fit_individual_times and len(unique_epochs) > 1:
 
             for epoch in unique_epochs:
 
-                names.append('T_mid_{0}'.format(epoch))
-                print_names.append('T_\mathrm{mid_{' + str(epoch) + '}}')
-                initial.append(new_mid_time + epoch * self.period)
-                limits1.append(new_mid_time + epoch * self.period + fit_mid_time_limits[0])
-                limits2.append(new_mid_time + epoch * self.period + fit_mid_time_limits[1])
+                names.append('eclipse_mid_time::{0}'.format(epoch))
+                print_names.append(r'T_\mathrm{{ec}}::{0}'.format(epoch))
+                initial.append(eclipse_mid_time + epoch * self.period)
+                limits1.append(eclipse_mid_time + epoch * self.period + fit_mid_time_limits[0])
+                limits2.append(eclipse_mid_time + epoch * self.period + fit_mid_time_limits[1])
+                logspace.append(False)
 
-                for observation_num, observation in enumerate(self.observations):
-                    if self.observations[observation]['epoch'] == epoch:
-                        parameters_map[observation_num].append(len(names) - 1)
+                for observation in self.observations:
+                    if observation.epoch == epoch:
+                        observation.add_to_parameters_map(len(names) - 1)
 
-        model_ids = np.array([])
+        initial = np.array(initial)
+        limits1 = np.array(limits1)
+        limits2 = np.array(limits2)
+        logspace = np.array(logspace, dtype=bool)
+
+        # single observation tests
+
+        for observation in self.observations:
+
+            def single_observation_full_model(indices, *model_variables):
+                return observation.full_model(indices, np.array(model_variables))
+
+            fitting = Fitting(observation.non_outliers_map,
+                              observation.dict['input_series']['flux'],
+                              observation.dict['input_series']['flux_unc'],
+                              single_observation_full_model, initial, limits1, limits2,
+                              logspace=logspace,
+                              data_x_name='time', data_y_name='flux',
+                              data_x_print_name='t_{BJD_{TDB}}', data_y_print_name='Relative Flux',
+                              parameters_names=names, parameters_print_names=print_names,
+                              walkers=walkers, iterations=iterations, burn_in=burn_in,
+                              counter=counter,
+                              optimise_initial_parameters=True,
+                              optimise_initial_parameters_trials=optimise_initial_parameters_trials,
+                              scale_uncertainties=scale_uncertainties,
+                              filter_outliers=filter_outliers,
+                              optimiser='curve_fit',
+                              strech_prior=strech_prior,
+                              walkers_spread=walkers_spread,
+                              )
+
+            fitting._prefit(verbose=verbose)
+
+            initial[observation.parameters_map] = fitting.results['prefit']['initials'][observation.parameters_map]
+            observation.dict['input_series']['flux_unc'] *= fitting.results['prefit']['scale_factor']
+            observation.dict['data_conversion_info']['scale_factor'] = fitting.results['prefit']['scale_factor']
+            observation.dict['data_conversion_info']['notes'].append('Flux_unc multiplied by {0}'.format(fitting.results['prefit']['scale_factor']))
+            observation.dict['data_conversion_info']['outliers'] = len(np.where(fitting.results['prefit']['outliers_map'])[0])
+            observation.dict['data_conversion_info']['notes'].append('{0} outliers removed'.format(len(np.where(fitting.results['prefit']['outliers_map'])[0])))
+            observation.dict['data_conversion_info']['non_outliers_map'] = np.where(~fitting.results['prefit']['outliers_map'])[0]
+            observation.non_outliers_map = np.where(~fitting.results['prefit']['outliers_map'])[0]
+
+            print()
+            print('Observation: ', observation.obs_id)
+            print('Filter: ', observation.filter_id)
+            print('Epoch: ', observation.epoch)
+            print('Data-points excluded: ', len(np.where(fitting.results['prefit']['outliers_map'])[0]))
+            print('Scaling uncertainties by: ', fitting.results['prefit']['scale_factor'])
+
+            observation.clear_outliers()
+
+        model_time = np.array([])
         model_flux = np.array([])
         model_flux_unc = np.array([])
         for observation in self.observations:
-            model_ids = np.append(model_ids, np.int_(10000*observation + np.arange(0, len(self.observations[observation]['time']))))
-            model_flux = np.append(model_flux, self.observations[observation]['flux'])
-            model_flux_unc = np.append(model_flux_unc, self.observations[observation]['flux_unc'])
+            model_time = np.append(model_time, observation.dict['input_series']['time'])
+            model_flux = np.append(model_flux, observation.dict['input_series']['flux'])
+            model_flux_unc = np.append(model_flux_unc, observation.dict['input_series']['flux_unc'])
 
-        parameters_map = np.array(parameters_map)
-
-        def detrend_model(model_ids, *model_variables):
-
+        def detrend_model(model_time, *model_variables):
             model = np.array([])
-
             for observation in self.observations:
-                coefficients = np.array(model_variables)[parameters_map[observation]][:trend.coefficients]
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-                model = np.append(model, trend.evaluate(self.observations[observation]['auxiliary_data'], *coefficients)[ids])
-
+                model = np.append(model, observation.splitted_model(None, np.array(model_variables))[0])
             return model
 
-        def full_model(model_ids, *model_variables):
-
-            model_variables = np.array(model_variables)
-
+        def full_model(model_time, *model_variables):
             model = np.array([])
-
             for observation in self.observations:
-
-                coefficients = np.array(model_variables)[parameters_map[observation]][:trend.coefficients]
-                f, r, p, a, e, i, w, mt = np.array(model_variables)[parameters_map[observation]][trend.coefficients:]
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-
-                trend_model = trend.evaluate(
-                    self.observations[observation]['auxiliary_data'],
-                    *coefficients)
-
-                eclipse_model = eclipse_integrated(
-                    f, r, p, a, e, i, w, mt,
-                    time_array=self.observations[observation]['time'],
-                    exp_time=self.observations[observation]['exp_time'],
-                    max_sub_exp_time=max_sub_exp_time,
-                    precision=precision
-                )
-
-                model = np.append(model, (trend_model * eclipse_model)[ids])
-
+                model = np.append(model, observation.full_model(None, np.array(model_variables)))
             return model
 
-        fitting = Fitting(model_ids, model_flux, model_flux_unc,
+        fitting = Fitting(model_time, model_flux, model_flux_unc,
                           full_model, initial, limits1, limits2,
                           data_x_name='time', data_y_name='flux',
-                          data_x_print_name='t_{BJD_TDB}',  data_y_print_name='Relative Flux',
+                          data_x_print_name='t_{BJD_{TDB}}', data_y_print_name='Relative Flux',
                           parameters_names=names, parameters_print_names=print_names,
                           walkers=walkers, iterations=iterations, burn_in=burn_in,
                           counter=counter, window_counter=window_counter,
-                          optimise_initial_parameters=optimise_initial_parameters,
-                          optimise_initial_parameters_trials=optimise_initial_parameters_trials,
-                          scale_uncertainties=scale_uncertainties,
-                          filter_outliers=filter_outliers,
+                          optimise_initial_parameters=True,
+                          scale_uncertainties=False,
+                          filter_outliers=False,
                           optimiser=optimiser,
                           strech_prior=strech_prior,
+                          walkers_spread=walkers_spread,
                           )
 
-        fitting.run()
+        print('\nOptimising initial parameters...')
+
+        fitting.run(verbose=verbose)
+
+        fitting.results['settings'] = {
+            'output_folder': output_folder,
+            'iterations': fitting.iterations,
+            'walkers': fitting.walkers,
+            'burn_in': fitting.burn_in,
+            'strech_prior': strech_prior,
+            'walkers_spread': walkers_spread,
+            'optimise_initial_parameters': True,
+            'scale_uncertainties': scale_uncertainties,
+            'filter_outliers': filter_outliers,
+            'optimiser': optimiser,
+            'data_x_name': 'time',
+            'data_x_print_name': 't_{BJD_{TDB}}',
+            'data_y_name': 'flux',
+            'data_y_print_name': 'Relative Flux',
+            'fit_individual_fp_over_fs': fit_individual_fp_over_fs,
+            'fit_rp_over_rs': fit_rp_over_rs,
+            'fit_individual_rp_over_rs': fit_individual_rp_over_rs,
+            'fit_sma_over_rs': fit_sma_over_rs,
+            'fit_inclination': fit_inclination,
+            'fit_mid_time': fit_mid_time,
+            'fit_period': fit_period,
+            'fit_individual_times': fit_individual_times,
+            'fit_fp_over_fs_limits': fit_fp_over_fs_limits,
+            'fit_rp_over_rs_limits': fit_rp_over_rs_limits,
+            'fit_sma_over_rs_limits': fit_sma_over_rs_limits,
+            'fit_inclination_limits': fit_inclination_limits,
+            'fit_mid_time_limits': fit_mid_time_limits,
+            'fit_period_limits': fit_period_limits,
+        }
+
+        del fitting.results['prefit']
+        del fitting.results['original_data']
+
+        trend = detrend_model(model_time, *fitting.results['parameters_final'])
+
+        fitting.results['output_series']['trend'] = trend
+
+        fitting.results['detrended_series'] = {
+            'time': model_time,
+            'flux': fitting.results['input_series']['flux'] / trend,
+            'flux_unc': fitting.results['input_series']['flux_unc'] / trend,
+            'model': fitting.results['output_series']['model'] / trend,
+            'residuals': fitting.results['output_series']['residuals'] / trend
+        }
+
+        fitting.results['detrended_statistics'] = residual_statistics(fitting.results['detrended_series']['time'],
+                                                                      fitting.results['detrended_series']['flux'],
+                                                                      fitting.results['detrended_series']['flux_unc'],
+                                                                      fitting.results['detrended_series']['model'],
+                                                                      len(fitting.fitted_parameters))
+
+        for observation in self.observations:
+
+            observation.dict['parameters'] = {}
+            number_of_free_parameters = 0
+            for parameter_index in observation.parameters_map:
+                parameter_name = names[parameter_index]
+                parameter_sub_name = parameter_name.split('::')[0]
+                parameter_data = copy_dict(fitting.results['parameters'][parameter_name])
+                parameter_data['trace'] = None
+                parameter_data['name'] = parameter_sub_name
+                parameter_data['print_name'] = parameter_data['print_name'].split(':')[0]
+                observation.dict['parameters'][parameter_sub_name] = parameter_data
+                if fitting.results['parameters'][parameter_name]['initial'] is not None:
+                    number_of_free_parameters += 0
+
+            observation.dict['output_series']['model'] = observation.full_model(None, fitting.results['parameters_final'])
+            observation.dict['output_series']['trend'] = observation.splitted_model(None, fitting.results['parameters_final'])[0]
+            observation.dict['output_series']['residuals'] = observation.dict['input_series']['flux'] - observation.dict['output_series']['model']
+            observation.dict['detrended_series']['time'] = observation.dict['input_series']['time']
+            observation.dict['detrended_series']['flux'] = observation.dict['input_series']['flux'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['flux_unc'] = observation.dict['input_series']['flux_unc'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['model'] = observation.dict['output_series']['model'] / observation.dict['output_series']['trend']
+            observation.dict['detrended_series']['residuals'] = observation.dict['detrended_series']['flux'] - observation.dict['detrended_series']['model']
+
+            observation.dict['statistics'] = residual_statistics(observation.dict['input_series']['time'],
+                                                                 observation.dict['input_series']['flux'],
+                                                                 observation.dict['input_series']['flux_unc'],
+                                                                 observation.dict['output_series']['model'],
+                                                                 number_of_free_parameters)
+
+            observation.dict['detrended_statistics'] = residual_statistics(observation.dict['detrended_series']['time'],
+                                                                           observation.dict['detrended_series']['flux'],
+                                                                           observation.dict['detrended_series']['flux_unc'],
+                                                                           observation.dict['detrended_series']['model'],
+                                                                           number_of_free_parameters)
 
         results_copy = copy_dict(fitting.results)
-        for parameter in results_copy['parameters']:
-            results_copy['parameters'][parameter]['trace'] = None
+        if not return_traces:
+            for parameter in results_copy['parameters']:
+                results_copy['parameters'][parameter]['trace'] = None
 
-        if fitting.mcmc_run_complete:
+        if output_folder:
 
-            fitting.results['settings']['max_sub_exp_time'] = max_sub_exp_time
-            fitting.results['settings']['precision'] = precision
-            fitting.results['settings']['detrending_order'] = detrending_order
-            fitting.results['settings']['iterations'] = iterations
-            fitting.results['settings']['walkers'] = walkers
-            fitting.results['settings']['burn_in'] = burn_in
-            fitting.results['settings']['fit_rp_over_rs'] = fit_rp_over_rs
-            fitting.results['settings']['fit_individual_rp_over_rs'] = fit_individual_rp_over_rs
-            fitting.results['settings']['fit_fp_over_fs'] = fit_fp_over_fs
-            fitting.results['settings']['fit_individual_fp_over_fs'] = fit_individual_fp_over_fs
-            fitting.results['settings']['fit_sma_over_rs'] = fit_sma_over_rs
-            fitting.results['settings']['fit_inclination'] = fit_inclination
-            fitting.results['settings']['fit_mid_time'] = fit_mid_time
-            fitting.results['settings']['fit_period'] = fit_period
-            fitting.results['settings']['fit_individual_times'] = fit_individual_times
-            fitting.results['settings']['fit_fp_over_fs_limits'] = fit_fp_over_fs_limits
-            fitting.results['settings']['fit_rp_over_rs_limits'] = fit_rp_over_rs_limits
-            fitting.results['settings']['fit_sma_over_rs_limits'] = fit_sma_over_rs_limits
-            fitting.results['settings']['fit_inclination_limits'] = fit_inclination_limits
-            fitting.results['settings']['fit_mid_time_limits'] = fit_mid_time_limits
-            fitting.results['settings']['fit_period_limits'] = fit_period_limits
-            fitting.results['settings']['filter_map'] = self.filters
+            if os.path.isdir(output_folder):
+                shutil.rmtree(output_folder)
+            os.mkdir(output_folder)
 
-            original_model_time = np.array([])
-            for observation_num, observation in enumerate(self.observations):
-                original_model_time = np.append(original_model_time, self.observations[observation]['time'])
+            save_dict(results_copy, os.path.join(output_folder, 'global_results.pickle'))
 
-            model_ids = fitting.results['input_series']['time']
-            model_time = np.array([])
-            for observation in self.observations:
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
-                model_time = np.append(model_time, self.observations[observation]['time'][ids])
+            fitting.save_results(os.path.join(output_folder, 'global_results.txt'))
 
-            trend = detrend_model(model_ids, *fitting.results['parameters_final'])
+            fitting.plot_corner(os.path.join(output_folder, 'global_correlations.pdf'))
 
-            fitting.results['settings']['time'] = original_model_time
-            fitting.results['input_series']['time'] = model_time
-            fitting.results['output_series']['trend'] = trend
-
-            fitting.results['detrended_input_series'] = {
-                'time': model_time,
-                'flux': fitting.results['input_series']['flux'] / trend,
-                'flux_unc': fitting.results['input_series']['flux_unc'] / trend
-            }
-
-            fitting.results['detrended_output_series'] = {
-                'model': fitting.results['output_series']['model'] / trend,
-                'residuals': fitting.results['output_series']['residuals'] / trend
-            }
-
-            fitting.results['detrended_statistics'] = {
-                'res_mean': np.mean(fitting.results['detrended_output_series']['residuals']),
-                'res_std': np.std(fitting.results['detrended_output_series']['residuals']),
-                'res_rms': np.sqrt(np.mean(fitting.results['detrended_output_series']['residuals'] ** 2)),
-            }
+            fitting.plot_traces(os.path.join(output_folder, 'global_traces.pdf'))
 
             for observation in self.observations:
 
-                ids = np.int_(model_ids[np.where(np.int_(model_ids/10000.0) == observation)] - observation * 10000.0)
+                cols = [
+                    ['# variable'],
+                    ['fix/fit'],
+                    ['value'],
+                    ['uncertainty'],
+                    ['initial'],
+                    ['min.allowed'],
+                    ['max.allowed']
+                ]
 
-                self.observations[observation]['time'] = self.observations[observation]['time'][ids]
-                self.observations[observation]['flux'] = self.observations[observation]['flux'][ids]
-                self.observations[observation]['flux_unc'] = self.observations[observation]['flux_unc'][ids]
-                self.observations[observation]['auxiliary_data'] = {ff:self.observations[observation]['auxiliary_data'][ff][ids] for ff in self.observations[observation]['auxiliary_data']}
+                for parameter_index in observation.parameters_map:
+                    parameter_name = names[parameter_index].split('::')[0]
 
-                id_series = np.where(np.int_(model_ids/10000.0) == observation)
+                    cols[0].append(observation.dict['parameters'][parameter_name]['name'])
+                    if observation.dict['parameters'][parameter_name]['initial'] is None:
+                        cols[1].append('fix')
+                        cols[2].append(observation.dict['parameters'][parameter_name]['print_value'])
+                        cols[3].append('-- --')
+                        cols[4].append('--')
+                        cols[5].append('--')
+                        cols[6].append('--')
+                    else:
+                        cols[1].append('fit')
+                        cols[2].append(observation.dict['parameters'][parameter_name]['print_value'])
+                        cols[3].append(
+                            '-{0} +{1}'.format(
+                                observation.dict['parameters'][parameter_name]['print_m_error'],
+                                observation.dict['parameters'][parameter_name]['print_p_error'])
+                        )
+                        cols[4].append(str(observation.dict['parameters'][parameter_name]['initial']))
+                        cols[5].append(str(observation.dict['parameters'][parameter_name]['min_allowed']))
+                        cols[6].append(str(observation.dict['parameters'][parameter_name]['max_allowed']))
 
-                self.observations[observation]['model'] = fitting.results['output_series']['model'][id_series]
-                self.observations[observation]['residuals'] = fitting.results['output_series']['residuals'][id_series]
-                self.observations[observation]['detrended_flux'] = fitting.results['detrended_input_series']['flux'][id_series]
-                self.observations[observation]['detrended_flux_unc'] = fitting.results['detrended_input_series']['flux_unc'][id_series]
-                self.observations[observation]['detrended_model'] = fitting.results['detrended_output_series']['model'][id_series]
-                self.observations[observation]['detrended_residuals'] = fitting.results['detrended_output_series']['residuals'][id_series]
+                for col in cols:
+                    col_length = np.max([len(ff) for ff in col])
+                    for ff in range(len(col)):
+                        col[ff] = col[ff] + ' ' * (col_length - len(col[ff]))
 
-                self.observations[observation]['res_mean'] = np.mean(self.observations[observation]['residuals'])
-                self.observations[observation]['res_std'] = np.std(self.observations[observation]['residuals'])
-                self.observations[observation]['res_rms'] = np.sqrt(np.mean(self.observations[observation]['residuals'] ** 2))
-                self.observations[observation]['res_chi_sqr'] = np.sum(
-                    (self.observations[observation]['residuals']/self.observations[observation]['flux_unc']) ** 2)
+                lines = []
 
-                self.observations[observation]['detrended_res_mean'] = np.mean(self.observations[observation]['detrended_residuals'])
-                self.observations[observation]['detrended_res_std'] = np.std(self.observations[observation]['detrended_residuals'])
-                self.observations[observation]['detrended_res_rms'] = np.sqrt(np.mean(self.observations[observation]['detrended_residuals'] ** 2))
-                self.observations[observation]['detrended_res_chi_sqr'] = np.sum(
-                    (self.observations[observation]['detrended_residuals']/self.observations[observation]['detrended_flux_unc']) ** 2)
+                for row in range(len(cols[0])):
+                    lines.append('  '.join([col[row] for col in cols]))
 
-            fitting.results['observations'] = self.observations
+                lines.append('')
+                lines.append('#Filter: {0}'.format(observation.filter_id))
+                lines.append('#Epoch: {0}'.format(observation.epoch))
+                lines.append('#Number of outliers removed: {0}'.format(observation.dict['data_conversion_info']['outliers']))
+                lines.append('#Uncertainties scale factor: {0}'.format(observation.dict['data_conversion_info']['scale_factor']))
 
-            if output_folder:
+                lines.append('')
+                lines.append('#Residuals:')
+                lines.append('#Mean: {0}'.format(observation.dict['statistics']['res_mean']))
+                lines.append('#STD: {0}'.format(observation.dict['statistics']['res_std']))
+                lines.append('#RMS: {0}'.format(observation.dict['statistics']['res_rms']))
+                lines.append('#Chi squared: {0}'.format(observation.dict['statistics']['res_chi_sqr']))
+                lines.append('#Reduced chi squared: {0}'.format(observation.dict['statistics']['res_red_chi_sqr']))
+                lines.append('#Max auto-correlation: {0}'.format(observation.dict['statistics']['res_max_autocorr']))
+                lines.append('#Max auto-correlation flag: {0}'.format(observation.dict['statistics']['res_max_autocorr_flag']))
+                lines.append('#Shapiro test: {0}'.format(observation.dict['statistics']['res_shapiro']))
+                lines.append('#Shapiro test flag: {0}'.format(observation.dict['statistics']['res_shapiro_flag']))
 
-                if not os.path.isdir(output_folder):
-                    os.mkdir(output_folder)
-                else:
-                    shutil.rmtree(output_folder)
-                    os.mkdir(output_folder)
+                lines.append('')
+                lines.append('#Detrended Residuals:')
+                lines.append('#Mean: {0}'.format(observation.dict['detrended_statistics']['res_mean']))
+                lines.append('#STD: {0}'.format(observation.dict['detrended_statistics']['res_std']))
+                lines.append('#RMS: {0}'.format(observation.dict['detrended_statistics']['res_rms']))
+                lines.append('#Chi squared: {0}'.format(observation.dict['detrended_statistics']['res_chi_sqr']))
+                lines.append('#Reduced chi squared: {0}'.format(observation.dict['detrended_statistics']['res_red_chi_sqr']))
+                lines.append('#Max auto-correlation: {0}'.format(observation.dict['detrended_statistics']['res_max_autocorr']))
+                lines.append('#Max auto-correlation flag: {0}'.format(observation.dict['detrended_statistics']['res_max_autocorr_flag']))
+                lines.append('#Shapiro test: {0}'.format(observation.dict['detrended_statistics']['res_shapiro']))
+                lines.append('#Shapiro test flag: {0}'.format(observation.dict['detrended_statistics']['res_shapiro_flag']))
 
-                save_dict(results_copy, os.path.join(output_folder, 'results.pickle'))
+                w = open(os.path.join(output_folder, '{0}_results.txt'.format(observation.obs_id)), 'w')
+                w.write('\n'.join(lines))
+                w.close()
 
-                fitting.save_results(os.path.join(output_folder, 'results.txt'))
+                observation_copy_dict = copy_dict(observation.dict)
+                save_dict(observation_copy_dict, os.path.join(output_folder, '{0}_results.pickle'.format(observation.obs_id)))
 
-                fitting.plot_corner(os.path.join(output_folder, 'correlations.pdf'))
+                plot_transit_fitting_models(observation.dict, os.path.join(output_folder, '{0}_lightcurve.pdf'.format(observation.obs_id)))
 
-                fitting.plot_traces(os.path.join(output_folder, 'traces.pdf'))
+        results_copy['observations'] = {}
+        for observation in self.observations:
+            results_copy['observations'][observation.obs_id] = observation.dict
 
-                plot_transit_fitting_models(fitting.results, os.path.join(output_folder, 'lightcurves.pdf'))
+        return results_copy
 
-                for observation in self.observations:
+    def performance_report(self, array_size):
 
-                    w = open(os.path.join(output_folder, 'diagnostics_dataset_{0}.txt'.format(observation + 1)), 'w')
-                    w.write('\n#Residuals:\n')
-                    w.write('#Mean: {0}\n'.format(self.observations[observation]['res_mean']))
-                    w.write('#STD: {0}\n'.format(self.observations[observation]['res_std']))
-                    w.write('#RMS: {0}\n'.format(self.observations[observation]['res_rms']))
-                    w.write('#Chi squared: {0}\n'.format(self.observations[observation]['res_chi_sqr']))
+        duration = self.transit_duration()
+        time_array = np.linspace(-duration/2 - 0.0000001, duration/2 + 0.0000001, array_size) + self.mid_time
 
-                    w.write('\n\n#Detrended Residuals:\n')
-                    w.write('#Mean: {0}\n'.format(self.observations[observation]['detrended_res_mean']))
-                    w.write('#STD: {0}\n'.format(self.observations[observation]['detrended_res_std']))
-                    w.write('#RMS: {0}\n'.format(self.observations[observation]['detrended_res_rms']))
-                    w.write('#Chi squared: {0}\n'.format(self.observations[observation]['detrended_res_chi_sqr']))
+        limb_darkening_coefficients = self.exotethys('COUSINS_R')
 
-                    w.close()
+        ref = transit(limb_darkening_coefficients, self.rp_over_rs, self.period,
+                      self.sma_over_rs, self.eccentricity, self.inclination,
+                      self.periastron, self.mid_time,
+                      time_array, precision='ref')
 
-        fitting.results = results_copy
+        print('Performance report')
+        print('Planet: ', self.name)
+        print('Array size: ', array_size)
 
-        return fitting
+        for precision in range(2, 11):
+            plc_times = []
+            for i in range(100000):
+                t0 = sys_time.time()
+                for j in range(10):
+                    test = transit(limb_darkening_coefficients, self.rp_over_rs, self.period,
+                                   self.sma_over_rs, self.eccentricity, self.inclination,
+                                   self.periastron, self.mid_time,
+                                   time_array, precision=precision)
+                plc_times.append(100*(sys_time.time() - t0))
+                if np.sum(plc_times) > 500:
+                    break
 
-    def visibility(self, latitude, longitude, time_zone=0, horizon=0, start_time=now(), window=1, oot=2/24.0,
-                   target_min_altitude=Degrees(20), sun_max_altitude=Degrees(-18),
-                   max_moon_illumination=0.9, min_moon_distance=Degrees(30)):
+            t1 = np.median(plc_times)
+            err1 = np.max(np.abs(1000000*(test-ref)))
 
-        latitude = _reformat_or_request_angle(latitude)
-        longitude = _reformat_or_request_angle(longitude)
-        target_min_altitude = _reformat_or_request_angle(target_min_altitude)
-        sun_max_altitude = _reformat_or_request_angle(sun_max_altitude)
-        min_moon_distance = _reformat_or_request_angle(min_moon_distance)
+            print('precision = {0} : {1:.2e} ppm, {2:.2f} ms '.format(precision, err1, t1))
 
-        observatory = Observatory(latitude, longitude, time_zone, horizon)
 
-        return observatory.periodic_events_visibility(
-            self.target, start_time, window,
-            self.mid_time, self.mid_time_format, self.period, self.transit_duration() + oot,
-            target_min_altitude, sun_max_altitude, max_moon_illumination, min_moon_distance
-        )
+def get_planet(name):
+
+    all_data = exoclock.get_planet(name)
+
+    planet = Planet(
+        all_data['name'],
+        all_data['star']['ra_deg'],
+        all_data['star']['dec_deg'],
+        all_data['planet']['logg'],
+        all_data['planet']['teff'],
+        all_data['planet']['meta'],
+        all_data['planet']['rp_over_rs'],
+        all_data['planet']['ephem_period'],
+        all_data['planet']['sma_over_rs'],
+        all_data['planet']['eccentricity'],
+        all_data['planet']['inclination'],
+        all_data['planet']['periastron'],
+        all_data['planet']['ephem_mid_time'],
+    )
+
+    planet.all_data = all_data
+
+    return planet
+
+
+def get_all_planets():
+    return exoclock.get_all_planets()

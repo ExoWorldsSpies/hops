@@ -29,6 +29,10 @@ def image_mean_std(fits_data,
 
     else:
         try:
+            if np.sum((test_data/256.0-np.int_(test_data/256.0)) == 0) > len(test_data)/2:
+                distribution = plc.one_d_distribution(fits_data/256.0, samples=samples, gaussian_fit=True,
+                                                      mad_filter=mad_filter)
+                return 256.0 * distribution[2], 256.0 * distribution[3]
             if np.sum((test_data/64.0-np.int_(test_data/64.0)) == 0) > len(test_data)/2:
                 distribution = plc.one_d_distribution(fits_data/64.0, samples=samples, gaussian_fit=True,
                                                       mad_filter=mad_filter)
@@ -54,7 +58,7 @@ def image_mean_std(fits_data,
 def image_burn_limit(fits_header, key=None):
 
     if key and key in fits_header:
-        return(fits_header[key])
+        return fits_header[key]
 
     else:
         return min(65535, int(2 ** abs(fits_header['BITPIX']) - 1))
@@ -62,7 +66,7 @@ def image_burn_limit(fits_header, key=None):
 
 def image_psf(fits_data, fits_header,
               mean=None, std=None, burn_limit=None,
-              sample=10, psf_guess=2):
+              sample=10, psf_guess=2, centroids_snr=3, stars_snr=4):
 
     if mean is None or std is None:
         mean, std = image_mean_std(fits_data)
@@ -73,9 +77,9 @@ def image_psf(fits_data, fits_header,
     # t0 = time.time()
 
     centroids = []
-    snr = 54
+    snr = 50 + centroids_snr
 
-    while len(centroids) < sample * 2 and snr >= 4.0:
+    while len(centroids) < sample * 2 and snr >= centroids_snr:
         centroids = _find_centroids(fits_data, -10, 10**10, -10, 10**10, mean, std, 0.9 * burn_limit, psf_guess, snr)
         snr -= 10
 
@@ -86,7 +90,7 @@ def image_psf(fits_data, fits_header,
     psf_err = []
 
     for centroid in centroids:
-        star = _star_from_centroid(fits_data, centroid[1], centroid[2], mean, std, burn_limit, psf_guess)
+        star = _star_from_centroid(fits_data, centroid[1], centroid[2], mean, std, burn_limit, psf_guess, stars_snr)
 
         if star:
 
@@ -108,7 +112,7 @@ def image_psf(fits_data, fits_header,
 
 def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_upper=None, x_centre=None, y_centre=None,
                      mean=None, std=None, burn_limit=None, psf=None,
-                     snr=4.0, psf_variation_allowed=0.5,
+                     centroids_snr=3.0, stars_snr=4.0, psf_variation_allowed=0.5,
                      aperture=3, sky_inner_aperture=1.7, sky_outer_aperture=2.4,
                      order_by_flux=True, star_limit=None,
                      progress_window=None, verbose=False):
@@ -139,7 +143,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
     fits_data_size_y, fits_data_size_x = fits_data.shape
 
-    centroids = _find_centroids(fits_data, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, psf, snr)
+    centroids = _find_centroids(fits_data, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, psf, centroids_snr)
 
     if progress_window:
         if progress_window.exit:
@@ -151,7 +155,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
     for num, centroid in enumerate(centroids):
 
-        star = _star_from_centroid(fits_data, centroid[1], centroid[2], mean, std, burn_limit, psf, snr)
+        star = _star_from_centroid(fits_data, centroid[1], centroid[2], mean, std, burn_limit, psf, stars_snr)
 
         if star:
 
@@ -224,7 +228,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
 def image_plate_solve(fits_data, fits_header, ra, dec,
                       mean=None, std=None, burn_limit=None, psf=None, stars=None, n=20, pixel=None,
-                      progress_window=None, verbose=False, gaia_engine=_get_gaia_stars):
+                      progress_window=None, verbose=False, gaia_engine=_get_gaia_stars, star_limit=None):
 
     if verbose:
         print('\nAnalysing frame...')
@@ -241,7 +245,7 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     if type(stars) == type(None):
         stars = image_find_stars(fits_data, fits_header,
                                  mean=mean, std=std, burn_limit=burn_limit, psf=psf,
-                                 progress_window=progress_window, verbose=verbose)
+                                 progress_window=progress_window, verbose=verbose, star_limit=star_limit)
 
     stars = np.array(stars)
 
@@ -302,7 +306,7 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     plate_solution = fit_wcs_from_points(
         detected_stars[s2].T,
         SkyCoord(gaia_stars[s1], unit="deg"),
-        proj_point = SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
+        proj_point=SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
         sip_degree=3,
     )
 
@@ -330,7 +334,7 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     plate_solution = fit_wcs_from_points(
         detected_stars[s2].T,
         SkyCoord(gaia_stars[s1], unit="deg"),
-        proj_point = SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
+        proj_point=SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
         sip_degree=3,
     )
 
@@ -372,18 +376,49 @@ def bin_frame(data_frame, binning):
     if binning <= 1:
         return data_frame
 
-    new_frame = []
-    for xx in range(len(data_frame))[::binning]:
-        new_frame.append(list(np.sum(data_frame[xx:xx + binning], 0)))
+    new_frame_ysize = int(len(data_frame)/binning)
+    new_frame_xsize = int(len(data_frame[0])/binning)
 
-    new_frame = np.swapaxes(np.array(new_frame), 0, 1)
+    new_frame = np.zeros((new_frame_ysize, len(data_frame[0])))
 
-    new_frame2 = []
-    for xx in range(len(new_frame))[::binning]:
-        new_frame2.append(list(np.sum(new_frame[xx:xx + binning], 0)))
+    for xx in range(binning):
+        new_frame += data_frame[xx:binning * new_frame_ysize:binning]
 
-    data_frame = np.swapaxes(np.array(new_frame2), 0, 1)
+    new_frame2 = np.zeros((new_frame_ysize, new_frame_xsize))
+    for xx in range(binning):
+        new_frame2 += new_frame[:, xx:binning * new_frame_xsize:binning]
 
-    return data_frame
+    return new_frame2
 
+
+def cartesian_to_polar(x_position, y_position, x_ref_position, y_ref_position):
+
+    radius = np.sqrt((x_position - x_ref_position) ** 2 + (y_position - y_ref_position) ** 2)
+
+    if (x_position - x_ref_position) > 0:
+        if (y_position - y_ref_position) >= 0:
+            angle = np.arctan((y_position - y_ref_position) / (x_position - x_ref_position))
+        else:
+            angle = 2.0 * np.pi + np.arctan((y_position - y_ref_position) / (x_position - x_ref_position))
+    elif (x_position - x_ref_position) < 0:
+        angle = np.arctan((y_position - y_ref_position) / (x_position - x_ref_position)) + np.pi
+    else:
+        if (y_position - y_ref_position) >= 0:
+            angle = np.pi / 2
+        else:
+            angle = 3 * np.pi / 2
+
+    return radius, angle
+
+
+def drift_rotate(x_position, y_position, x_ref_position, y_ref_position, dx, dy, dtheta):
+
+    rr, tt = cartesian_to_polar(x_position, y_position, x_ref_position, y_ref_position)
+
+    tt = tt + dtheta
+
+    xx = x_ref_position + rr * np.cos(tt) + dx
+    yy = y_ref_position + rr * np.sin(tt) + dy
+
+    return xx, yy
 

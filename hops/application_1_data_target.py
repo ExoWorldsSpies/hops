@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+import exoclock
 import hops.pylightcurve41 as plc
 
 from astropy.io import fits as pf
@@ -287,6 +288,9 @@ class DataTargetWindow(MainWindow):
 
         # advanced settings window
 
+        self.faint_target_mode = self.advanced_settings_window.CheckButton(text='Enable UltraShortExposure mode (use for occultations)',
+                                                  initial=self.log.get_param('faint_target_mode'))
+
         self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
                                                                options=[1, 2, 3, 4],
                                                                instance=int, command=self.update_preview_final)
@@ -317,22 +321,21 @@ class DataTargetWindow(MainWindow):
                     text='To crop the original image (on the left panel),\n'
                          'zoom in to the area you want to select and then press "Select area".'
                 ), 0],
-                [self.advanced_settings_window.Button(text='Select area', command=self.crop_to_selected_area), 1]
+                [self.advanced_settings_window.Button(text='Select area', command=self.crop_to_selected_area), 1],
+                [self.advanced_settings_window.Label(text='Binning (use 2 for coloured cameras)'), 3],
+                [self.bin_fits, 4],
             ],
             [
                 [self.advanced_settings_window.Label(
                     text='Remove pixels from the edge of the image,\n'
                          'useful for cameras with GPS data in the first rows/columns.'
                 ), 0],
-                [self.crop_edge_pixels, 1]
-            ],
-            [
-                [self.advanced_settings_window.Label(text='Binning (use 2 for coloured cameras)'), 0],
-                [self.bin_fits, 1],
+                [self.crop_edge_pixels, 1],
+                [self.faint_target_mode, 3, 2]
             ],
             [],
-            [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3]],
-            [[self.initial_figure, 0, 3], [self.final_figure, 3]],
+            [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3, 2]],
+            [[self.initial_figure, 0, 3], [self.final_figure, 3, 2]],
             [],
         ])
 
@@ -454,6 +457,7 @@ class DataTargetWindow(MainWindow):
         self.crop_x2.set(self.log.get_param('crop_x2'))
         self.crop_y1.set(self.log.get_param('crop_y1'))
         self.crop_y2.set(self.log.get_param('crop_y2'))
+        self.faint_target_mode.set(self.log.get_param('faint_target_mode'))
         self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
         self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
         self.target_name.set(self.log.get_param('target_name'))
@@ -569,7 +573,7 @@ class DataTargetWindow(MainWindow):
         except:
             pass
 
-        hdu= pf.CompImageHDU(data=np.array(data_frame, dtype=np.int32))
+        hdu = pf.CompImageHDU(data=np.array(data_frame, dtype=np.int32))
         plc.save_fits(pf.HDUList([pf.PrimaryHDU(), hdu]), '.test_size.fits')
 
         self.final_figure_size.set(
@@ -623,12 +627,12 @@ class DataTargetWindow(MainWindow):
         if ra and dec:
             try:
                 if isinstance(ra, str):
-                    target = plc.FixedTarget(plc.Hours(ra.replace(',', '.')),
-                                             plc.Degrees(dec.replace(',', '.')))
+                    target = exoclock.FixedTarget(exoclock.Hours(ra.replace(',', '.')),
+                                                  exoclock.Degrees(dec.replace(',', '.')))
                     self.auto_target_ra_dec.set(target.coord())
                     self.target_ra_dec_choice_0['state'] = self.NORMAL
                 elif isinstance(ra, float):
-                    target = plc.FixedTargetTarget(plc.Degrees(ra), plc.Degrees(dec))
+                    target = exoclock.FixedTarget(exoclock.Degrees(ra), exoclock.Degrees(dec))
                     self.auto_target_ra_dec.set(target.coord())
                     self.target_ra_dec_choice_0['state'] = self.NORMAL
             except:
@@ -646,13 +650,20 @@ class DataTargetWindow(MainWindow):
             self.manual_target_ra_dec.set('')
 
             try:
-                target = plc.FixedTarget(
-                    plc.Hours(self.auto_target_ra_dec.get().split(' ')[0]),
-                    plc.Degrees(self.auto_target_ra_dec.get().split(' ')[1])
+                target = exoclock.FixedTarget(
+                    exoclock.Hours(self.auto_target_ra_dec.get().split(' ')[0]),
+                    exoclock.Degrees(self.auto_target_ra_dec.get().split(' ')[1])
                 )
 
                 try:
-                    nearest = plc.simbad_search_by_coordinates(target.ra, target.dec, radius=plc.Degrees(0.25))
+                    nearest = exoclock.simbad_search_by_coordinates(target.ra, target.dec,
+                                                                    radius=exoclock.Degrees(0.25))
+                    nearest._notes = ''
+                    if len(nearest.all_names) > 0:
+                        test = list(set(nearest.all_names).intersection(list(exoclock.exoclock_data.ecc()['hosts'])))
+                        if len(test) > 0:
+                            nearest._notes = '/ Host of: ' + ', '.join(exoclock.exoclock_data.ecc()['hosts'][test[0]])
+
                     self.target_ra_dec_2.set(nearest.coord())
                     if nearest._notes:
                         self.target_name_2.set(nearest.name + ' ' + nearest._notes)
@@ -673,7 +684,13 @@ class DataTargetWindow(MainWindow):
             self.manual_target_ra_dec.set('')
 
             try:
-                nearest = plc.simbad_search_by_name(self.simbad_target_name.get())
+                nearest = exoclock.simbad_search_by_name(self.simbad_target_name.get())
+                nearest._notes = ''
+                if len(nearest.all_names) > 0:
+                    test = list(set(nearest.all_names).intersection(list(exoclock.exoclock_data.ecc()['hosts'])))
+                    if len(test) > 0:
+                        nearest._notes = '/ Host of: ' + ', '.join(exoclock.exoclock_data.ecc()['hosts'][test[0]])
+
                 self.target_ra_dec_2.set(nearest.coord())
                 if nearest._notes:
                     self.target_name_2.set(nearest.name + ' ' + nearest._notes)
@@ -692,11 +709,18 @@ class DataTargetWindow(MainWindow):
 
             try:
                 if len(self.manual_target_ra_dec.get().split(':')) == 5:
-                    target = plc.FixedTarget(
-                        plc.Hours(self.manual_target_ra_dec.get().split(' ')[0]),
-                        plc.Degrees(self.manual_target_ra_dec.get().split(' ')[1])
+                    target = exoclock.FixedTarget(
+                        exoclock.Hours(self.manual_target_ra_dec.get().split(' ')[0]),
+                        exoclock.Degrees(self.manual_target_ra_dec.get().split(' ')[1])
                     )
-                    nearest = plc.simbad_search_by_coordinates(target.ra, target.dec, radius=plc.Degrees(0.25))
+                    nearest = exoclock.simbad_search_by_coordinates(target.ra, target.dec,
+                                                                    radius=exoclock.Degrees(0.25))
+                    nearest._notes = ''
+                    if len(nearest.all_names) > 0:
+                        test = list(set(nearest.all_names).intersection(list(exoclock.exoclock_data.ecc()['hosts'])))
+                        if len(test) > 0:
+                            nearest._notes = '/ Host of: ' + ', '.join(exoclock.exoclock_data.ecc()['hosts'][test[0]])
+
                     self.target_ra_dec_2.set(nearest.coord())
                     if nearest._notes:
                         self.target_name_2.set(nearest.name + ' ' + nearest._notes)
@@ -716,8 +740,8 @@ class DataTargetWindow(MainWindow):
 
         try:
 
-            _ = plc.FixedTarget(plc.Hours(self.target_ra_dec.get().split(' ')[0]),
-                                     plc.Degrees(self.target_ra_dec.get().split(' ')[1]))
+            _ = exoclock.FixedTarget(exoclock.Hours(self.target_ra_dec.get().split(' ')[0]),
+                                     exoclock.Degrees(self.target_ra_dec.get().split(' ')[1]))
             self.target_ra_dec_test.set('   OK   ')
 
         except:
@@ -746,12 +770,12 @@ class DataTargetWindow(MainWindow):
         if lat and long:
             try:
                 if isinstance(lat, str):
-                    observatory = plc.Observatory(plc.Degrees(lat.replace(',', '.')),
-                                                  plc.Degrees(long.replace(',', '.')))
+                    observatory = exoclock.Observatory(exoclock.Degrees(lat.replace(',', '.')),
+                                                  exoclock.Degrees(long.replace(',', '.')))
                     self.auto_location.set(observatory.coord())
                     self.location_choice_0['state'] = self.NORMAL
                 elif isinstance(lat, float):
-                    observatory = plc.Observatory(plc.Degrees(lat), plc.Degrees(long))
+                    observatory = exoclock.Observatory(exoclock.Degrees(lat), exoclock.Degrees(long))
                     self.auto_location.set(observatory.coord())
                     self.location_choice_0['state'] = self.NORMAL
             except:
@@ -760,8 +784,8 @@ class DataTargetWindow(MainWindow):
         self.profile_location.set('Not found')
         self.location_choice_1['state'] = self.DISABLED
         try:
-            observatory = plc.Observatory(plc.Degrees(self.log.get_param('observatory_lat')),
-                                          plc.Degrees(self.log.get_param('observatory_long')))
+            observatory = exoclock.Observatory(exoclock.Degrees(self.log.get_param('observatory_lat')),
+                                          exoclock.Degrees(self.log.get_param('observatory_long')))
             self.profile_location.set(observatory.coord())
             self.location_choice_1['state'] = self.NORMAL
         except:
@@ -791,8 +815,8 @@ class DataTargetWindow(MainWindow):
 
         try:
 
-            observatory = plc.Observatory(plc.Degrees(self.location.get().split(' ')[0]),
-                                          plc.Degrees(self.location.get().split(' ')[1]))
+            observatory = exoclock.Observatory(exoclock.Degrees(self.location.get().split(' ')[0]),
+                                          exoclock.Degrees(self.location.get().split(' ')[1]))
             self.location_test.set('   OK   ')
 
         except:
@@ -948,6 +972,11 @@ class DataTargetWindow(MainWindow):
         self.log.set_param('crop_x2', self.crop_x2.get())
         self.log.set_param('crop_y1', self.crop_y1.get())
         self.log.set_param('crop_y2', self.crop_y2.get())
+        self.log.set_param('faint_target_mode', self.faint_target_mode.get())
+        if self.faint_target_mode.get():
+            self.log.set_param('centroids_snr', 2)
+            self.log.set_param('psf_guess', 1)
+            self.log.set_param('stars_snr', 2)
         self.log.set_param('crop_edge_pixels', self.crop_edge_pixels.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())

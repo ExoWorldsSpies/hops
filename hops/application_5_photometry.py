@@ -3,6 +3,7 @@ import os
 import glob
 import numpy as np
 import shutil
+import exoclock
 import warnings
 import matplotlib
 import webbrowser
@@ -17,7 +18,7 @@ from matplotlib.cm import Greys, Greys_r
 
 from hops.application_windows import MainWindow, AddOnWindow
 from hops.hops_tools.fits import get_fits_data_and_header
-from hops.hops_tools.image_analysis import image_find_stars, image_plate_solve
+from hops.hops_tools.image_analysis import image_find_stars, image_plate_solve, cartesian_to_polar
 
 
 class PhotometryWindow(MainWindow):
@@ -120,6 +121,8 @@ class PhotometryWindow(MainWindow):
         self.visible_fov_y_min = self.log.get_param('min_y')
         self.visible_fov_x_max = self.log.get_param('max_x')
         self.visible_fov_y_max = self.log.get_param('max_y')
+        self.centroids_snr = self.log.get_param('centroids_snr')
+        self.stars_snr = self.log.get_param('stars_snr')
 
         self.all_frames = plc.open_dict(self.log.all_frames)
         self.science_files = []
@@ -340,6 +343,7 @@ class PhotometryWindow(MainWindow):
             std=self.fits_header[self.log.std_key],
             burn_limit=self.fits_header[self.log.hops_saturation_key],
             psf=self.fits_header[self.log.psf_key],
+            centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
             order_by_flux=False,
         )
 
@@ -542,7 +546,6 @@ class PhotometryWindow(MainWindow):
                 self.targets[i_target][7].set_x(self.targets[i_target][2].get() + text_x_drift * self.targets[i_target][1].get())
                 self.targets[i_target][7].set_y(self.targets[i_target][3].get() + text_y_drift * self.targets[i_target][1].get())
 
-
                 if self.plate_solution:
 
                     identified_stars = [[ii,
@@ -698,8 +701,8 @@ class PhotometryWindow(MainWindow):
     def plate_solve_first(self):
 
         ra_target, dec_target = self.log.get_param('target_ra_dec').split(' ')
-        ra = plc.Hours(ra_target).deg()
-        dec = plc.Degrees(dec_target).deg_coord()
+        ra = exoclock.Hours(ra_target).deg()
+        dec = exoclock.Degrees(dec_target).deg_coord()
 
         try:
 
@@ -712,6 +715,48 @@ class PhotometryWindow(MainWindow):
                                                         psf=self.fits_header[self.log.psf_key],
                                                         stars=self.all_stars,
                                                         pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                        verbose=True)
+
+                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                    self.plate_solution = None
+
+            if self.plate_solution is None:
+
+                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                        mean=self.fits_header[self.log.mean_key],
+                                                        std=self.fits_header[self.log.std_key],
+                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                        psf=self.fits_header[self.log.psf_key],
+                                                        stars=self.all_stars,
+                                                        pixel=0.25 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                        verbose=True)
+
+                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                    self.plate_solution = None
+
+            if self.plate_solution is None:
+
+                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                        mean=self.fits_header[self.log.mean_key],
+                                                        std=self.fits_header[self.log.std_key],
+                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                        psf=self.fits_header[self.log.psf_key],
+                                                        stars=self.all_stars,
+                                                        pixel=1.0 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                        verbose=True)
+
+                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                    self.plate_solution = None
+
+            if self.plate_solution is None:
+
+                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                        mean=self.fits_header[self.log.mean_key],
+                                                        std=self.fits_header[self.log.std_key],
+                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                        psf=self.fits_header[self.log.psf_key],
+                                                        stars=self.all_stars,
+                                                        pixel=0.1 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
                                                         verbose=True)
 
                 if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
@@ -765,7 +810,7 @@ class PhotometryWindow(MainWindow):
         self.log.set_param('target_x_position', self.targets[0][2].get())
         self.log.set_param('target_y_position', self.targets[0][3].get())
         self.log.set_param('target_aperture', self.targets[0][1].get())
-        target_polar = plc.cartesian_to_polar(self.targets[0][2].get(), self.targets[0][3].get(),
+        target_polar = cartesian_to_polar(self.targets[0][2].get(), self.targets[0][3].get(),
                                               self.fits_header[self.log.align_x0_key],
                                               self.fits_header[self.log.align_y0_key])
         self.log.set_param('target_r_position', float(target_polar[0]))
@@ -782,7 +827,7 @@ class PhotometryWindow(MainWindow):
             if 0 not in [self.targets[comparison][2].get(),
                          self.targets[comparison][3].get()]:
 
-                target_polar = plc.cartesian_to_polar(self.targets[comparison][2].get(),
+                target_polar = cartesian_to_polar(self.targets[comparison][2].get(),
                                                       self.targets[comparison][3].get(),
                                                       self.fits_header[self.log.align_x0_key],
                                                       self.fits_header[self.log.align_y0_key])
@@ -841,6 +886,9 @@ class PhotometryProgressWindow(MainWindow):
         self.sky_inner_aperture = self.log.get_param('sky_inner_aperture')
         self.sky_outer_aperture = self.log.get_param('sky_outer_aperture')
         self.camera_gain = self.log.get_param('camera_gain')
+        self.faint_target_mode = self.log.get_param('faint_target_mode')
+        self.centroids_snr = self.log.get_param('centroids_snr')
+        self.stars_snr = self.log.get_param('stars_snr')
 
         # load science files and targets
 
@@ -965,7 +1013,7 @@ class PhotometryProgressWindow(MainWindow):
                                       self.results['aperture_flux'][0], 'ko', ms=3, label='Aperture'))
 
             self.axes_lc[-1].set_ylim(self.axes_lc_ylims[0], self.axes_lc_ylims[1])
-            self.axes_lc[-1].set_xlim((-0.01) * 24, (self.results['jd'][-1] - self.results['jd'][0] + 0.01) * 24)
+            self.axes_lc[-1].set_xlim(-0.1/60, (max(self.results['jd']) - min(self.results['jd'])) * 24 + 0.1/60)
             if target == 0:
                 self.axes_lc[-1].set_ylabel('T', fontsize=12)
             else:
@@ -989,7 +1037,7 @@ class PhotometryProgressWindow(MainWindow):
         self.target_label = self.Label(text='Target')
 
         self.progress_diagnostics = [self.target_label]
-        self.progress_active = [self.CheckButton(text='',initial=1)]
+        self.progress_active = [self.CheckButton(text='', initial=1)]
         self.progress_active[0].disable()
         for target in range(1, self.targets):
             self.progress_diagnostics.append(self.Label(text='Comparison {0}'.format(target)))
@@ -1087,37 +1135,54 @@ class PhotometryProgressWindow(MainWindow):
                     psf=fits_header[self.log.psf_key],
                     aperture=self.targets_aperture[target] * self.psf_ratio[counter] / fits_header[self.log.psf_key],
                     sky_inner_aperture=self.sky_inner_aperture, sky_outer_aperture=self.sky_outer_aperture,
-                    order_by_flux=False
+                    order_by_flux=False,
+                    centroids_snr=self.centroids_snr, stars_snr=self.stars_snr
                 )
 
-                if star:
-
-                    star = star[0]
-
-                    x_mean = star[0]
-                    y_mean = star[1]
-                    norm = star[2]
-                    floor = star[3]
-                    x_std = star[4]
-                    y_std = star[5]
-                    total_app_flux = star[6]
-                    sky_flux = star[8]
-                    sky_flux_unc = star[9]
-
-                    # save psf photometry
-
-                    self.results['gauss_x_position'][target][counter] = x_mean
-                    self.results['gauss_y_position'][target][counter] = y_mean
-                    self.results['gauss_x_std'][target][counter] = x_std
-                    self.results['gauss_y_std'][target][counter] = y_std
-                    self.results['gauss_flux'][target][counter] = 2 * np.pi * norm * x_std * y_std
-                    self.results['gauss_flux_error'][target][counter] = np.sqrt(
-                        2 * np.pi * norm * x_std * y_std
-                    )
+                if star or self.faint_target_mode:
 
                     try:
 
-                        if self.use_geometric_center:
+                        if star:
+                            star = star[0]
+
+                            x_mean = star[0]
+                            y_mean = star[1]
+                            norm = star[2]
+                            floor = star[3]
+                            x_std = star[4]
+                            y_std = star[5]
+                            total_app_flux = star[6]
+                            sky_flux = star[8]
+                            sky_flux_unc = star[9]
+
+                        else:
+
+                            x_mean = (ref_x_position + self.targets_r_position[target] *
+                                      np.cos(ref_u_position + self.targets_u_position[target]))
+                            y_mean = (ref_y_position + self.targets_r_position[target] *
+                                      np.sin(ref_u_position + self.targets_u_position[target]))
+                            floor = fits_header[self.log.mean_key]
+                            x_std = fits_header[self.log.psf_key]
+                            y_std = fits_header[self.log.psf_key]
+                            total_app_flux = aperture_photometry(fits_data, CircularAperture(np.array([x_mean-0.5, y_mean-0.5]),
+                                                                                             self.targets_aperture[target]))['aperture_sum'][0]
+                            sky_flux = np.pi * (self.targets_aperture[target]**2) * fits_header[self.log.mean_key]
+                            sky_flux_unc = np.sqrt(np.pi * (self.targets_aperture[target]**2)) * fits_header[self.log.std_key]
+                            norm = (total_app_flux - sky_flux) / (2 * np.pi * x_std * y_std)
+
+                        # save psf photometry
+
+                        self.results['gauss_x_position'][target][counter] = x_mean
+                        self.results['gauss_y_position'][target][counter] = y_mean
+                        self.results['gauss_x_std'][target][counter] = x_std
+                        self.results['gauss_y_std'][target][counter] = y_std
+                        self.results['gauss_flux'][target][counter] = 2 * np.pi * norm * x_std * y_std
+                        self.results['gauss_flux_error'][target][counter] = np.sqrt(
+                            np.abs(2 * np.pi * norm * x_std * y_std)
+                        )
+
+                        if star and self.use_geometric_center:
                             x1 = int(star[0] - 3 * fits_header[self.log.psf_key])
                             x2 = x1 + int(6 * fits_header[self.log.psf_key]) + 1
                             y1 = int(star[1] - 3 * fits_header[self.log.psf_key])
@@ -1168,9 +1233,8 @@ class PhotometryProgressWindow(MainWindow):
                         self.results['aperture_background_error'][target][counter] = sky_flux_unc
                         self.results['aperture_flux'][target][counter] = total_app_flux - sky_flux
                         self.results['aperture_flux_error'][target][counter] = np.sqrt(
-                            (total_app_flux - sky_flux)/self.camera_gain +
+                            np.abs(total_app_flux - sky_flux)/self.camera_gain +
                             2 * (sky_flux_unc**2))
-
 
                     except Exception as e:
                         print(e)
@@ -1466,7 +1530,7 @@ class PhotometryProgressWindow(MainWindow):
         ra_dec_string = self.log.get_param('target_ra_dec')
         ra_dec_string = ra_dec_string.split(' ')
         try:
-            planet = plc.locate_planet(plc.Hours(ra_dec_string[0]), plc.Degrees(ra_dec_string[1])).name
+            planet = exoclock.locate_planet(exoclock.Hours(ra_dec_string[0]), exoclock.Degrees(ra_dec_string[1])).name
         except:
             planet = 'Could not find a planet in the ExoClock catalogue at this location'
 

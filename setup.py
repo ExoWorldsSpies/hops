@@ -26,7 +26,8 @@ files_to_include.append('LICENSE')
 
 w = open('MANIFEST.in', 'w')
 for i in subdirs_to_include:
-    w.write('include ' + os.path.join(i, '*') + ' \n')
+    if '__pycache__' not in i:
+     w.write('include ' + os.path.join(i, '*') + ' \n')
 
 for i in files_to_include:
     w.write('include ' + i + ' \n')

@@ -1,6 +1,6 @@
 
-__version__ = '3.2.4'
-__message__ = 'Version 3.2 is now online with new features, including connection with GAIA DR3!\nv3.2.1 - Avoid bright stars in alignment, version control for reduction.\nv3.2.2 - Fix GAIA catalogue bug.\nv3.2.3 - Fix installation overwriting older versions.\nv3.2.4 - Matplotlib==3.9.0 bug fixed.'
+__version__ = '3.3.0'
+__message__ = 'Version 3.3 is now online with new features!\n- UltraShortExposure mode, for stellar occultations.'
 
 from .__run__ import run_app
 

@@ -1,7 +1,7 @@
 
-import datetime
 import numpy as np
-import hops.pylightcurve41 as plc
+import datetime
+import exoclock
 
 from hops.application_windows import MainWindow
 
@@ -9,7 +9,7 @@ from hops.application_windows import MainWindow
 def test_coordinates2(ra_string, dec_string):
 
     try:
-        plc.FixedTarget(plc.Hours(ra_string), plc.Degrees(dec_string))
+        exoclock.FixedTarget(exoclock.Hours(ra_string), exoclock.Degrees(dec_string))
         return [True, 'Coordinates\naccepted']
     except:
         return [False, 'Wrong\ncoordinates']
@@ -149,7 +149,7 @@ class ObservingPlannerWindow(MainWindow):
     def search_object(self):
 
         try:
-            target = plc.simbad_search_by_name(self.target_search.get())
+            target = exoclock.simbad_search_by_name(self.target_search.get())
 
             if target:
                 self.target.set(target.name)
@@ -201,8 +201,8 @@ class ObservingPlannerWindow(MainWindow):
                  observatory_name):
         ax.cla()
 
-        target = plc.FixedTarget(plc.Hours(target_ra), plc.Degrees(target_dec))
-        observatory = plc.Observatory(plc.Degrees(latitude), plc.Degrees(longitude), tmzn, horizon)
+        target = exoclock.FixedTarget(exoclock.Hours(target_ra), exoclock.Degrees(target_dec))
+        observatory = exoclock.Observatory(exoclock.Degrees(latitude), exoclock.Degrees(longitude), tmzn, horizon)
 
         year = int(year_mont_string.split()[0])
         month = int(year_mont_string.split()[1])
@@ -215,15 +215,15 @@ class ObservingPlannerWindow(MainWindow):
         else:
             days = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-        time_0 = plc.UTC('{0}-{1}-1 12:00:00'.format(year, month)) - plc.DTime(hours=tmzn)
-        jd_0 = time_0.jd()
+        jd_0 = exoclock.Moment('{0}-{1}-01 12:00:00'.format(year, month)).jd_utc() - tmzn / 24
+        time_0 = exoclock.Moment(jd_utc=jd_0)
 
         events = []
 
         # mid-day splits
 
         for jj in range(days[month] + 1):
-            events.append([time_0 + plc.DTime(days=jj), 'mid-day'])
+            events.append([exoclock.Moment(jd_utc=time_0.jd_utc() + jj), 'mid-day'])
 
         # target rise/set events
 
@@ -233,10 +233,10 @@ class ObservingPlannerWindow(MainWindow):
 
         for jj in range(days[month]):
 
-            check_time = time_0 + plc.DTime(days=jj)
+            check_time = exoclock.Moment(jd_utc=time_0.jd_utc() + jj)
 
-            sun = plc.Sun(check_time)
-            fixed_sun = plc.FixedTarget(sun.ra, sun.dec)
+            sun = exoclock.Sun(check_time)
+            fixed_sun = exoclock.FixedTarget(sun.ra, sun.dec)
 
             # # sun rise/set
             sun_events = observatory.target_horizon_crossings(fixed_sun, check_time, 1)
@@ -250,7 +250,7 @@ class ObservingPlannerWindow(MainWindow):
 
             # sun -18 rise/set
 
-            twilight_events = observatory.target_altitude_crossings(fixed_sun, check_time, 1, plc.Degrees(-18))
+            twilight_events = observatory.target_altitude_crossings(fixed_sun, check_time, 1, exoclock.Degrees(-18))
             for i in range(len(twilight_events)):
                 if twilight_events[i][1] == 'rise':
                     twilight_events[i][1] = 'sun_rise_18'
@@ -259,7 +259,7 @@ class ObservingPlannerWindow(MainWindow):
 
             events += twilight_events
 
-        events2 = [[ff[0].jd(), ff[0], ff[1]] for ff in events]
+        events2 = [[ff[0].jd_utc(), ff[0], ff[1]] for ff in events]
         events2.sort(key=lambda ff: ff[0])
 
         # for i in events2:
@@ -283,7 +283,7 @@ class ObservingPlannerWindow(MainWindow):
         for jj, ii in enumerate(events2[:-1]):
 
             test_jd = 0.5 * (ii[0] + events2[jj + 1][0])
-            check_time = plc.JD(test_jd )
+            check_time = exoclock.Moment(jd_utc=test_jd)
 
             day = 1 + int(test_jd - jd_0)
 
@@ -297,13 +297,13 @@ class ObservingPlannerWindow(MainWindow):
                 color = 'w'
                 alpha = 0
             else:
-                sun_az, sun_alt = observatory.target_azimuth_altitude(plc.Sun(check_time), check_time)
+                sun_az, sun_alt = observatory.target_azimuth_altitude(exoclock.Sun(check_time), check_time)
                 if sun_alt.deg_coord() > 0:
                     color = 'y'
                 elif sun_alt.deg_coord() > -18:
                     color = 'r'
                 else:
-                    color = str(0.8 * plc.Moon(check_time).illumination())
+                    color = str(0.8 * exoclock.Moon(check_time).illumination())
 
             ax.plot(time_range, [day, day], linewidth=2.5, color=color, alpha=alpha)
 
