@@ -169,9 +169,9 @@ class ObservingPlannerWindow(MainWindow):
         self.update_window()
 
     def plot(self):
-            self.ax1.cla()
+        self.ax1.cla()
 
-        # try:
+        try:
 
             name = self.target.get()
             if name == 'No results':
@@ -192,10 +192,10 @@ class ObservingPlannerWindow(MainWindow):
                           self.target_ra.get(), self.target_dec.get(), self.obs_year_month.get(), self.ax1,
                           name, self.observatory.get())
 
-        # except:
-        #     pass
+        except:
+            pass
 
-            self.figure.draw()
+        self.figure.draw()
 
     def avc_plot(self, latitude, longitude, tmzn, horizon, target_ra, target_dec, year_mont_string, ax, name,
                  observatory_name):
