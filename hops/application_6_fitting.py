@@ -386,7 +386,7 @@ class FittingWindow(MainWindow):
             self.inclination.activate()
             self.periastron.activate()
 
-            self.title1.set_text('{0}{1}{2}'.format('$\mathbf{', self.planet.get(), '}$'))
+            self.title1.set_text(r'{0}{1}{2}'.format(r'$\mathbf{', self.planet.get(), '}$'))
 
         else:
             self.planet.disable()
@@ -402,7 +402,7 @@ class FittingWindow(MainWindow):
             self.inclination.disable()
             self.periastron.disable()
 
-            self.title1.set_text('{0}{1}{2}'.format(r'$\mathbf{', self.auto_planet.get(), '}$'))
+            self.title1.set_text(r'{0}{1}{2}'.format(r'$\mathbf{', self.auto_planet.get(), '}$'))
 
         self.preview_figure.draw()
 
@@ -661,7 +661,7 @@ class FittingWindow(MainWindow):
         date = exoclock.Moment(jd_utc=light_curve[0][0]).utc().isoformat()[:16].replace('T', ' ')
         obs_duration = round(24 * (light_curve[0][-1] - light_curve[0][0]), 1)
 
-        title1.set_text('{0}{1}{2}'.format('$\mathbf{', planet.name, '}$'))
+        title1.set_text(r'{0}{1}{2}'.format(r'$\mathbf{', planet.name, '}$'))
 
         title2.set_text('{0} (UT)\nDur: {1}h / Exp: {2}s\nFilter: {3}'.format(date, obs_duration, self.exposure_time,
                                                                                    self.log.get_param('filter')))
@@ -870,7 +870,7 @@ class FittingWindow(MainWindow):
         light_curve = np.loadtxt(self.light_curve_file.get(), unpack=True)
 
         file_name = 'HOPS_{5}_{0}_{1}_{2}_{3}s_for_{4}.txt'.format(
-            self.observation_date,
+            self.observation_date[:10],
             planet_to_plot,
             self.log.get_param('filter'),
             self.exposure_time,

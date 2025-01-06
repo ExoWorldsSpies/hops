@@ -14,7 +14,7 @@ from .errors import *
 from .__databases_setup__ import _setup_database
 
 databases_file = '__databases__.pickle'
-package_name = 'pylightcurve4'
+package_name = 'hops33pylightcurve4'
 github_link = 'https://www.dropbox.com/scl/fi/cmpsnfosniz108l97nugv/__databases__.pickle?rlkey=lv6oh6dqgs2blyvs5gwezsoyf&dl=1'
 
 

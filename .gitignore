@@ -1,6 +1,8 @@
 *.pyc
 *.egg-info/*
+build
 MANIFEST.in
 local_*
 .idea/*
 hops/__pycache__/*
+*.DS_store

@@ -11,7 +11,7 @@ astroquery>=0.4.6
 pillow
 quantities
 pyyaml
-exotethys>=2.0.4
+exotethys>=2.0.15
 click
 twirl==0.1.3
 photutils
