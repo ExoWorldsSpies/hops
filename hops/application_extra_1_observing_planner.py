@@ -215,7 +215,7 @@ class ObservingPlannerWindow(MainWindow):
         else:
             days = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-        jd_0 = exoclock.Moment('{0}-{1}-01 12:00:00'.format(year, month)).jd_utc() - tmzn / 24
+        jd_0 = exoclock.Moment('{0}-{1}-01 12:00:00'.format(year, str(month).zfill(2))).jd_utc() - tmzn / 24
         time_0 = exoclock.Moment(jd_utc=jd_0)
 
         events = []
