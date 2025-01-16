@@ -159,7 +159,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
         if star:
 
-            if abs(star[0][4] - psf) < (3 * np.sqrt(star[1][4][4]) + psf * psf_variation_allowed):
+            if abs(star[0][4] - psf) < (3 * np.sqrt(star[1][4][4]) + psf * psf_variation_allowed) and np.sqrt(star[1][4][4]) < psf * psf_variation_allowed:
 
                 if len(stars) == 0 or np.min([np.sqrt((ff[0]-star[0][2])**2 + (ff[1]-star[0][3])**2) for ff in stars]) > psf:
 
@@ -196,10 +196,12 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
                         target_flux = total_flux - sky_flux
 
-                        stars.append([
-                            star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
-                            total_flux, target_flux, sky_flux, sky_flux_unc
-                        ])
+                        if target_flux > 0:
+
+                            stars.append([
+                                star[0][2], star[0][3], star[0][0], star[0][1], star[0][4], star[0][5],
+                                total_flux, target_flux, sky_flux, sky_flux_unc
+                            ])
 
             if verbose:
                 sys.stdout.write('\r\033[K')

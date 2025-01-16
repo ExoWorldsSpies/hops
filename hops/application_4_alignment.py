@@ -181,6 +181,9 @@ class AlignmentWindow(MainWindow):
             burn_limit = all_stars_dict['burn_limit']
             length = np.sqrt((all_stars_dict['x-length']/2)**2 + (all_stars_dict['y-length']/2)**2)
 
+            stars = stars[np.where(stars[:, 2] > 2)]
+            stars = stars[np.where(stars[:, 7] > 2)]
+
             min_flux = np.log10(np.min(stars[:, 2]) - 1)
             max_flux = np.log10(0.5 * burn_limit)
 
@@ -225,6 +228,9 @@ class AlignmentWindow(MainWindow):
                 r_position, u_position = cartesian_to_polar(star[0], star[1], self.x0, self.y0)
                 if r_position > 5 * psf:
                     self.comparisons.append([r_position, u_position])
+
+                if len(self.comparisons) >= 500:
+                    break
 
             if self.faint_target_mode:
                 self.min_calibration_stars_number = 3
@@ -301,6 +307,8 @@ class AlignmentWindow(MainWindow):
 
             if self.test_level == 1:
 
+                self.alignment_log('Test Level: 1')
+
                 self.stars = image_find_stars(self.fits_data, self.fits_header,
                                               x_low=self.x0 - 10 * self.fits_header[self.log.psf_key],
                                               x_upper=self.x0 + 10 * self.fits_header[self.log.psf_key],
@@ -324,6 +332,8 @@ class AlignmentWindow(MainWindow):
 
             elif self.test_level == 2:
 
+                self.alignment_log('Test Level: 2')
+
                 self.stars = image_find_stars(self.fits_data, self.fits_header,
                                               mean=self.fits_header[self.log.mean_key],
                                               std=self.fits_header[self.log.std_key],
@@ -344,21 +354,41 @@ class AlignmentWindow(MainWindow):
                     all_stars_dict = plc.open_dict('all_stars.pickle')
                     all_stars = np.array(all_stars_dict['all_stars'])
 
-                    # for ii in all_stars[:20]:
-                    #     circle = mpatches.Circle((ii[0], ii[1]), 20, ec='r', fill=False)
+                    all_stars_to_check_x = np.array([all_stars[0][0]])
+                    all_stars_to_check_y = np.array([all_stars[0][1]])
+                    for star in all_stars:
+                        if min(np.sqrt(
+                                (star[0] - all_stars_to_check_x) ** 2 + (star[1] - all_stars_to_check_y) ** 2)) > 6 * \
+                                self.fits_header[self.log.psf_key]:
+                            all_stars_to_check_x = np.append(all_stars_to_check_x, star[0])
+                            all_stars_to_check_y = np.append(all_stars_to_check_y, star[1])
+
+                    new_stars_to_check_x = np.array([self.stars[0][0]])
+                    new_stars_to_check_y = np.array([self.stars[0][1]])
+                    for star in self.stars:
+                        if min(np.sqrt(
+                                (star[0] - new_stars_to_check_x) ** 2 + (star[1] - new_stars_to_check_y) ** 2)) > 6 * \
+                                self.fits_header[self.log.psf_key]:
+                            new_stars_to_check_x = np.append(new_stars_to_check_x, star[0])
+                            new_stars_to_check_y = np.append(new_stars_to_check_y, star[1])
+
+                    # for ii in range(20):
+                    #     circle = mpatches.Circle((all_stars_to_check_x[ii], all_stars_to_check_y[ii]), 20, ec='r', fill=False)
                     #     self.progress_figure.ax.add_patch(circle)
-                    # for ii in self.stars[:20]:
-                    #     circle = mpatches.Circle((ii[0], ii[1]), 30, ec='g', fill=False)
+                    # for ii in range(20):
+                    #     circle = mpatches.Circle((new_stars_to_check_x[ii], new_stars_to_check_y[ii]), 30, ec='g', fill=False)
                     #     self.progress_figure.ax.add_patch(circle)
 
                     X = twirl.utils.find_transform(
-                        np.array([[star[0], star[1]] for star in all_stars[:20]]),
-                        np.array([[star[0], star[1]] for star in self.stars[:20]]),
+                        np.array([[all_stars_to_check_x[ii], all_stars_to_check_y[ii]] for ii in range(20)]),
+                        np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)]),
                         n=20, tolerance=3 * self.fits_header[self.log.psf_key])
 
-                    # for ii in twirl.utils.affine_transform(X)(np.array([[star[0], star[1]] for star in all_stars[:20]])):
+                    # for ii in twirl.utils.affine_transform(X)(np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)])):
                     #     circle = mpatches.Circle((ii[0], ii[1]), 40, ec='b', fill=False)
                     #     self.progress_figure.ax.add_patch(circle)
+                    #
+                    # self.progress_figure.draw()
 
                     center, check = twirl.utils.affine_transform(X)(np.array([[self.x0_fits0, self.y0_fits0],
                                                                     [self.x0_fits0 + 10, self.y0_fits0]

@@ -748,19 +748,6 @@ class PhotometryWindow(MainWindow):
                 if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
                     self.plate_solution = None
 
-            if self.plate_solution is None:
-
-                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
-                                                        mean=self.fits_header[self.log.mean_key],
-                                                        std=self.fits_header[self.log.std_key],
-                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
-                                                        psf=self.fits_header[self.log.psf_key],
-                                                        stars=self.all_stars,
-                                                        pixel=0.1 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
-                                                        verbose=True)
-
-                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
-                    self.plate_solution = None
 
         except Exception as e:
             # print(e)
@@ -775,7 +762,9 @@ class PhotometryWindow(MainWindow):
 
             target_x, target_y = SkyCoord([[ra, dec]], unit="deg").to_pixel(self.plate_solution['plate_solution'])
             dd = len(self.fits_data[0]) * 0.1
-            arrow = mpatches.Arrow(target_x[0] - dd, target_y[0] - dd, 0.9 * dd, 0.9 * dd, width=dd/3, color='r')
+            arrow = mpatches.Arrow(target_x[0] - 3 * self.fits_header[self.log.psf_key] - dd,
+                                   target_y[0] - 3 * self.fits_header[self.log.psf_key] - dd,
+                                   dd, dd, width=dd/3, color='r')
 
             text = self.log.get_param('target_name')
             self.fits_figure.ax.text(target_x[0] - 0.4 * dd, target_y[0] - 0.5 * dd,

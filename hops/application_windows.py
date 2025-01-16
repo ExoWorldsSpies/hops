@@ -782,10 +782,10 @@ class HOPSFitsWindow(HOPSWidget):
         self.mean = 0
         self.std = 0
         self.image = None
-        self.sqrt_vmin = DoubleVar(widget, value=0)
-        self.vmin = IntVar(widget, value=0)
-        self.sqrt_vmax = DoubleVar(widget, value=10000)
-        self.vmax = IntVar(widget, value=10000)
+        self.vmin = DoubleVar(widget, value=0)
+        self.black_scale = DoubleVar(widget, value=0)
+        self.vmax = DoubleVar(widget, value=65000)
+        self.white_scale = DoubleVar(widget, value=1)
         self.gamma = DoubleVar(widget, value=0)
         self.flip = IntVar(widget, value=0)
         self.mirror = IntVar(widget, value=0)
@@ -804,23 +804,23 @@ class HOPSFitsWindow(HOPSWidget):
         self.mouse_data = StringVar(control_frame, value=' ')
         self.mouse_data_label = Label(control_frame, textvar=self.mouse_data)
 
-        self.black_entry = Scale(control_frame, resolution=0.1, variable=self.sqrt_vmin, orient=HORIZONTAL, showvalue=False)
+        self.black_entry = Scale(control_frame, resolution=0.0001, variable=self.black_scale, orient=HORIZONTAL, showvalue=False)
         self.black_entry.bind("<B1-Motion>", self.contrast)
         self.black_entry.bind("<ButtonRelease-1>", self.contrast)
         self.black_entry_label_0 = Label(control_frame, text='Minimum = ', anchor=E)
         self.black_entry_label = Label(control_frame, textvar=self.vmin, anchor=W)
-        self.black_entry['from_'] = 1
-        self.black_entry['to'] = 1000
+        self.black_entry['from_'] = 0
+        self.black_entry['to'] = 1
 
-        self.white_entry = Scale(control_frame, resolution=0.1, variable=self.sqrt_vmax, orient=HORIZONTAL, showvalue=False)
+        self.white_entry = Scale(control_frame, resolution=0.0001, variable=self.white_scale, orient=HORIZONTAL, showvalue=False)
         self.white_entry.bind("<B1-Motion>", self.contrast)
         self.white_entry.bind("<ButtonRelease-1>", self.contrast)
         self.white_entry_label_0 = Label(control_frame, text='Maximum = ', anchor=E)
         self.white_entry_label = Label(control_frame, textvar=self.vmax, anchor=W)
-        self.white_entry['from_'] = 1
-        self.white_entry['to'] = 1000
+        self.white_entry['from_'] = 0
+        self.white_entry['to'] = 1
 
-        self.gamma_entry = Scale(control_frame, resolution=0.001, variable=self.gamma, orient=HORIZONTAL, showvalue=False)
+        self.gamma_entry = Scale(control_frame, resolution=0.0001, variable=self.gamma, orient=HORIZONTAL, showvalue=False)
         self.gamma_entry.bind("<B1-Motion>", self.contrast)
         self.gamma_entry.bind("<ButtonRelease-1>", self.contrast)
         self.gamma_entry_label_0 = Label(control_frame, text='Stretch factor = ', anchor=E)
@@ -910,33 +910,39 @@ class HOPSFitsWindow(HOPSWidget):
         except:
             self.mean, self.std = plc.mean_std_from_median_mad(fits_data)
 
-        self.black_entry['from_'] = np.sqrt(max(0, np.min(self.data)))
-        self.black_entry['to'] = np.sqrt(np.max(self.data))
-
-        self.white_entry['from_'] = np.sqrt(max(0, np.min(self.data)))
-        self.white_entry['to'] = np.sqrt(np.max(self.data))
-
         self.ax.cla()
         if not self.show_axes:
             self.ax.axis('off')
         self.ax.tick_params(axis='y', rotation=90)
 
-        self.vmin.set(max(1, int(self.mean + self.window.log.frame_low_std * self.std)))
-        self.vmax.set(max(1, int(self.mean + self.window.log.frame_upper_std * self.std)))
+        self.vmin.set(self.mean + self.window.log.frame_low_std * self.std)
+        self.vmax.set(self.mean + self.window.log.frame_upper_std * self.std)
         self.gamma.set(0)
 
         if input_options:
             if input_options[0] != 'auto':
-                self.vmin.set(max(1, int(self.mean + input_options[0] * self.std)))
+                self.vmin.set(self.mean + input_options[0] * self.std)
             if input_options[1] != 'auto':
-                self.vmax.set(max(1, int(self.mean + input_options[1] * self.std)))
+                self.vmax.set(self.mean + input_options[1] * self.std)
             self.gamma.set(input_options[2])
             self.flip.set(input_options[3])
             self.mirror.set(input_options[4])
             self.white_sky.set(input_options[5])
 
-        self.sqrt_vmin.set(np.sqrt(self.vmin.get()))
-        self.sqrt_vmax.set(np.sqrt(self.vmax.get()))
+        xmax = np.max(self.data)
+        xmin = np.min(self.data)
+        xm = self.mean
+        g = 3
+        a = 0.5
+
+        xx = (((self.vmin.get() - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+        self.black_scale.set(a - xx)
+        xx = (((self.vmax.get() - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+        self.white_scale.set(a + xx)
+
+        self.black_entry['from_'] = a - (((xmin - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+        self.white_entry['from_'] = a - (((xmin - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+
 
         if self.show_half:
             xl = len(self.data[0])
@@ -1002,15 +1008,23 @@ class HOPSFitsWindow(HOPSWidget):
 
     def contrast(self, event):
 
-        if self.sqrt_vmin.get() >= self.sqrt_vmax.get():
-            self.sqrt_vmin.set(self.sqrt_vmax.get() - 1)
+        if self.black_scale.get() >= self.white_scale.get():
+            self.black_scale.set(0.9 * self.white_scale.get())
 
-        self.vmin.set(int(self.sqrt_vmin.get() ** 2))
-        self.vmax.set(int(self.sqrt_vmax.get() ** 2))
+        xmax = np.max(self.data)
+        xm = self.mean
+        g = 3
+        a = 0.5
+
+        self.vmin.set((((1 - a) ** (-g)) * (xmax - xm)) * ((self.black_scale.get() - a) ** g) + xm)
+        self.vmax.set((((1 - a) ** (-g)) * (xmax - xm)) * ((self.white_scale.get() - a) ** g) + xm)
 
         self.image.set_data(np.maximum(0, self.data) ** (10 ** - self.gamma.get()))
 
-        self.image.set_clim(self.vmin.get() ** (10 ** -self.gamma.get()), self.vmax.get() ** (10 ** -self.gamma.get()))
+        self.image.set_clim(
+            self.vmin.get() ** (10 ** -self.gamma.get()),
+            self.vmax.get() ** (10 ** -self.gamma.get())
+        )
         self.canvas.draw()
 
     def get_fov_options(self):
@@ -1114,10 +1128,18 @@ class HOPSFitsWindow(HOPSWidget):
         if self.mirror.get():
             self.ax.set_xlim(self.ax.get_xlim()[1], self.ax.get_xlim()[0])
 
-        self.vmin.set(max(1, int(self.mean + self.window.log.frame_low_std * self.std)))
-        self.sqrt_vmin.set(np.sqrt(self.vmin.get()))
-        self.vmax.set(max(1, int(self.mean + self.window.log.frame_upper_std * self.std)))
-        self.sqrt_vmax.set(np.sqrt(self.vmax.get()))
+        self.vmin.set(self.mean + self.window.log.frame_low_std * self.std)
+        self.vmax.set(self.mean + self.window.log.frame_upper_std * self.std)
+
+        xmax = np.max(self.data)
+        xm = self.mean
+        g = 3
+        a = 0.5
+
+        xx = (((self.vmin.get() - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+        self.black_scale.set(a - xx)
+        xx = (((self.vmax.get() - xm) ** 2) * ((1 - a) ** (2 * g)) / ((xmax - xm) ** 2)) ** (1 / (2 * g))
+        self.white_scale.set(a + xx)
 
         self.gamma.set(0)
 
