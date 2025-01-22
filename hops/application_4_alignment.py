@@ -380,8 +380,8 @@ class AlignmentWindow(MainWindow):
                     #     self.progress_figure.ax.add_patch(circle)
 
                     X = twirl.utils.find_transform(
-                        np.array([[all_stars_to_check_x[ii], all_stars_to_check_y[ii]] for ii in range(20)]),
-                        np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)]),
+                        np.array([[all_stars_to_check_x[ii], all_stars_to_check_y[ii]] for ii in range(min(len(all_stars_to_check_y)-1, 20))]),
+                        np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(min(len(new_stars_to_check_y)-1, 20))]),
                         n=20, tolerance=3 * self.fits_header[self.log.psf_key])
 
                     # for ii in twirl.utils.affine_transform(X)(np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)])):

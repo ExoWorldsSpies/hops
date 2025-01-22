@@ -444,91 +444,100 @@ class ReductionWindow(MainWindow):
                 observation_time = ' '.join([fits_header[self.log.get_param('observation_date_key')].split('T')[0],
                                              fits_header[self.log.get_param('observation_time_key')]])
 
-            observation_time = exoclock.Moment(utc=observation_time)
-            if self.log.get_param('time_stamp') == 'exposure start':
+            try:
+                observation_time = exoclock.Moment(utc=observation_time)
+                if self.log.get_param('time_stamp') == 'exposure start':
+                    pass
+                elif self.log.get_param('time_stamp') == 'mid-exposure':
+                    observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - 0.5 * exp_time / 24.0 / 3600.0)
+                elif self.log.get_param('time_stamp') == 'exposure end':
+                    observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - exp_time / 24.0 / 3600.0)
+                else:
+                    raise RuntimeError('Not acceptable time stamp.')
+
+                julian_date = observation_time.jd_utc()
+                airmass = self.observatory.airmass(self.target, observation_time)
+
+                # write the new fits file
+                # important to keep it like this for windows!
+
+                time_in_file = observation_time.utc().isoformat()
+                time_in_file = time_in_file.split('.')[0]
+                time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
+
+                new_name = '{0}{1}_{2}'.format(self.log.reduction_prefix, time_in_file, science_file.split(os.sep)[-1])
+                primary = pf.PrimaryHDU()
+                image = pf.CompImageHDU()
+                image.data = np.array(data_frame, dtype=np.int32)
+                image.header.set('BITPIX', fits_header['BITPIX'])
+                image.header.set('NAXIS1', len(fits_data[0]))
+                image.header.set('NAXIS2', len(fits_data))
+                image.header.set('XBINNING', bin_fits)
+                image.header.set('YBINNING', bin_fits)
+                image.header.set('BZERO',  0)
+                image.header.set('BSCALE', 1)
+                image.header.set(self.log.hops_observatory_latitude_key, self.observatory.latitude.deg_coord())
+                image.header.set(self.log.hops_observatory_longitude_key, self.observatory.longitude.deg())
+                image.header.set(self.log.hops_target_ra_key, self.target.ra.deg())
+                image.header.set(self.log.hops_target_dec_key, self.target.dec.deg_coord())
+                image.header.set(self.log.hops_datetime_key, observation_time.utc().isoformat())
+                image.header.set(self.log.hops_exposure_key, exp_time)
+                image.header.set(self.log.hops_filter_key, self.filter)
+                image.header.set(self.log.time_key, julian_date)
+                image.header.set(self.log.airmass_key, airmass)
+                image.header.set(self.log.mean_key, mean)
+                image.header.set(self.log.std_key, std)
+                image.header.set(self.log.hops_saturation_key, saturation)
+                image.header.set(self.log.psf_key, psf)
+                image.header.set(self.log.skip_key, skip)
+                image.header.set(self.log.align_x0_key, False)
+                image.header.set(self.log.align_y0_key, False)
+                image.header.set(self.log.align_u0_key, False)
+                image.header.set(self.log.align_u0_key, False)
+                fits_header[self.log.mean_key] = mean
+                fits_header[self.log.std_key] = std
+
+                plc.save_fits(pf.HDUList([primary, image]), os.path.join(self.log.reduction_directory, new_name))
+
+                self.all_frames[new_name] = {
+                    self.log.mean_key: mean,
+                    self.log.std_key: std,
+                    self.log.psf_key: psf,
+                    self.log.time_key: julian_date,
+                    self.log.airmass_key: airmass,
+                    self.log.get_param('exposure_time_key'): exp_time,
+                    self.log.skip_key: skip,
+                    self.log.align_x0_key: False,
+                    self.log.align_y0_key: False,
+                    self.log.align_u0_key: False,
+                }
+
+                if timing:
+                    print('Saving: ', time.time()-t0)
+                    print('Total: ', time.time()-t00)
+
+                self.progress_science.update()
+                self.science_counter += 1
+
+                if self.science_counter >= len(self.science_files):
+                    self.after(self.save)
+                else:
+                    if self.progress_science_loop.get() or self.science_counter == 1:
+                        self.progress_figure.load_fits(data_frame, fits_header, new_name)
+                        self.progress_figure.draw()
+
+                    if len(self.jobs) > self.jobs_completed + 1:
+                        self.fr_time += 10
+
+            except exoclock.errors.ExoClockInputError:
+                print('Bad time data, skipping frame: ', science_file)
+                print(observation_time)
+
+                self.science_counter += 1
+
                 pass
-            elif self.log.get_param('time_stamp') == 'mid-exposure':
-                observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - 0.5 * exp_time / 24.0 / 3600.0)
-            elif self.log.get_param('time_stamp') == 'exposure end':
-                observation_time = exoclock.Moment(jd_utc=observation_time.jd_utc() - exp_time / 24.0 / 3600.0)
-            else:
-                raise RuntimeError('Not acceptable time stamp.')
 
-            julian_date = observation_time.jd_utc()
-            airmass = self.observatory.airmass(self.target, observation_time)
-
-            # write the new fits file
-            # important to keep it like this for windows!
-
-            time_in_file = observation_time.utc().isoformat()
-            time_in_file = time_in_file.split('.')[0]
-            time_in_file = time_in_file.replace('-', '_').replace(':', '_').replace('T', '_')
-
-            new_name = '{0}{1}_{2}'.format(self.log.reduction_prefix, time_in_file, science_file.split(os.sep)[-1])
-            primary = pf.PrimaryHDU()
-            image = pf.CompImageHDU()
-            image.data = np.array(data_frame, dtype=np.int32)
-            image.header.set('BITPIX', fits_header['BITPIX'])
-            image.header.set('NAXIS1', len(fits_data[0]))
-            image.header.set('NAXIS2', len(fits_data))
-            image.header.set('XBINNING', bin_fits)
-            image.header.set('YBINNING', bin_fits)
-            image.header.set('BZERO',  0)
-            image.header.set('BSCALE', 1)
-            image.header.set(self.log.hops_observatory_latitude_key, self.observatory.latitude.deg_coord())
-            image.header.set(self.log.hops_observatory_longitude_key, self.observatory.longitude.deg())
-            image.header.set(self.log.hops_target_ra_key, self.target.ra.deg())
-            image.header.set(self.log.hops_target_dec_key, self.target.dec.deg_coord())
-            image.header.set(self.log.hops_datetime_key, observation_time.utc().isoformat())
-            image.header.set(self.log.hops_exposure_key, exp_time)
-            image.header.set(self.log.hops_filter_key, self.filter)
-            image.header.set(self.log.time_key, julian_date)
-            image.header.set(self.log.airmass_key, airmass)
-            image.header.set(self.log.mean_key, mean)
-            image.header.set(self.log.std_key, std)
-            image.header.set(self.log.hops_saturation_key, saturation)
-            image.header.set(self.log.psf_key, psf)
-            image.header.set(self.log.skip_key, skip)
-            image.header.set(self.log.align_x0_key, False)
-            image.header.set(self.log.align_y0_key, False)
-            image.header.set(self.log.align_u0_key, False)
-            image.header.set(self.log.align_u0_key, False)
-            fits_header[self.log.mean_key] = mean
-            fits_header[self.log.std_key] = std
-
-            plc.save_fits(pf.HDUList([primary, image]), os.path.join(self.log.reduction_directory, new_name))
-
-            self.all_frames[new_name] = {
-                self.log.mean_key: mean,
-                self.log.std_key: std,
-                self.log.psf_key: psf,
-                self.log.time_key: julian_date,
-                self.log.airmass_key: airmass,
-                self.log.get_param('exposure_time_key'): exp_time,
-                self.log.skip_key: skip,
-                self.log.align_x0_key: False,
-                self.log.align_y0_key: False,
-                self.log.align_u0_key: False,
-            }
-
-            if timing:
-                print('Saving: ', time.time()-t0)
-                print('Total: ', time.time()-t00)
-
-            self.progress_science.update()
-            self.science_counter += 1
-
-            if self.science_counter >= len(self.science_files):
-                self.after(self.save)
-            else:
-                if self.progress_science_loop.get() or self.science_counter == 1:
-                    self.progress_figure.load_fits(data_frame, fits_header, new_name)
-                    self.progress_figure.draw()
-
-                if len(self.jobs) > self.jobs_completed + 1:
-                    self.fr_time += 10
-
-                self.after(self.reduce_science, time=self.fr_time)
+            self.after(self.reduce_science, time=self.fr_time)
 
     def save(self):
 

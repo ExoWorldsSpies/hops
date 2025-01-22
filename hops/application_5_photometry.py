@@ -45,6 +45,12 @@ class PhotometryWindow(MainWindow):
             command=self.update_window
         )
 
+        self.moving_target = self.advanced_settings_window.CheckButton(
+            text='Moving target mode: Update the target position after every frame.',
+            initial=self.log.get_param('moving_target'),
+            command=self.update_window
+        )
+
         self.sky_inner_aperture = self.advanced_settings_window.Entry(
             value=self.log.get_param('sky_inner_aperture'),
             instance=float,
@@ -106,6 +112,7 @@ class PhotometryWindow(MainWindow):
             [],
             [[self.use_variable_aperture, 0, 3]],
             [[self.use_geometric_center, 0, 3]],
+            [[self.moving_target, 0, 3]],
             [],
         ])
         ##############################################################################
@@ -428,6 +435,7 @@ class PhotometryWindow(MainWindow):
             for parameter in [
                 [self.use_variable_aperture, 'use_variable_aperture'],
                 [self.use_geometric_center, 'use_geometric_center'],
+                [self.moving_target, 'moving_target'],
                 [self.sky_inner_aperture, 'sky_inner_aperture'],
                 [self.sky_outer_aperture, 'sky_outer_aperture'],
                 [self.saturation, 'saturation'],
@@ -790,6 +798,7 @@ class PhotometryWindow(MainWindow):
         self.log.set_param('camera_gain', self.camera_gain.get())
         self.log.set_param('use_variable_aperture', self.use_variable_aperture.get())
         self.log.set_param('use_geometric_center', self.use_geometric_center.get())
+        self.log.set_param('moving_target', self.moving_target.get())
         self.log.set_param('photometry_fov_options', self.fits_figure.get_fov_options())
 
         # targets
@@ -872,6 +881,7 @@ class PhotometryProgressWindow(MainWindow):
         self.visible_fov_y_max = self.log.get_param('max_y')
         self.use_geometric_center = self.log.get_param('use_geometric_center')
         self.use_variable_aperture = self.log.get_param('use_variable_aperture')
+        self.moving_target = self.log.get_param('moving_target')
         self.sky_inner_aperture = self.log.get_param('sky_inner_aperture')
         self.sky_outer_aperture = self.log.get_param('sky_outer_aperture')
         self.camera_gain = self.log.get_param('camera_gain')
@@ -1170,6 +1180,15 @@ class PhotometryProgressWindow(MainWindow):
                         self.results['gauss_flux_error'][target][counter] = np.sqrt(
                             np.abs(2 * np.pi * norm * x_std * y_std)
                         )
+
+                        if star and self.moving_target:
+
+                            target_polar = cartesian_to_polar(x_mean, y_mean,
+                                                              ref_x_position, ref_y_position)
+
+                            self.targets_r_position[target] = target_polar[0]
+                            self.targets_u_position[target] = target_polar[1] - ref_u_position
+
 
                         if star and self.use_geometric_center:
                             x1 = int(star[0] - 3 * fits_header[self.log.psf_key])
