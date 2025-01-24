@@ -7,6 +7,7 @@ centroids_snr: 3
 stars_snr: 4
 psf_guess: 2
 faint_target_mode: 0
+rotating_field_mode: 0
 min_x: 0
 min_y: 0
 max_x: 0
@@ -98,7 +99,7 @@ show_good_comparisons: True
 show_good_comparisons_percent: 40
 use_variable_aperture: True
 use_geometric_center: False
-moving_target: False
+moving_target_mode: False
 target_ra_dec_choice: 0
 comparison_10_aperture: 0.0
 comparison_10_r_position: 0.0

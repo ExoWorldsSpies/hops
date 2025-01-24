@@ -30,6 +30,8 @@ class AlignmentWindow(MainWindow):
         self.centroids_snr = self.log.get_param('centroids_snr')
         self.stars_snr = self.log.get_param('stars_snr')
         self.faint_target_mode = self.log.get_param('faint_target_mode')
+        self.moving_target_mode = self.log.get_param('moving_target_mode')
+        self.rotating_field_mode = self.log.get_param('rotating_field_mode')
 
         self.all_frames = plc.open_dict(self.log.all_frames)
         self.science_files = []
@@ -187,9 +189,9 @@ class AlignmentWindow(MainWindow):
             min_flux = np.log10(np.min(stars[:, 2]) - 1)
             max_flux = np.log10(0.5 * burn_limit)
 
-            if self.faint_target_mode:
-                weight_distance = -0.5
-                weight_flux = 1
+            if self.faint_target_mode or self.moving_target_mode:
+                weight_distance = 1
+                weight_flux = 4
 
             else:
                 weight_distance = 2
@@ -327,6 +329,9 @@ class AlignmentWindow(MainWindow):
                 if self.stars:
                     for star in self.stars:
                         self.settings_to_check.append([star[0], star[1], self.u0, star])
+                        if self.rotating_field_mode:
+                            for rotation in self.large_angles + self.u0:
+                                self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.check_star()
 
@@ -395,8 +400,13 @@ class AlignmentWindow(MainWindow):
                                                                     ]))
 
                     for star in sorted(self.stars, key=lambda x: np.sqrt((x[0] - center[0])**2 + (x[1] - center[1])**2))[:5]:
-                        for rotation in self.small_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
-                            self.settings_to_check.append([star[0], star[1], rotation, star])
+
+                        if self.rotating_field_mode:
+                            for rotation in self.large_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
+                                self.settings_to_check.append([star[0], star[1], rotation, star])
+                        else:
+                            for rotation in self.small_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
+                                self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.after(self.check_star)
 

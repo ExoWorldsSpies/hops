@@ -288,8 +288,19 @@ class DataTargetWindow(MainWindow):
 
         # advanced settings window
 
-        self.faint_target_mode = self.advanced_settings_window.CheckButton(text='Enable UltraShortExposure mode (use for occultations)',
-                                                  initial=self.log.get_param('faint_target_mode'))
+        self.faint_target_mode = self.advanced_settings_window.CheckButton(
+            text='UltraShortExposure mode (use for occultations)',
+            initial=self.log.get_param('faint_target_mode'))
+
+        self.moving_target_mode = self.advanced_settings_window.CheckButton(
+            text='MovingTarget mode (use for asteroids).',
+            initial=self.log.get_param('moving_target_mode')
+        )
+
+        self.rotating_field_mode = self.advanced_settings_window.CheckButton(
+            text='RotatingField mode (use for AltAz mounts without rotator).',
+            initial=self.log.get_param('rotating_field_mode')
+        )
 
         self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
                                                                options=[1, 2, 3, 4],
@@ -332,6 +343,12 @@ class DataTargetWindow(MainWindow):
                 ), 0],
                 [self.crop_edge_pixels, 1],
                 [self.faint_target_mode, 3, 2]
+            ],
+            [
+                [self.moving_target_mode, 3, 2]
+            ],
+            [
+                [self.rotating_field_mode, 3, 2]
             ],
             [],
             [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3, 2]],
@@ -458,6 +475,8 @@ class DataTargetWindow(MainWindow):
         self.crop_y1.set(self.log.get_param('crop_y1'))
         self.crop_y2.set(self.log.get_param('crop_y2'))
         self.faint_target_mode.set(self.log.get_param('faint_target_mode'))
+        self.moving_target_mode.set(self.log.get_param('moving_target_mode'))
+        self.rotating_field_mode.set(self.log.get_param('rotating_field_mode'))
         self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
         self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
         self.target_name.set(self.log.get_param('target_name'))
@@ -627,8 +646,8 @@ class DataTargetWindow(MainWindow):
         if ra and dec:
             try:
                 if isinstance(ra, str):
-                    target = exoclock.FixedTarget(exoclock.Hours(ra.replace(',', '.')),
-                                                  exoclock.Degrees(dec.replace(',', '.')))
+                    target = exoclock.FixedTarget(exoclock.Hours(ra.replace(',', '.').replace(' ', ':')),
+                                                  exoclock.Degrees(dec.replace(',', '.').replace(' ', ':')))
                     self.auto_target_ra_dec.set(target.coord())
                     self.target_ra_dec_choice_0['state'] = self.NORMAL
                 elif isinstance(ra, float):
@@ -977,6 +996,8 @@ class DataTargetWindow(MainWindow):
             self.log.set_param('centroids_snr', 2)
             self.log.set_param('psf_guess', 1)
             self.log.set_param('stars_snr', 2)
+        self.log.set_param('moving_target_mode', self.moving_target_mode.get())
+        self.log.set_param('rotating_field_mode', self.rotating_field_mode.get())
         self.log.set_param('crop_edge_pixels', self.crop_edge_pixels.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())
