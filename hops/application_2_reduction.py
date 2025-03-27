@@ -20,6 +20,8 @@ class ReductionWindow(MainWindow):
 
         MainWindow.__init__(self, log, name='HOPS - Reduction', position=2)
 
+        self.colour_camera_mode = self.log.get_param('colour_camera_mode')
+
         self.file_info = []
 
         self.bias_files = find_fits_files(self.log.get_param('bias_files'))
@@ -332,8 +334,17 @@ class ReductionWindow(MainWindow):
                     flat_frames = [ff / np.nanmedian(ff) for ff in self.flat_frames]
                     self.master_flat = np.array([np.nanmedian([xx[ff] for xx in flat_frames], 0) for ff in range(len(flat_frames[0]))])
                 print('Median Flat: ', round(np.nanmedian(self.master_flat), 3))
-                self.master_flat = self.master_flat / np.nanmedian(self.master_flat)
+
+                if self.colour_camera_mode:
+                    self.master_flat[::2, ::2] = self.master_flat[::2, ::2] / np.nanmedian(self.master_flat[::2, ::2])
+                    self.master_flat[::2, 1::2] = self.master_flat[::2, 1::2] / np.nanmedian(self.master_flat[::2, 1::2])
+                    self.master_flat[1::2, ::2] = self.master_flat[1::2, ::2] / np.nanmedian(self.master_flat[1::2, ::2])
+                    self.master_flat[1::2, 1::2] = self.master_flat[1::2, 1::2] / np.nanmedian(self.master_flat[1::2, 1::2])
+                else:
+                    self.master_flat = self.master_flat / np.nanmedian(self.master_flat)
+
                 self.master_flat = np.where(self.master_flat == 0, 1, self.master_flat)
+
             else:
                 self.master_flat = 1.0
 

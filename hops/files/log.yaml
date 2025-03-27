@@ -8,6 +8,7 @@ stars_snr: 4
 psf_guess: 2
 faint_target_mode: 0
 rotating_field_mode: 0
+colour_camera_mode: 0
 min_x: 0
 min_y: 0
 max_x: 0

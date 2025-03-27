@@ -230,7 +230,8 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
 def image_plate_solve(fits_data, fits_header, ra, dec,
                       mean=None, std=None, burn_limit=None, psf=None, stars=None, n=20, pixel=None,
-                      progress_window=None, verbose=False, gaia_engine=_get_gaia_stars, star_limit=None):
+                      progress_window=None, flip_image=False, verbose=False, gaia_engine=_get_gaia_stars,
+                      star_limit=None):
 
     if verbose:
         print('\nAnalysing frame...')
@@ -257,8 +258,12 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     default_wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
     default_wcs.wcs.crpix=np.array(fits_data.shape)[::-1]/2
     default_wcs.wcs.crval=np.array([ra, dec])
-    default_wcs.wcs.pc[0][0] = -pixel/60/60
-    default_wcs.wcs.pc[1][1] = -pixel/60/60
+    if flip_image:
+        default_wcs.wcs.pc[0][0] = pixel / 60 / 60
+        default_wcs.wcs.pc[1][1] = -pixel / 60 / 60
+    else:
+        default_wcs.wcs.pc[0][0] = -pixel/60/60
+        default_wcs.wcs.pc[1][1] = -pixel/60/60
 
     ra1, dec1 = default_wcs.all_pix2world([[0, 0]], 0)[0]
     ra2, dec2 = default_wcs.all_pix2world([[0, len(fits_data)]], 0)[0]

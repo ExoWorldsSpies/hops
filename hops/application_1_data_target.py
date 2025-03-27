@@ -302,6 +302,11 @@ class DataTargetWindow(MainWindow):
             initial=self.log.get_param('rotating_field_mode')
         )
 
+        self.colour_camera_mode = self.advanced_settings_window.CheckButton(
+            text='ColourCamera mode (use for colour cameras).',
+            initial=self.log.get_param('colour_camera_mode')
+        )
+
         self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
                                                                options=[1, 2, 3, 4],
                                                                instance=int, command=self.update_preview_final)
@@ -349,6 +354,9 @@ class DataTargetWindow(MainWindow):
             ],
             [
                 [self.rotating_field_mode, 3, 2]
+            ],
+            [
+                [self.colour_camera_mode, 3, 2]
             ],
             [],
             [[self.initial_figure_size, 0, 3], [self.final_figure_size, 3, 2]],
@@ -477,6 +485,7 @@ class DataTargetWindow(MainWindow):
         self.faint_target_mode.set(self.log.get_param('faint_target_mode'))
         self.moving_target_mode.set(self.log.get_param('moving_target_mode'))
         self.rotating_field_mode.set(self.log.get_param('rotating_field_mode'))
+        self.colour_camera_mode.set(self.log.get_param('colour_camera_mode'))
         self.target_ra_dec_choice.set(self.log.get_param('target_ra_dec_choice'))
         self.target_ra_dec.set(self.log.get_param('target_ra_dec'))
         self.target_name.set(self.log.get_param('target_name'))
@@ -998,6 +1007,7 @@ class DataTargetWindow(MainWindow):
             self.log.set_param('stars_snr', 2)
         self.log.set_param('moving_target_mode', self.moving_target_mode.get())
         self.log.set_param('rotating_field_mode', self.rotating_field_mode.get())
+        self.log.set_param('colour_camera_mode', self.colour_camera_mode.get())
         self.log.set_param('crop_edge_pixels', self.crop_edge_pixels.get())
         self.log.set_param('target_ra_dec_choice', self.target_ra_dec_choice.get())
         self.log.set_param('auto_target_ra_dec', self.auto_target_ra_dec.get())

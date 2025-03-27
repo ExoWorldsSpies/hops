@@ -2,8 +2,9 @@
 __all__=['HOPS']
 
 import os
-import shutil
 import yaml
+import shutil
+import traceback
 import matplotlib.image as mpimg
 
 from urllib.request import urlopen
@@ -357,5 +358,8 @@ class HOPSLog:
             return True
         else:
             return False
+
+    def debug(self):
+        print(traceback.format_exc())
 
 
