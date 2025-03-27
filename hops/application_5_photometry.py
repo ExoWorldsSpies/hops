@@ -708,69 +708,141 @@ class PhotometryWindow(MainWindow):
 
             if self.plate_solution is None:
 
-                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
-                                                        mean=self.fits_header[self.log.mean_key],
-                                                        std=self.fits_header[self.log.std_key],
-                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
-                                                        psf=self.fits_header[self.log.psf_key],
-                                                        stars=self.all_stars,
-                                                        pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
-                                                        verbose=True)
+                try:
 
-                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
-                    print('Only {0} / {1} stars identified, solution rejected'.format(
-                        len(self.plate_solution['identified_stars']), len(self.all_stars)))
-                    self.plate_solution = None
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                            verbose=True)
 
-            if self.plate_solution is None:
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
 
-                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
-                                                        mean=self.fits_header[self.log.mean_key],
-                                                        std=self.fits_header[self.log.std_key],
-                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
-                                                        psf=self.fits_header[self.log.psf_key],
-                                                        stars=self.all_stars,
-                                                        pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
-                                                        flip_image=True,
-                                                        verbose=True)
-
-                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
-                    print('Only {0} / {1} stars identified, solution rejected'.format(
-                        len(self.plate_solution['identified_stars']), len(self.all_stars)))
-                    self.plate_solution = None
+                except:
+                    print('Solution failed.')
+                    pass
 
             if self.plate_solution is None:
 
-                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
-                                                        mean=self.fits_header[self.log.mean_key],
-                                                        std=self.fits_header[self.log.std_key],
-                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
-                                                        psf=self.fits_header[self.log.psf_key],
-                                                        stars=self.all_stars,
-                                                        pixel=0.25 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
-                                                        verbose=True)
+                try:
 
-                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
-                    print('Only {0} / {1} stars identified, solution rejected'.format(
-                        len(self.plate_solution['identified_stars']), len(self.all_stars)))
-                    self.plate_solution = None
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=0.25 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                            verbose=True)
+
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
+
+                except:
+                    print('Solution failed.')
+                    pass
 
             if self.plate_solution is None:
 
-                self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
-                                                        mean=self.fits_header[self.log.mean_key],
-                                                        std=self.fits_header[self.log.std_key],
-                                                        burn_limit=self.fits_header[self.log.hops_saturation_key],
-                                                        psf=self.fits_header[self.log.psf_key],
-                                                        stars=self.all_stars,
-                                                        pixel=1.0 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
-                                                        verbose=True)
+                try:
 
-                if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
-                    print('Only {0} / {1} stars identified, solution rejected'.format(
-                        len(self.plate_solution['identified_stars']), len(self.all_stars)))
-                    self.plate_solution = None
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=1.0 * self.star_size_arcsec.get() / self.fits_header[self.log.psf_key],
+                                                            verbose=True)
 
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
+
+                except:
+                    print('Solution failed.')
+                    pass
+
+            if self.plate_solution is None:
+
+                try:
+
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=0.5 * self.star_size_arcsec.get() / self.fits_header[
+                                                                self.log.psf_key],
+                                                            flip_image=True,
+                                                            verbose=True)
+
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
+
+                except:
+                    print('Solution failed.')
+                    pass
+
+            if self.plate_solution is None:
+
+                try:
+
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=0.25 * self.star_size_arcsec.get() / self.fits_header[
+                                                                self.log.psf_key],
+                                                            flip_image=True,
+                                                            verbose=True)
+
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
+
+                except:
+                    print('Solution failed.')
+                    pass
+
+            if self.plate_solution is None:
+
+                try:
+
+                    self.plate_solution = image_plate_solve(self.fits_data, self.fits_header, ra, dec,
+                                                            mean=self.fits_header[self.log.mean_key],
+                                                            std=self.fits_header[self.log.std_key],
+                                                            burn_limit=self.fits_header[self.log.hops_saturation_key],
+                                                            psf=self.fits_header[self.log.psf_key],
+                                                            stars=self.all_stars,
+                                                            pixel=1.0 * self.star_size_arcsec.get() / self.fits_header[
+                                                                self.log.psf_key],
+                                                            flip_image=True,
+                                                            verbose=True)
+
+                    if len(self.plate_solution['identified_stars']) < 0.5 * len(self.all_stars):
+                        print('Only {0} / {1} stars identified, solution rejected'.format(
+                            len(self.plate_solution['identified_stars']), len(self.all_stars)))
+                        self.plate_solution = None
+
+                except:
+                    print('Solution failed.')
+                    pass
 
 
         except:
