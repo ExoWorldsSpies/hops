@@ -350,8 +350,6 @@ class AlignmentWindow(MainWindow):
 
                 self.progress_all_stars.set(' ')
 
-                print(len(self.stars))
-
                 if self.stars and len(self.stars) > self.min_calibration_stars_number:
 
                     self.check_num = max(self.min_calibration_stars_number - 0.5, len(self.stars) / 10.0)

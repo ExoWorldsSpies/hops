@@ -230,8 +230,8 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
 def image_plate_solve(fits_data, fits_header, ra, dec,
                       mean=None, std=None, burn_limit=None, psf=None, stars=None, n=20, pixel=None,
-                      progress_window=None, flip_image=False, verbose=False, gaia_engine=_get_gaia_stars,
-                      star_limit=None):
+                      progress_window=None, flip_image=False, verbose=False, gaia_query=None,
+                      gaia_engine=_get_gaia_stars, star_limit=None):
 
     if verbose:
         print('\nAnalysing frame...')
@@ -278,7 +278,8 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
 
     x0, y0 = len(fits_data[0])/2, len(fits_data)/2
 
-    gaia_query = gaia_engine(ra, dec, 2.0 * fov_radius, 9 * len(stars))
+    if gaia_query is None:
+        gaia_query = gaia_engine(ra, dec, 2.0 * fov_radius, 9 * len(stars))
     gaia_stars = np.array([[star['ra'], star['dec']] for star in gaia_query])
 
     xx = np.array(default_wcs.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1))
@@ -328,7 +329,8 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     if verbose:
         print('Final FOV radius: ', fov_radius)
 
-    gaia_query = gaia_engine(ra, dec, fov_radius, 8 * len(stars))
+    if gaia_query is None:
+        gaia_query = gaia_engine(ra, dec, fov_radius, 8 * len(stars))
     gaia_stars = np.array([[star['ra'], star['dec']] for star in gaia_query])
 
     transformed_projected_gaia_stars = np.array(plate_solution.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1)).T
