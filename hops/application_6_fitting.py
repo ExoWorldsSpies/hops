@@ -119,8 +119,7 @@ class FittingWindow(MainWindow):
             self.auto_eccentricity = self.Label(text=ecc_data['planet']['eccentricity'], instance=float)
             self.auto_inclination = self.Label(text=ecc_data['planet']['inclination'], instance=float)
             self.auto_periastron = self.Label(text=ecc_data['planet']['periastron'], instance=float)
-        except Exception as e:
-            print(e)
+        except:
             planet = None
             self.auto_planet = self.Label(text='None')
             self.auto_target_ra_dec = self.Label(text='None')
