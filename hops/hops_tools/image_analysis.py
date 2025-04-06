@@ -230,7 +230,7 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
 def image_plate_solve(fits_data, fits_header, ra, dec,
                       mean=None, std=None, burn_limit=None, psf=None, stars=None, n=20, pixel=None,
-                      progress_window=None, flip_image=False, verbose=False, gaia_query=None,
+                      progress_window=None, verbose=False, gaia_query_ext=None,
                       gaia_engine=_get_gaia_stars, star_limit=None):
 
     if verbose:
@@ -252,23 +252,29 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
 
     stars = np.array(stars)
 
+    x0, y0 = len(fits_data[0]) / 2, len(fits_data) / 2
+
+    detected_stars = np.array([[star[0], star[1]] for star in stars])
+    detected_stars_in = detected_stars[
+        np.where(np.sqrt((detected_stars[:, 0] - x0) ** 2 + (detected_stars[:, 1] - y0) ** 2) < min(x0, y0))]
+    detected_stars_in = detected_stars_in[:2 * n]
+
+    tolerance = 3 * psf
+
+
     if pixel is None:
         pixel = 2.0 / psf
-    default_wcs = wcs.WCS(naxis=2)
-    default_wcs.wcs.ctype = ["RA---ARC", "DEC--ARC"]
-    default_wcs.wcs.crpix=np.array(fits_data.shape)[::-1]/2
-    default_wcs.wcs.crval=np.array([ra, dec])
-    if flip_image:
-        default_wcs.wcs.pc[0][0] = pixel / 60 / 60
-        default_wcs.wcs.pc[1][1] = -pixel / 60 / 60
-    else:
-        default_wcs.wcs.pc[0][0] = -pixel/60/60
-        default_wcs.wcs.pc[1][1] = -pixel/60/60
+    default_wcs_A = wcs.WCS(naxis=2)
+    default_wcs_A.wcs.ctype = ["RA---ARC", "DEC--ARC"]
+    default_wcs_A.wcs.crpix=np.array(fits_data.shape)[::-1]/2
+    default_wcs_A.wcs.crval=np.array([ra, dec])
+    default_wcs_A.wcs.pc[0][0] = -pixel / 60 / 60
+    default_wcs_A.wcs.pc[1][1] = -pixel / 60 / 60
 
-    ra1, dec1 = default_wcs.all_pix2world([[0, 0]], 0)[0]
-    ra2, dec2 = default_wcs.all_pix2world([[0, len(fits_data)]], 0)[0]
-    ra3, dec3 = default_wcs.all_pix2world([[len(fits_data[0]), len(fits_data)]], 0)[0]
-    ra4, dec4 = default_wcs.all_pix2world([[len(fits_data[0]), 0]], 0)[0]
+    ra1, dec1 = default_wcs_A.all_pix2world([[0, 0]], 0)[0]
+    ra2, dec2 = default_wcs_A.all_pix2world([[0, len(fits_data)]], 0)[0]
+    ra3, dec3 = default_wcs_A.all_pix2world([[len(fits_data[0]), len(fits_data)]], 0)[0]
+    ra4, dec4 = default_wcs_A.all_pix2world([[len(fits_data[0]), 0]], 0)[0]
 
     fov_radius = max([_separation(ra, dec, ra1, dec1), _separation(ra, dec, ra2, dec2),
                       _separation(ra, dec, ra3, dec3), _separation(ra, dec, ra4, dec4)])
@@ -276,47 +282,87 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     if verbose:
         print('Initial FOV radius guess: ', fov_radius)
 
-    x0, y0 = len(fits_data[0])/2, len(fits_data)/2
-
-    if gaia_query is None:
-        gaia_query = gaia_engine(ra, dec, 2.0 * fov_radius, 9 * len(stars))
+    if gaia_query_ext is None:
+        gaia_query = gaia_engine(ra, dec, 1.5 * fov_radius, 10 * len(stars))
+    else:
+        gaia_query = gaia_query_ext
     gaia_stars = np.array([[star['ra'], star['dec']] for star in gaia_query])
 
-    xx = np.array(default_wcs.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1))
 
-    gaia_stars_in = gaia_stars[np.where(np.sqrt((xx[0] - x0)**2 + (xx[1] - y0)**2) < min(x0, y0))]
-    gaia_stars_in = gaia_stars_in[:2*n]
+    xx_A = np.array(default_wcs_A.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1))
 
-    projected_gaia_stars_in = np.array(default_wcs.wcs_world2pix(gaia_stars_in[:,0], gaia_stars_in[:,1], 1)).T
+    gaia_stars_in_A = gaia_stars[np.where(np.sqrt((xx_A[0] - x0)**2 + (xx_A[1] - y0)**2) < min(x0, y0))]
+    gaia_stars_in_A = gaia_stars_in_A[:2*n]
 
-    detected_stars = np.array([[star[0], star[1]] for star in stars])
-    detected_stars_in = detected_stars[np.where(np.sqrt((detected_stars[:,0] - x0)**2 + (detected_stars[:,1] - y0)**2) < min(x0, y0))]
-    detected_stars_in = detected_stars_in[:2*n]
+    projected_gaia_stars_in_A = np.array(default_wcs_A.wcs_world2pix(gaia_stars_in_A[:,0], gaia_stars_in_A[:,1], 1)).T
 
-    tolerance = 3 * psf
-    X = twirl.utils.find_transform(projected_gaia_stars_in, detected_stars_in, n=n, tolerance=tolerance)
 
-    projected_gaia_stars = np.array(default_wcs.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1)).T
-    transformed_projected_gaia_stars = twirl.utils.affine_transform(X)(projected_gaia_stars)
+    X_A = twirl.utils.find_transform(projected_gaia_stars_in_A, detected_stars_in, n=n, tolerance=tolerance)
 
-    central_transformed_projected_gaia_star = gaia_stars[sorted(
-        np.arange(len(transformed_projected_gaia_stars)),
+    projected_gaia_stars_A = np.array(default_wcs_A.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1)).T
+    transformed_projected_gaia_stars_A = twirl.utils.affine_transform(X_A)(projected_gaia_stars_A)
+
+    central_transformed_projected_gaia_star_A = gaia_stars[sorted(
+        np.arange(len(transformed_projected_gaia_stars_A)),
         key=lambda x: np.sqrt(
-            (transformed_projected_gaia_stars[x][0] - len(fits_data[0])/2)**2 +
-            (transformed_projected_gaia_stars[x][1] - len(fits_data)/2)**2)
+            (transformed_projected_gaia_stars_A[x][0] - len(fits_data[0])/2)**2 +
+            (transformed_projected_gaia_stars_A[x][1] - len(fits_data)/2)**2)
     )[0]]
 
-    s1, s2 = twirl.utils.cross_match(
-        transformed_projected_gaia_stars,
+    s1_A, s2_A = twirl.utils.cross_match(
+        transformed_projected_gaia_stars_A,
         detected_stars,
         return_ixds=True, tolerance=tolerance).T
 
-    plate_solution = fit_wcs_from_points(
-        detected_stars[s2].T,
-        SkyCoord(gaia_stars[s1], unit="deg"),
-        proj_point=SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
-        sip_degree=3,
-    )
+    # test flipped
+
+    default_wcs_B = wcs.WCS(naxis=2)
+    default_wcs_B.wcs.ctype = ["RA---ARC", "DEC--ARC"]
+    default_wcs_B.wcs.crpix=np.array(fits_data.shape)[::-1]/2
+    default_wcs_B.wcs.crval=np.array([ra, dec])
+    default_wcs_B.wcs.pc[0][0] = pixel / 60 / 60
+    default_wcs_B.wcs.pc[1][1] = -pixel / 60 / 60
+
+    xx_B = np.array(default_wcs_B.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1))
+
+    gaia_stars_in_B = gaia_stars[np.where(np.sqrt((xx_B[0] - x0)**2 + (xx_B[1] - y0)**2) < min(x0, y0))]
+    gaia_stars_in_B = gaia_stars_in_B[:2*n]
+
+    projected_gaia_stars_in_B = np.array(default_wcs_B.wcs_world2pix(gaia_stars_in_B[:,0], gaia_stars_in_B[:,1], 1)).T
+
+
+    X_B = twirl.utils.find_transform(projected_gaia_stars_in_B, detected_stars_in, n=n, tolerance=tolerance)
+
+    projected_gaia_stars_B = np.array(default_wcs_B.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1)).T
+    transformed_projected_gaia_stars_B = twirl.utils.affine_transform(X_B)(projected_gaia_stars_B)
+
+    central_transformed_projected_gaia_star_B = gaia_stars[sorted(
+        np.arange(len(transformed_projected_gaia_stars_B)),
+        key=lambda x: np.sqrt(
+            (transformed_projected_gaia_stars_B[x][0] - len(fits_data[0])/2)**2 +
+            (transformed_projected_gaia_stars_B[x][1] - len(fits_data)/2)**2)
+    )[0]]
+
+    s1_B, s2_B = twirl.utils.cross_match(
+        transformed_projected_gaia_stars_B,
+        detected_stars,
+        return_ixds=True, tolerance=tolerance).T
+
+
+    if len(s1_A) >= len(s1_B):
+        plate_solution = fit_wcs_from_points(
+            detected_stars[s2_A].T,
+            SkyCoord(gaia_stars[s1_A], unit="deg"),
+            proj_point=SkyCoord(*(central_transformed_projected_gaia_star_A + 0.01), unit="deg"),
+            sip_degree=3,
+        )
+    else:
+        plate_solution = fit_wcs_from_points(
+            detected_stars[s2_B].T,
+            SkyCoord(gaia_stars[s1_B], unit="deg"),
+            proj_point=SkyCoord(*(central_transformed_projected_gaia_star_B + 0.01), unit="deg"),
+            sip_degree=3,
+        )
 
     ra1, dec1 = plate_solution.all_pix2world([[0, 0]], 0)[0]
     ra2, dec2 = plate_solution.all_pix2world([[0, len(fits_data)]], 0)[0]
@@ -329,8 +375,10 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     if verbose:
         print('Final FOV radius: ', fov_radius)
 
-    if gaia_query is None:
+    if gaia_query_ext is None:
         gaia_query = gaia_engine(ra, dec, fov_radius, 8 * len(stars))
+    else:
+        gaia_query = gaia_query_ext
     gaia_stars = np.array([[star['ra'], star['dec']] for star in gaia_query])
 
     transformed_projected_gaia_stars = np.array(plate_solution.wcs_world2pix(gaia_stars[:,0], gaia_stars[:,1], 1)).T
@@ -343,7 +391,6 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
     plate_solution = fit_wcs_from_points(
         detected_stars[s2].T,
         SkyCoord(gaia_stars[s1], unit="deg"),
-        proj_point=SkyCoord(*(central_transformed_projected_gaia_star + 0.01), unit="deg"),
         sip_degree=3,
     )
 
