@@ -35,7 +35,7 @@ def _find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_
     min_test = np.sum(test > mean + snr * std, 0) >= 0.5 * (2 * psf + 1)**2
     max_test = np.max(test, 0)
 
-    centroids = np.where((max_test < burn_limit) * (max_test == data_array_test) * min_test)[0]
+    centroids = np.where((max_test < burn_limit - 1) * (max_test == data_array_test) * min_test)[0]
     centroids = np.swapaxes([data_array_test[centroids], bright[1][centroids] + x_low, bright[0][centroids] + y_low], 0, 1)
     centroids = np.int_(centroids)
     centroids = np.array(sorted(centroids, key=lambda x: -x[0]))
@@ -112,10 +112,17 @@ def _star_from_centroid(data_array, centroid_x, centroid_y, mean, std, burn_limi
         # print('2', 1000*(time.time() - t0))
         # t0 = time.time()
 
+        star_check_window = int(round(3 * max(popt[4], popt[5])))
+        y_min = int(max(int(popt[3]) - star_check_window, 0))
+        y_max = int(min(int(popt[3]) + star_check_window + 1, len(data_array)))
+        x_min = int(max(int(popt[2]) - star_check_window, 0))
+        x_max = int(min(int(popt[2]) + star_check_window + 1, len(data_array[0])))
+        saturation_check = np.sum(data_array[y_min: y_max, x_min: x_max] >= burn_limit - 1)
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             if popt[0] > snr * std:
-                if popt[0] < burn_limit:
+                if not saturation_check:
                     if np.nan not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
                         if np.inf not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:
                             if 0 not in [np.sqrt(abs(pcov[ff][ff])) for ff in range(len(pcov) - 1)]:

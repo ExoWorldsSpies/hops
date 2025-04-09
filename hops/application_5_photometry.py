@@ -90,7 +90,7 @@ class PhotometryWindow(MainWindow):
             [[self.advanced_settings_window.Label(text='Note: the bright pixels inside the sky-ring\nare NOT taken into account for the sky background estimation.'), 0, 3]],
             [],
             [
-                [self.advanced_settings_window.Label(text='Saturation warning limit, relatively to the full-well depth'), 0],
+                [self.advanced_settings_window.Label(text='Saturation limit, relatively to the full-well depth'), 0],
                 [self.saturation, 1],
                 [self.advanced_settings_window.Label(text='(default = 0.95)'), 2]],
             [],
@@ -341,7 +341,7 @@ class PhotometryWindow(MainWindow):
             y_centre=y,
             mean=self.fits_header[self.log.mean_key],
             std=self.fits_header[self.log.std_key],
-            burn_limit=self.fits_header[self.log.hops_saturation_key],
+            burn_limit=self.fits_header[self.log.hops_saturation_key] * self.saturation.get(),
             psf=self.fits_header[self.log.psf_key],
             centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
             order_by_flux=False,
@@ -395,7 +395,7 @@ class PhotometryWindow(MainWindow):
                 star = self.get_star(event.xdata, event.ydata)
 
                 if not star:
-                    self.showinfo('Star not acceptable.', 'Star could not be located or it is saturated.')
+                    self.showinfo('Star not acceptable.', 'Star could not be located or it includes pixels above the saturation limit.')
                     return None
 
                 else:
@@ -605,16 +605,8 @@ class PhotometryWindow(MainWindow):
                         self.targets[i_target][13].set('Comp. too bright')
                     elif self.targets[i_target][10].get() < 0.5 * self.targets[0][10].get():
                         self.targets[i_target][13].set('Comp. too faint')
-
-        for i_target in range(self.max_targets):
-            if 0 not in [self.targets[i_target][2].get(), self.targets[i_target][3].get()]:
-                if self.targets[i_target][11].get() > self.saturation.get() * self.fits_header[self.log.hops_saturation_key]:
-                    if 'Star close to saturation' not in self.targets[i_target][13].get():
-                        if self.targets[i_target][13].get() == '':
-                            self.targets[i_target][13].set('Star close to saturation')
-                        else:
-                            self.targets[i_target][13].set(
-                                ', '.join(self.targets[i_target][13].get().split(', ') + ['Star close to saturation']))
+                    else:
+                        self.targets[i_target][13].set('')
 
         # update action buttons
         photometry_active = True
@@ -643,8 +635,8 @@ class PhotometryWindow(MainWindow):
             self.run_message.set('Saturation limit must be larger than 0.')
             photometry_active = False
 
-        if self.saturation.get() >= 1:
-            self.run_message.set('Saturation limit must be lower than 1.')
+        if self.saturation.get() > 1:
+            self.run_message.set('Saturation limit must be lower or equal to 1.')
             photometry_active = False
 
         if photometry_active:
@@ -810,6 +802,7 @@ class PhotometryWindow(MainWindow):
         self.log.set_param('sky_inner_aperture', self.sky_inner_aperture.get())
         self.log.set_param('sky_outer_aperture', self.sky_outer_aperture.get())
         self.log.set_param('star_size_arcsec', self.star_size_arcsec.get())
+        self.log.set_param('saturation', self.saturation.get())
         self.log.set_param('camera_gain', self.camera_gain.get())
         self.log.set_param('use_variable_aperture', self.use_variable_aperture.get())
         self.log.set_param('use_geometric_center', self.use_geometric_center.get())
@@ -885,7 +878,6 @@ class PhotometryProgressWindow(MainWindow):
         # load variabvles
 
         self.bin_fits = self.log.get_param('bin_fits')
-        self.burn_limit = self.log.get_param('burn_limit')
         self.saturation = self.log.get_param('saturation')
         self.max_targets = self.log.get_param('max_comparisons') + 1
         self.target_ra_dec = self.log.get_param('target_ra_dec')
@@ -1144,7 +1136,7 @@ class PhotometryProgressWindow(MainWindow):
                     y_centre=y,
                     mean=fits_header[self.log.mean_key],
                     std=fits_header[self.log.std_key],
-                    burn_limit=self.burn_limit * self.bin_fits * self.bin_fits,
+                    burn_limit=fits_header[self.log.hops_saturation_key] * self.saturation,
                     psf=fits_header[self.log.psf_key],
                     aperture=self.targets_aperture[target] * self.psf_ratio[counter] / fits_header[self.log.psf_key],
                     sky_inner_aperture=self.sky_inner_aperture, sky_outer_aperture=self.sky_outer_aperture,
