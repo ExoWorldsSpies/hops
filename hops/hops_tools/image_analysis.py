@@ -145,6 +145,8 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
     centroids = _find_centroids(fits_data, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, psf, centroids_snr)
 
+    centroids = sorted(centroids, key=lambda x: np.sqrt((x[1] - x_centre) ** 2 + (x[2] - y_centre) ** 2))
+
     if progress_window:
         if progress_window.exit:
             return None
@@ -218,9 +220,6 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
         if order_by_flux is True:
             stars = sorted(stars, key=lambda x: -x[7])
-        else:
-
-            stars = sorted(stars, key=lambda x: np.sqrt((x[0] - x_centre) ** 2 + (x[1] - y_centre) ** 2))
 
         return stars
 

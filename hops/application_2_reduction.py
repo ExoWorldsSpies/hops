@@ -438,7 +438,7 @@ class ReductionWindow(MainWindow):
                 print('SKY: ', time.time()-t0)
 
             t0 = time.time()
-            psf = image_psf(data_frame, fits_header, mean, std, saturation,
+            psf = image_psf(data_frame, fits_header, mean, std, 0.8 * saturation,
                             centroids_snr=centroids_snr, stars_snr=stars_snr, psf_guess=psf_guess)
             if np.isnan(psf):
                 psf = 10

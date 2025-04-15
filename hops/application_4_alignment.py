@@ -312,10 +312,10 @@ class AlignmentWindow(MainWindow):
                 self.alignment_log('Test Level: 1')
 
                 self.stars = image_find_stars(self.fits_data, self.fits_header,
-                                              x_low=self.x0 - 10 * self.fits_header[self.log.psf_key],
-                                              x_upper=self.x0 + 10 * self.fits_header[self.log.psf_key],
-                                              y_low=self.y0 - 10 * self.fits_header[self.log.psf_key],
-                                              y_upper=self.y0 + 10 * self.fits_header[self.log.psf_key],
+                                              x_low=self.x0 - self.shift_tolerance,
+                                              x_upper=self.x0 + self.shift_tolerance,
+                                              y_low=self.y0 - self.shift_tolerance,
+                                              y_upper=self.y0 + self.shift_tolerance,
                                               x_centre=self.x0,
                                               y_centre=self.y0,
                                               mean=self.fits_header[self.log.mean_key],
@@ -323,7 +323,8 @@ class AlignmentWindow(MainWindow):
                                               burn_limit=2*self.fits_header[self.log.hops_saturation_key],
                                               psf=self.fits_header[self.log.psf_key],
                                               centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
-                                              order_by_flux=False
+                                              order_by_flux=False,
+                                              star_limit=1
                                               )
 
                 if self.stars:
@@ -550,7 +551,7 @@ class AlignmentWindow(MainWindow):
                 for ii in self.comparisons[:int(self.check_num + 0.5)]:
                     circle = mpatches.Circle((self.x0 + ii[0] * np.cos(self.u0 + ii[1]),
                                               self.y0 + ii[0] * np.sin(self.u0 + ii[1])),
-                                             self.circles_diameter, ec='w', fill=False)
+                                             self.circles_diameter, ec='y', fill=False)
                     self.progress_figure.ax.add_patch(circle)
 
                 if self.target_x0:
