@@ -308,7 +308,7 @@ class DataTargetWindow(MainWindow):
         )
 
         self.bin_fits = self.advanced_settings_window.DropDown(initial=self.log.get_param('bin_fits'),
-                                                               options=[1, 2, 3, 4],
+                                                               options=[1, 2, 3, 4, 5, 6, 7, 8],
                                                                instance=int, command=self.update_preview_final)
         self.crop_edge_pixels = self.advanced_settings_window.DropDown(initial=self.log.get_param('crop_edge_pixels'),
                                                                        options=np.int_(np.arange(0, 50, 1)),

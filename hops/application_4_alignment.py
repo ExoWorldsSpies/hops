@@ -202,10 +202,16 @@ class AlignmentWindow(MainWindow):
                                          / (weight_distance + weight_flux)
                            )
 
-            self.x0 = stars[0][0]
-            self.y0 = stars[0][1]
-            self.u0 = 0.0
-            self.f0 = stars[0][7]
+            if self.faint_target_mode or self.moving_target_mode:
+                self.x0 = stars[1][0]
+                self.y0 = stars[1][1]
+                self.u0 = 0.0
+                self.f0 = stars[1][7]
+            else:
+                self.x0 = stars[0][0]
+                self.y0 = stars[0][1]
+                self.u0 = 0.0
+                self.f0 = stars[0][7]
 
             self.x0_fits0 = 1.0 * self.x0
             self.y0_fits0 = 1.0 * self.y0
