@@ -93,7 +93,7 @@ class HOPS(MainWindow):
         self.setup_window([
             [[logo, 0, 2, 6]],
             [[self.Label(text='{0}\nv{1}'.format(self.log.software_name, self.log.version)), 2, 1, 1, 'title']],
-            [[self.Label(text='Copyright (c) 2017-{1} Angelos Tsiaras, atsiaras@star.ucl.ac.uk'.format(
+            [[self.Label(text='Copyright (c) 2017-{1} Angelos Tsiaras, aggelostsiaras@gmail.com'.format(
               self.log.version, datetime.date.today().year)), 2]],
             [[self.Button(text=self.log.updates, command=self.open_updates), 2, 1, 2]],
             [],

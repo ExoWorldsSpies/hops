@@ -165,7 +165,7 @@ class FittingWindow(MainWindow):
         frow = 5
         fbottom = 0.11
         fright = 0.02
-        self.fssmall = 9
+        self.fssmall = 7
         self.fsmain = 9
         self.fsbig = 20
         self.preview_figure = self.FigureWindow(figsize=(6, 7), show_nav=True)
@@ -726,7 +726,7 @@ class FittingWindow(MainWindow):
         data_ymax = max(flux) + 2 * std_res
 
         ax1.set_yticks(ax1.get_yticks()[np.where(ax1.get_yticks() > data_ymin)])
-        ymin, ymax = data_ymax - 1.3 * (data_ymax - data_ymin), data_ymax
+        ymin, ymax = data_ymax - 1.1 * (data_ymax - data_ymin), data_ymax
         ax1.set_ylim(ymin, ymax)
 
         ax1.tick_params(labelbottom=False, labelsize=self.fsmain)

@@ -389,29 +389,31 @@ class AlignmentWindow(MainWindow):
                     #     circle = mpatches.Circle((new_stars_to_check_x[ii], new_stars_to_check_y[ii]), 30, ec='g', fill=False)
                     #     self.progress_figure.ax.add_patch(circle)
 
-                    X = twirl.utils.find_transform(
-                        np.array([[all_stars_to_check_x[ii], all_stars_to_check_y[ii]] for ii in range(min(len(all_stars_to_check_y)-1, 20))]),
-                        np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(min(len(new_stars_to_check_y)-1, 20))]),
-                        n=20, tolerance=3 * self.fits_header[self.log.psf_key])
+                    if len(new_stars_to_check_y) > self.min_calibration_stars_number:
 
-                    # for ii in twirl.utils.affine_transform(X)(np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)])):
-                    #     circle = mpatches.Circle((ii[0], ii[1]), 40, ec='b', fill=False)
-                    #     self.progress_figure.ax.add_patch(circle)
-                    #
-                    # self.progress_figure.draw()
+                        X = twirl.utils.find_transform(
+                            np.array([[all_stars_to_check_x[ii], all_stars_to_check_y[ii]] for ii in range(min(len(all_stars_to_check_y)-1, 20))]),
+                            np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(min(len(new_stars_to_check_y)-1, 20))]),
+                            n=20, tolerance=3 * self.fits_header[self.log.psf_key])
 
-                    center, check = twirl.utils.affine_transform(X)(np.array([[self.x0_fits0, self.y0_fits0],
-                                                                    [self.x0_fits0 + 10, self.y0_fits0]
-                                                                    ]))
+                        # for ii in twirl.utils.affine_transform(X)(np.array([[new_stars_to_check_x[ii], new_stars_to_check_y[ii]] for ii in range(20)])):
+                        #     circle = mpatches.Circle((ii[0], ii[1]), 40, ec='b', fill=False)
+                        #     self.progress_figure.ax.add_patch(circle)
+                        #
+                        # self.progress_figure.draw()
 
-                    for star in sorted(self.stars, key=lambda x: np.sqrt((x[0] - center[0])**2 + (x[1] - center[1])**2))[:5]:
+                        center, check = twirl.utils.affine_transform(X)(np.array([[self.x0_fits0, self.y0_fits0],
+                                                                        [self.x0_fits0 + 10, self.y0_fits0]
+                                                                        ]))
 
-                        if self.rotating_field_mode:
-                            for rotation in self.large_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
-                                self.settings_to_check.append([star[0], star[1], rotation, star])
-                        else:
-                            for rotation in self.small_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
-                                self.settings_to_check.append([star[0], star[1], rotation, star])
+                        for star in sorted(self.stars, key=lambda x: np.sqrt((x[0] - center[0])**2 + (x[1] - center[1])**2))[:5]:
+
+                            if self.rotating_field_mode:
+                                for rotation in self.large_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
+                                    self.settings_to_check.append([star[0], star[1], rotation, star])
+                            else:
+                                for rotation in self.small_angles + cartesian_to_polar(check[0], check[1],  center[0],  center[1])[1]:
+                                    self.settings_to_check.append([star[0], star[1], rotation, star])
 
                 self.after(self.check_star)
 
