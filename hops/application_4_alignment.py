@@ -330,6 +330,7 @@ class AlignmentWindow(MainWindow):
                                               psf=self.fits_header[self.log.psf_key],
                                               centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
                                               order_by_flux=False,
+                                              sky_inner_aperture=2.0, sky_outer_aperture=5.0,
                                               star_limit=1
                                               )
 
@@ -352,6 +353,7 @@ class AlignmentWindow(MainWindow):
                                               burn_limit=2*self.fits_header[self.log.hops_saturation_key],
                                               psf=self.fits_header[self.log.psf_key],
                                               centroids_snr=self.centroids_snr, stars_snr=self.stars_snr,
+                                              sky_inner_aperture=2.0, sky_outer_aperture=5.0,
                                               verbose=True, order_by_flux=True
                                               )
 
