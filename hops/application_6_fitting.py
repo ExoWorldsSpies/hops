@@ -787,7 +787,7 @@ class FittingWindow(MainWindow):
                  fontsize=self.fssmall)
         ax2.text(ax2.get_xlim()[0] + 0.02 * (ax2.get_xlim()[-1] - ax2.get_xlim()[0]),
                  ax2.get_ylim()[0] + 0.07 * (ax2.get_ylim()[-1] - ax2.get_ylim()[0]),
-                 r'AutoCorr = %.2f' %res_autocorr + [' (acceptable)', ' (too high)'][res_autocorr_flag],
+                 r'AutoCorr = %.2f' %res_autocorr + [' (acceptable)', ' (too high)'][int(res_autocorr_flag)],
                  fontsize=self.fssmall)
 
     def show_point_info(self, event=None):

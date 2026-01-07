@@ -375,6 +375,11 @@ def image_plate_solve(fits_data, fits_header, ra, dec,
             sip_degree=3,
         )
 
+    ra, dec = plate_solution.all_pix2world([[len(fits_data[0])/2, len(fits_data)/2]], 0)[0]
+
+    if verbose:
+        print('Refined RA/DEC: ', ra, dec)
+
     ra1, dec1 = plate_solution.all_pix2world([[0, 0]], 0)[0]
     ra2, dec2 = plate_solution.all_pix2world([[0, len(fits_data)]], 0)[0]
     ra3, dec3 = plate_solution.all_pix2world([[len(fits_data[0]), len(fits_data)]], 0)[0]
