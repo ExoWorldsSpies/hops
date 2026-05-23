@@ -832,6 +832,8 @@ class HOPSFitsWindow(HOPSWidget):
         self.mirror_button = Checkbutton(control_frame, text='Mirror', variable=self.mirror, command=self.mirror_fov)
         self.reverse_color_button = Checkbutton(control_frame, text='White Sky', variable=self.white_sky, command=self.reverse_color)
         self.reset_button = Button(control_frame, text='RESET', command=self.reset)
+        self.zoom_in_button = Button(control_frame, text='Zoom +', command=self.zoom_in)
+        self.zoom_out_button = Button(control_frame, text='Zoom -', command=self.zoom_out)
 
         self.info_label.grid(row=1, column=1, columnspan=4)
         self.mouse_data_label.grid(row=2, column=1, columnspan=4)
@@ -848,7 +850,10 @@ class HOPSFitsWindow(HOPSWidget):
         self.flip_button.grid(row=9, column=2)
         self.mirror_button.grid(row=9, column=3)
         self.reverse_color_button.grid(row=9, column=4)
-        Label(control_frame, text=' ').grid(row=10, column=1, columnspan=4)
+        Label(control_frame, text='Zoom:').grid(row=10, column=1, columnspan=2)
+        self.zoom_out_button.grid(row=10, column=3)
+        self.zoom_in_button.grid(row=10, column=4)
+        Label(control_frame, text=' ').grid(row=11, column=1, columnspan=4)
 
         self.picked = False
 
@@ -1116,6 +1121,25 @@ class HOPSFitsWindow(HOPSWidget):
                 self.ax.set_ylim([new_ymin, new_ymin + new_yrange])
 
                 self.canvas.draw()
+
+    def zoom_in(self):
+        self._zoom_step(1 / 1.2)
+
+    def zoom_out(self):
+        self._zoom_step(1.2)
+
+    def _zoom_step(self, scale_factor):
+        cur_xlim = self.ax.get_xlim()
+        cur_ylim = self.ax.get_ylim()
+        xdata = (cur_xlim[0] + cur_xlim[1]) / 2
+        ydata = (cur_ylim[0] + cur_ylim[1]) / 2
+        cur_xrange = cur_xlim[1] - cur_xlim[0]
+        cur_yrange = cur_ylim[1] - cur_ylim[0]
+        new_xrange = cur_xrange * scale_factor
+        new_yrange = cur_yrange * scale_factor
+        self.ax.set_xlim([xdata - new_xrange / 2, xdata + new_xrange / 2])
+        self.ax.set_ylim([ydata - new_yrange / 2, ydata + new_yrange / 2])
+        self.canvas.draw()
 
     def reset(self):
 
