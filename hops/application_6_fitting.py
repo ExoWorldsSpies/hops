@@ -941,8 +941,8 @@ class FittingWindow(MainWindow):
                                          'are applied:\n\n' \
                                          '1. Half of the exposure time is added as the time-stamp required on ETD ' \
                                          'referes to the exposure mid-time\n' \
-                                         '2. The uncertainties are  mupliplied by 1/SQRT(gain) to represent the ' \
-                                         'uncertainies in electrons rather than counts.\n\n'\
+                                         '2. The uncertainties are  multiplied by 1/SQRT(gain) to represent the ' \
+                                         'uncertainties in electrons rather than counts.\n\n'\
                                          'When uploading you will need to use the following details:\n' \
                                          'Planet: {0}\n'\
                                          'JD format: geocentric\n'\
