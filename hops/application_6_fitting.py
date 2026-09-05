@@ -27,6 +27,7 @@ filter_map = {'Clear': 'clear',
               'u\'': 'sdss_u',
               'g\'': 'sdss_g',
               'r\'': 'sdss_r',
+              'i\'': 'sdss_i',
               'z\'': 'sdss_z',
               }
 

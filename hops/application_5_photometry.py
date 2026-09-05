@@ -1548,7 +1548,7 @@ class PhotometryProgressWindow(MainWindow):
         ra_dec_string = self.log.get_param('target_ra_dec')
         ra_dec_string = ra_dec_string.split(' ')
         try:
-            planet = exoclock.locate_planet(exoclock.Hours(ra_dec_string[0]), exoclock.Degrees(ra_dec_string[1])).name
+            planet = exoclock.locate_planet(exoclock.Hours(ra_dec_string[0]), exoclock.Degrees(ra_dec_string[1]))['name']
         except:
             planet = 'Could not find a planet in the ExoClock catalogue at this location'
 
