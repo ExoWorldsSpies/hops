@@ -605,11 +605,19 @@ class AlignmentWindow(MainWindow):
 
                 time.sleep(1)
 
-            self.all_frames[self.science_file][self.log.align_x0_key] = self.x0
-            self.all_frames[self.science_file][self.log.align_y0_key] = self.y0
-            self.all_frames[self.science_file][self.log.align_u0_key] = self.u0
+            if self.stars_detected:
+                self.all_frames[self.science_file][self.log.align_x0_key] = self.x0
+                self.all_frames[self.science_file][self.log.align_y0_key] = self.y0
+                self.all_frames[self.science_file][self.log.align_u0_key] = self.u0
 
-            if not self.x0:
+                if not self.x0:
+                    self.all_frames[self.science_file][self.log.skip_key] = True
+            else:
+                # as in the header; self.x0/y0/u0 still hold the previous frame (the starting
+                # point for the next one) and must not be stored for this frame
+                self.all_frames[self.science_file][self.log.align_x0_key] = False
+                self.all_frames[self.science_file][self.log.align_y0_key] = False
+                self.all_frames[self.science_file][self.log.align_u0_key] = False
                 self.all_frames[self.science_file][self.log.skip_key] = True
 
             self.progress_figure.draw()
