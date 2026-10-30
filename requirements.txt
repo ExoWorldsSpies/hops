@@ -14,4 +14,4 @@ pyyaml
 exotethys>=2.0.15
 click
 photutils
-exoclock
+exoclock>=0.0.1
