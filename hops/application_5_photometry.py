@@ -687,10 +687,24 @@ class PhotometryWindow(MainWindow):
 
     def openweb_simbad(self):
 
-        radec_string = self.log.get_param('target_ra_dec').replace('+', '%2B').replace(' ', '+')
-        webbrowser.open("http://simbad.u-strasbg.fr/simbad/sim-coo?Coord={0}&CooFrame=ICRS&"
-                        "CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=20&"
-                        "Radius.unit=arcmin&submit=submit+query&CoordList=".format(radec_string), new=1)
+        _ = exoclock.simbad_search_by_name('M27')
+
+        status = exoclock.get_simbad_status()
+
+        if 'Connected to ' in status:
+            server = status.replace('Connected to ', '')
+
+            radec_string = self.log.get_param('target_ra_dec').replace('+', '%2B').replace(' ', '+')
+            webbrowser.open("http://{0}/simbad/sim-coo?Coord={1}&CooFrame=ICRS&"
+                            "CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=20&"
+                            "Radius.unit=arcmin&submit=submit+query&CoordList=".format(
+                server, radec_string), new=1
+            )
+
+        else:
+
+            self.showinfo('Simbad not connected failed',
+                          'Could not connect to Simbad.')
 
     def plate_solve_first(self):
 

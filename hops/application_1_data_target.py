@@ -51,7 +51,10 @@ filter_translations = {
 
 __location__ = os.path.abspath(os.path.dirname(__file__))
 
-_ = exoclock.simbad_search_by_name('M27')
+try:
+    _ = exoclock.simbad_search_by_name('M27')
+except:
+    _ = exoclock.simbad_search_by_name('M27')
 
 class DataTargetWindow(MainWindow):
 
