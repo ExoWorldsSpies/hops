@@ -167,6 +167,9 @@ def image_find_stars(fits_data, fits_header, x_low=0, x_upper=None, y_low=0, y_u
 
     for num, centroid in enumerate(centroids):
 
+        if progress_window and progress_window.exit:
+            return None
+
         star = _star_from_centroid(fits_data, centroid[1], centroid[2], mean, std, burn_limit, psf, stars_snr, fit_effort=fit_effort, verbose=verbose)
 
         if star:
