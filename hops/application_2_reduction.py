@@ -351,7 +351,9 @@ class ReductionWindow(MainWindow):
                 bp_map = np.where(np.isnan(self.master_flat), 1, bp_map)
                 bp_map = np.where(self.master_flat==np.inf, 1, bp_map)
 
-                self.master_flat[np.int_(bp_map)] = 1
+                # bad pixels only (indexing with np.int_(bp_map) selected whole rows 0 and 1);
+                # they are replaced by the interpolation below
+                self.master_flat[bp_map == 1] = 1
                 bp_map[:, 0] = 0
                 bp_map[:, -1] = 0
 
