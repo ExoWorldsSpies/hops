@@ -583,7 +583,7 @@ class PhotometryWindow(MainWindow):
                                 key=lambda x: np.sqrt((x[0] -
                                                        self.targets[0][2].get()) ** 2 +
                                                       (x[1] -
-                                                       self.targets[0][2].get()) ** 2))
+                                                       self.targets[0][3].get()) ** 2))
 
             for num in range(100):
 
