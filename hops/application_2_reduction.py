@@ -7,12 +7,25 @@ import shutil
 import exoclock
 import hops.pylightcurve41 as plc
 
-from scipy.interpolate import interp1d
 from astropy.io import fits as pf
 
 from hops.hops_tools.fits import *
 from hops.hops_tools.image_analysis import image_mean_std, image_burn_limit, image_psf, bin_frame
 from hops.application_windows import MainWindow
+
+
+def combine_frames(frames, method):
+    """Pixel-wise nanmedian (or nanmean) of a list of frames, in blocks of rows.
+
+    Gives the same values as the per-row list comprehension it replaces, much faster."""
+    if len(frames) == 1:
+        return np.array(frames[0], dtype=float)
+    combine = np.nanmean if method == 'mean' else np.nanmedian
+    result = np.empty_like(frames[0], dtype=float)
+    for start in range(0, len(frames[0]), 256):
+        rows = slice(start, start + 256)
+        result[rows] = combine(np.stack([frame[rows] for frame in frames]), axis=0)
+    return result
 
 
 class ReductionWindow(MainWindow):
@@ -150,7 +163,7 @@ class ReductionWindow(MainWindow):
                 self.progress_bias.initiate(len(self.bias_files))
 
             fits_data, fits_header = self.get_fits_data_and_header(self.bias_files[self.bias_counter])
-            self.bias_frames.append(np.ones_like(fits_data) * fits_data)
+            self.bias_frames.append(fits_data)
 
             try:
                 bias_exptime = fits_header[self.log.get_param('exposure_time_key')]
@@ -183,11 +196,11 @@ class ReductionWindow(MainWindow):
                 self.bias_frames = [self.bias_frames[ff] for ff in range(len(self.bias_frames))  if consistent_exp_time[ff]]
 
                 if self.log.get_param('master_bias_method') == 'median':
-                    self.master_bias = np.array([np.nanmedian([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
+                    self.master_bias = combine_frames(self.bias_frames, 'median')
                 elif self.log.get_param('master_bias_method') == 'mean':
-                    self.master_bias = np.array([np.nanmean([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
+                    self.master_bias = combine_frames(self.bias_frames, 'mean')
                 else:
-                    self.master_bias = np.array([np.nanmedian([xx[ff] for xx in self.bias_frames], 0) for ff in range(len(self.bias_frames[0]))])
+                    self.master_bias = combine_frames(self.bias_frames, 'median')
 
                 self.bias_frames_exp = np.median(self.bias_frames_exp)
 
@@ -212,7 +225,7 @@ class ReductionWindow(MainWindow):
                 self.progress_dark.initiate(len(self.dark_files))
 
             fits_data, fits_header = self.get_fits_data_and_header(self.dark_files[self.dark_counter])
-            dark_frame = np.ones_like(fits_data) * fits_data
+            dark_frame = fits_data
             self.dark_frames.append((dark_frame - self.master_bias) / (fits_header[self.log.get_param('exposure_time_key')] - self.bias_frames_exp))
 
             print('{0}: median = {1}'.format(self.dark_files[self.dark_counter], np.nanmedian(self.dark_frames[-1])))
@@ -234,11 +247,11 @@ class ReductionWindow(MainWindow):
 
             if len(self.dark_frames) > 0:
                 if self.log.get_param('master_dark_method') == 'median':
-                    self.master_dark = np.array([np.nanmedian([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
+                    self.master_dark = combine_frames(self.dark_frames, 'median')
                 elif self.log.get_param('master_dark_method') == 'mean':
-                    self.master_dark = np.array([np.nanmean([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
+                    self.master_dark = combine_frames(self.dark_frames, 'mean')
                 else:
-                    self.master_dark = np.array([np.nanmedian([xx[ff] for xx in self.dark_frames], 0) for ff in range(len(self.dark_frames[0]))])
+                    self.master_dark = combine_frames(self.dark_frames, 'median')
             else:
                 self.master_dark = 0.0
 
@@ -258,7 +271,7 @@ class ReductionWindow(MainWindow):
                 self.progress_darkf.initiate(len(self.darkf_files))
 
             fits_data, fits_header = self.get_fits_data_and_header(self.darkf_files[self.darkf_counter])
-            darkf_frame = np.ones_like(fits_data) * fits_data
+            darkf_frame = fits_data
             self.darkf_frames.append((darkf_frame - self.master_bias) / (fits_header[self.log.get_param('exposure_time_key')] - self.bias_frames_exp))
 
             print('{0}: median = {1}'.format(self.darkf_files[self.darkf_counter], np.nanmedian(self.darkf_frames[-1])))
@@ -280,11 +293,11 @@ class ReductionWindow(MainWindow):
 
             if len(self.darkf_frames) > 0:
                 if self.log.get_param('master_darkf_method') == 'median':
-                    self.master_darkf = np.array([np.nanmedian([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
+                    self.master_darkf = combine_frames(self.darkf_frames, 'median')
                 elif self.log.get_param('master_darkf_method') == 'mean':
-                    self.master_darkf = np.array([np.nanmean([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
+                    self.master_darkf = combine_frames(self.darkf_frames, 'mean')
                 else:
-                    self.master_darkf = np.array([np.nanmedian([xx[ff] for xx in self.darkf_frames], 0) for ff in range(len(self.darkf_frames[0]))])
+                    self.master_darkf = combine_frames(self.darkf_frames, 'median')
             else:
                 self.master_darkf = self.master_dark
 
@@ -304,7 +317,7 @@ class ReductionWindow(MainWindow):
                 self.progress_flat.initiate(len(self.flat_files))
 
             fits_data, fits_header = self.get_fits_data_and_header(self.flat_files[self.flat_counter])
-            flat_frame = np.ones_like(fits_data) * fits_data
+            flat_frame = fits_data
 
             self.flat_frames.append(
                 flat_frame - self.master_bias - (fits_header[self.log.get_param('exposure_time_key')] - self.bias_frames_exp) * self.master_darkf)
@@ -330,10 +343,10 @@ class ReductionWindow(MainWindow):
             if len(self.flat_frames) > 0:
                 if self.log.get_param('master_flat_method') == 'mean':
                     flat_frames = [ff / np.nanmean(ff) for ff in self.flat_frames]
-                    self.master_flat = np.array([np.nanmean([xx[ff] for xx in flat_frames], 0) for ff in range(len(flat_frames[0]))])
+                    self.master_flat = combine_frames(flat_frames, 'mean')
                 else:
                     flat_frames = [ff / np.nanmedian(ff) for ff in self.flat_frames]
-                    self.master_flat = np.array([np.nanmedian([xx[ff] for xx in flat_frames], 0) for ff in range(len(flat_frames[0]))])
+                    self.master_flat = combine_frames(flat_frames, 'median')
                 print('Median Flat: ', round(np.nanmedian(self.master_flat), 3))
 
                 if self.colour_camera_mode:
@@ -351,16 +364,22 @@ class ReductionWindow(MainWindow):
                 bp_map = np.where(np.isnan(self.master_flat), 1, bp_map)
                 bp_map = np.where(self.master_flat==np.inf, 1, bp_map)
 
-                self.master_flat[np.int_(bp_map)] = 1
+                # Same result as `self.master_flat[np.int_(bp_map)] = 1` (indexing with the 0/1 map selects
+                # whole rows: row 0 if there is a good pixel, row 1 if there is a bad one), without writing a
+                # full row once per pixel.
+                if (bp_map == 0).any():
+                    self.master_flat[0] = 1
+                if (bp_map == 1).any():
+                    self.master_flat[1] = 1
                 bp_map[:, 0] = 0
                 bp_map[:, -1] = 0
 
-                for line in range(len(self.master_flat)):
-                    clean_pixs = np.where(bp_map[line] == 0)
-                    points = clean_pixs[0]
-                    values = self.master_flat[line][clean_pixs]
-                    line_model = interp1d(points, values)
-                    self.master_flat[line] = line_model(np.arange(len(self.master_flat[line])))
+                columns = np.arange(len(self.master_flat[0]))
+                # rows without bad pixels are returned unchanged by the interpolation
+                for line in np.where(bp_map.any(axis=1))[0]:
+                    clean_pixs = np.where(bp_map[line] == 0)[0]
+                    # what interp1d(clean_pixs, values) evaluates to for these inputs
+                    self.master_flat[line] = np.interp(columns, clean_pixs, self.master_flat[line][clean_pixs])
 
                 # self.master_flat = np.where(self.master_flat <= 0, 1, self.master_flat)
                 # self.master_flat = np.where(np.isnan(self.master_flat), 1, self.master_flat)
@@ -406,10 +425,13 @@ class ReductionWindow(MainWindow):
             centroids_snr = self.log.get_param('centroids_snr')
             stars_snr = self.log.get_param('stars_snr')
             psf_guess = self.log.get_param('psf_guess')
-            data_frame = np.ones_like(fits_data) * fits_data
+            # get_fits_data_and_header returns a new float array: calibrate it in place
+            data_frame = fits_data
             dq_frame = np.where(data_frame == saturation, 1, 0)
-            data_frame = (data_frame - self.master_bias - (exp_time - self.bias_frames_exp) * self.master_dark) / self.master_flat
-            data_frame[np.where(np.isnan(data_frame))] = 0
+            data_frame -= self.master_bias
+            data_frame -= (exp_time - self.bias_frames_exp) * self.master_dark
+            data_frame /= self.master_flat
+            data_frame[np.isnan(data_frame)] = 0
 
             if timing:
                 print('Reduction: ', time.time()-t0)
