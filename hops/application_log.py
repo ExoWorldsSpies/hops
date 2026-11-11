@@ -297,7 +297,7 @@ class HOPSLog:
         self.save_yaml(x, self.files['local_log_user'])
 
     def read_log_profile(self, keyword):
-        x = self.open_yaml(self.files['log_profile'])
+        x = self.open_yaml(self.files['main_log_profile'])
         if not x[keyword]:
             return ''
         else:
